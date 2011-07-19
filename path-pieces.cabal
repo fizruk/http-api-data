@@ -1,0 +1,22 @@
+name:            path-pieces
+version:         0.0.0
+license:         BSD3
+license-file:    LICENSE
+author:          Michael Snoyman <michael@snoyman.com>
+maintainer:      Michael Snoyman <michael@snoyman.com>
+synopsis:        Components of paths.
+category:        Web, Yesod
+stability:       unstable
+cabal-version:   >= 1.6
+build-type:      Simple
+homepage:        http://github.com/snoyberg/path-pieces
+
+library
+    build-depends:   base             >= 4       && < 5
+                   , text             >= 0.5     && < 0.12
+    exposed-modules: Web.PathPieces
+    ghc-options:     -Wall
+
+source-repository head
+  type:     git
+  location: git://github.com/snoyberg/path-pieces.git
