@@ -7,7 +7,7 @@ maintainer:      Michael Snoyman <michael@snoyman.com>
 synopsis:        Components of paths.
 category:        Web, Yesod
 stability:       unstable
-cabal-version:   >= 1.6
+cabal-version:   >= 1.8
 build-type:      Simple
 homepage:        http://github.com/snoyberg/path-pieces
 
@@ -16,6 +16,19 @@ library
                    , text             >= 0.5     && < 0.12
     exposed-modules: Web.PathPieces
     ghc-options:     -Wall
+
+test-suite test
+    type:          exitcode-stdio-1.0
+    main-is:       main.hs
+    hs-source-dirs: test
+    ghc-options:   -Wall
+    build-depends:   HUnit
+                   , hspec >= 0.8 && < 0.9
+                   , file-location >= 0.4 && < 0.5
+                   , base >= 4 && < 5
+                   , QuickCheck == 2.4.*
+                   , path-pieces
+                   , text
 
 source-repository head
   type:     git
