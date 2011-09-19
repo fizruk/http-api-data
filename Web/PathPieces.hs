@@ -3,8 +3,10 @@ module Web.PathPieces
     ( RoutePiece (..)
     , RouteMultiPiece (..)
     -- * Deprecated
-    , SinglePiece (..)
-    , MultiPiece (..)
+    , toSinglePiece
+    , toMultiPiece
+    , fromSinglePiece
+    , fromMultiPiece
     ) where
 
 import Data.Int (Int64)
@@ -66,58 +68,18 @@ instance RouteMultiPiece [L.Text] where
     fromRouteMultiPiece = Just . map (L.fromChunks . return)
     toRouteMultiPiece = map $ S.concat . L.toChunks
 
+{-# DEPRECATED toSinglePiece "Use toRoutePiece instead of toSinglePiece" #-}
+toSinglePiece :: RoutePiece p => p -> S.Text
+toSinglePiece = toRoutePiece
 
--- | deprecated api
-class SinglePiece s where
-    fromSinglePiece :: S.Text -> Maybe s
-    toSinglePiece :: s -> S.Text
+{-# DEPRECATED fromSinglePiece "Use fromRoutePiece instead of fromSinglePiece" #-}
+fromSinglePiece :: RoutePiece p => S.Text -> Maybe p
+fromSinglePiece = fromRoutePiece
 
-instance SinglePiece String where
-    fromSinglePiece s = if S.null s then Nothing else Just (S.unpack s)
-    toSinglePiece = S.pack
+{-# DEPRECATED toMultiPiece "Use toRouteMultiPiece instead of toMultiPiece" #-}
+toMultiPiece :: RouteMultiPiece ps => ps -> [S.Text]
+toMultiPiece = toRouteMultiPiece
 
-instance SinglePiece S.Text where
-    fromSinglePiece s = if S.null s then Nothing else Just s
-    toSinglePiece = id
-
-instance SinglePiece L.Text where
-    fromSinglePiece s = if S.null s then Nothing else Just (L.fromChunks [s])
-    toSinglePiece = S.concat . L.toChunks
-
-instance SinglePiece Integer where
-    fromSinglePiece s =
-        case Data.Text.Read.decimal s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
-    toSinglePiece = S.pack . show
-
-instance SinglePiece Int where
-    fromSinglePiece s =
-        case Data.Text.Read.decimal s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
-    toSinglePiece = S.pack . show
-
-instance SinglePiece Int64 where
-    fromSinglePiece s =
-        case Data.Text.Read.decimal s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
-    toSinglePiece = S.pack . show
-
-
-class MultiPiece s where
-    fromMultiPiece :: [S.Text] -> Maybe s
-    toMultiPiece :: s -> [S.Text]
-
-instance MultiPiece [String] where
-    fromMultiPiece = Just . map S.unpack
-    toMultiPiece = map S.pack
-
-instance MultiPiece [S.Text] where
-    fromMultiPiece = Just
-    toMultiPiece = id
-
-instance MultiPiece [L.Text] where
-    fromMultiPiece = Just . map (L.fromChunks . return)
-    toMultiPiece = map $ S.concat . L.toChunks
+{-# DEPRECATED fromMultiPiece "Use fromRouteMultiPiece instead of fromMultiPiece" #-}
+fromMultiPiece :: RouteMultiPiece ps => [S.Text] -> Maybe ps
+fromMultiPiece = fromRouteMultiPiece
