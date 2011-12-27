@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances  #-}
 module Web.PathPieces
-    ( RoutePiece (..)
-    , RouteMultiPiece (..)
+    ( PathPiece (..)
+    , PathMultiPiece (..)
     -- * Deprecated
     , toSinglePiece
     , toMultiPiece
@@ -14,72 +14,72 @@ import qualified Data.Text as S
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Read
 
-class RoutePiece s where
-    fromRoutePiece :: S.Text -> Maybe s
-    toRoutePiece :: s -> S.Text
+class PathPiece s where
+    fromPathPiece :: S.Text -> Maybe s
+    toPathPiece :: s -> S.Text
 
-instance RoutePiece String where
-    fromRoutePiece s = if S.null s then Nothing else Just (S.unpack s)
-    toRoutePiece = S.pack
+instance PathPiece String where
+    fromPathPiece s = if S.null s then Nothing else Just (S.unpack s)
+    toPathPiece = S.pack
 
-instance RoutePiece S.Text where
-    fromRoutePiece s = if S.null s then Nothing else Just s
-    toRoutePiece = id
+instance PathPiece S.Text where
+    fromPathPiece s = if S.null s then Nothing else Just s
+    toPathPiece = id
 
-instance RoutePiece L.Text where
-    fromRoutePiece s = if S.null s then Nothing else Just (L.fromChunks [s])
-    toRoutePiece = S.concat . L.toChunks
+instance PathPiece L.Text where
+    fromPathPiece s = if S.null s then Nothing else Just (L.fromChunks [s])
+    toPathPiece = S.concat . L.toChunks
 
-instance RoutePiece Integer where
-    fromRoutePiece s =
+instance PathPiece Integer where
+    fromPathPiece s =
         case Data.Text.Read.decimal s of
             Right (i, _) -> Just i
             Left _ -> Nothing
-    toRoutePiece = S.pack . show
+    toPathPiece = S.pack . show
 
-instance RoutePiece Int where
-    fromRoutePiece s =
+instance PathPiece Int where
+    fromPathPiece s =
         case Data.Text.Read.decimal s of
             Right (i, _) -> Just i
             Left _ -> Nothing
-    toRoutePiece = S.pack . show
+    toPathPiece = S.pack . show
 
-instance RoutePiece Int64 where
-    fromRoutePiece s =
+instance PathPiece Int64 where
+    fromPathPiece s =
         case Data.Text.Read.decimal s of
             Right (i, _) -> Just i
             Left _ -> Nothing
-    toRoutePiece = S.pack . show
+    toPathPiece = S.pack . show
 
 
-class RouteMultiPiece s where
-    fromRouteMultiPiece :: [S.Text] -> Maybe s
-    toRouteMultiPiece :: s -> [S.Text]
+class PathMultiPiece s where
+    fromPathMultiPiece :: [S.Text] -> Maybe s
+    toPathMultiPiece :: s -> [S.Text]
 
-instance RouteMultiPiece [String] where
-    fromRouteMultiPiece = Just . map S.unpack
-    toRouteMultiPiece = map S.pack
+instance PathMultiPiece [String] where
+    fromPathMultiPiece = Just . map S.unpack
+    toPathMultiPiece = map S.pack
 
-instance RouteMultiPiece [S.Text] where
-    fromRouteMultiPiece = Just
-    toRouteMultiPiece = id
+instance PathMultiPiece [S.Text] where
+    fromPathMultiPiece = Just
+    toPathMultiPiece = id
 
-instance RouteMultiPiece [L.Text] where
-    fromRouteMultiPiece = Just . map (L.fromChunks . return)
-    toRouteMultiPiece = map $ S.concat . L.toChunks
+instance PathMultiPiece [L.Text] where
+    fromPathMultiPiece = Just . map (L.fromChunks . return)
+    toPathMultiPiece = map $ S.concat . L.toChunks
 
-{-# DEPRECATED toSinglePiece "Use toRoutePiece instead of toSinglePiece" #-}
-toSinglePiece :: RoutePiece p => p -> S.Text
-toSinglePiece = toRoutePiece
+{-# DEPRECATED toSinglePiece "Use toPathPiece instead of toSinglePiece" #-}
+toSinglePiece :: PathPiece p => p -> S.Text
+toSinglePiece = toPathPiece
 
-{-# DEPRECATED fromSinglePiece "Use fromRoutePiece instead of fromSinglePiece" #-}
-fromSinglePiece :: RoutePiece p => S.Text -> Maybe p
-fromSinglePiece = fromRoutePiece
+{-# DEPRECATED fromSinglePiece "Use fromPathPiece instead of fromSinglePiece" #-}
+fromSinglePiece :: PathPiece p => S.Text -> Maybe p
+fromSinglePiece = fromPathPiece
 
-{-# DEPRECATED toMultiPiece "Use toRouteMultiPiece instead of toMultiPiece" #-}
-toMultiPiece :: RouteMultiPiece ps => ps -> [S.Text]
-toMultiPiece = toRouteMultiPiece
+{-# DEPRECATED toMultiPiece "Use toPathMultiPiece instead of toMultiPiece" #-}
+toMultiPiece :: PathMultiPiece ps => ps -> [S.Text]
+toMultiPiece = toPathMultiPiece
 
-{-# DEPRECATED fromMultiPiece "Use fromRouteMultiPiece instead of fromMultiPiece" #-}
-fromMultiPiece :: RouteMultiPiece ps => [S.Text] -> Maybe ps
-fromMultiPiece = fromRouteMultiPiece
+{-# DEPRECATED fromMultiPiece "Use fromPathMultiPiece instead of fromMultiPiece" #-}
+fromMultiPiece :: PathMultiPiece ps => [S.Text] -> Maybe ps
+fromMultiPiece = fromPathMultiPiece
