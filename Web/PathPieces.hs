@@ -13,6 +13,7 @@ import Data.Int (Int64)
 import qualified Data.Text as S
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Read
+import Data.Time (Day)
 
 class PathPiece s where
     fromPathPiece :: S.Text -> Maybe s
@@ -51,6 +52,12 @@ instance PathPiece Int64 where
             Left _ -> Nothing
     toPathPiece = S.pack . show
 
+instance PathPiece Day where
+    fromPathPiece t =
+        case reads $ S.unpack t of
+            [(a,"")] -> Just a
+            _ -> Nothing
+    toPathPiece = S.pack . show
 
 class PathMultiPiece s where
     fromPathMultiPiece :: [S.Text] -> Maybe s
