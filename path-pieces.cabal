@@ -10,6 +10,8 @@ stability:       unstable
 cabal-version:   >= 1.8
 build-type:      Simple
 homepage:        http://github.com/snoyberg/path-pieces
+extra-source-files:
+  test/main.hs
 
 library
     build-depends:   base             >= 4       && < 5
