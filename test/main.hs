@@ -22,28 +22,28 @@ main = hspecX specs
 
 specs :: Specs
 specs = do
-  describe "RoutePiece" $ do
-    prop "toRoutePiece <=> fromSinglePiece String" $ \(p::String) ->
-      case (fromRoutePiece . toSinglePiece) p of
+  describe "PathPiece" $ do
+    prop "toPathPiece <=> fromSinglePiece String" $ \(p::String) ->
+      case (fromPathPiece . toSinglePiece) p of
         Nothing -> null p
         Just pConverted -> p == pConverted
 
-    prop "toRoutePiece <=> fromSinglePiece String" $ \(p::T.Text) ->
-      case (fromRoutePiece . toSinglePiece) p of
+    prop "toPathPiece <=> fromSinglePiece String" $ \(p::T.Text) ->
+      case (fromPathPiece . toSinglePiece) p of
         Nothing -> T.null p
         Just pConverted -> p == pConverted
 
-    prop "toRoutePiece <=> fromSinglePiece String" $ \(p::Int) ->
-      case (fromRoutePiece . toSinglePiece) p of
+    prop "toPathPiece <=> fromSinglePiece String" $ \(p::Int) ->
+      case (fromPathPiece . toSinglePiece) p of
         Nothing -> p < 0
         Just pConverted -> p == pConverted
 
-  describe "RouteMultiPiece" $ do
-    prop "toRouteMultiPiece <=> fromMultiPiece String" $ \(p::[String]) ->
-      p == (fromJust . fromRouteMultiPiece . toMultiPiece) p
+  describe "PathMultiPiece" $ do
+    prop "toPathMultiPiece <=> fromMultiPiece String" $ \(p::[String]) ->
+      p == (fromJust . fromPathMultiPiece . toMultiPiece) p
 
-    prop "toRouteMultiPiece <=> fromMultiPiece String" $ \(p::[T.Text]) ->
-      p == (fromJust . fromRouteMultiPiece . toMultiPiece) p
+    prop "toPathMultiPiece <=> fromMultiPiece String" $ \(p::[T.Text]) ->
+      p == (fromJust . fromPathMultiPiece . toMultiPiece) p
 
 
   describe "SinglePiece" $ do
