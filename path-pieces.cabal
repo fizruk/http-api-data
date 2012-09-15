@@ -9,7 +9,6 @@ category:        Web, Yesod
 stability:       unstable
 cabal-version:   >= 1.8
 build-type:      Simple
-homepage:        http://github.com/snoyberg/path-pieces
 extra-source-files:
   test/main.hs
 
@@ -35,4 +34,4 @@ test-suite test
 
 source-repository head
   type:     git
-  location: git://github.com/snoyberg/path-pieces.git
+  location: https://github.com/yesodweb/path-pieces
