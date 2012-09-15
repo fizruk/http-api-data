@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Main where
 
-import Test.Hspec.Monadic (Specs, describe, hspecX)
+import Test.Hspec.Monadic (Spec, describe, hspec)
 import Test.Hspec.HUnit()
 import Test.Hspec.QuickCheck(prop)
 import Test.QuickCheck
@@ -18,10 +18,10 @@ instance Arbitrary T.Text where
 
 
 main :: IO ()
-main = hspecX specs
+main = hspec spec
 
-specs :: Specs
-specs = do
+spec :: Spec
+spec = do
   describe "PathPiece" $ do
     prop "toPathPiece <=> fromPathPiece String" $ \(p::String) ->
       case (fromPathPiece . toPathPiece) p of
