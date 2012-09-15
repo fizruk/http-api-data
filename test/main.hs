@@ -2,8 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Main where
 
-import Test.Hspec.Monadic (Spec, describe, hspec)
-import Test.Hspec.HUnit()
+import Test.Hspec
 import Test.Hspec.QuickCheck(prop)
 import Test.QuickCheck
 
