@@ -20,15 +20,15 @@ class PathPiece s where
     toPathPiece :: s -> S.Text
 
 instance PathPiece String where
-    fromPathPiece s = if S.null s then Nothing else Just (S.unpack s)
+    fromPathPiece = Just . S.unpack
     toPathPiece = S.pack
 
 instance PathPiece S.Text where
-    fromPathPiece s = if S.null s then Nothing else Just s
+    fromPathPiece = Just
     toPathPiece = id
 
 instance PathPiece L.Text where
-    fromPathPiece s = if S.null s then Nothing else Just (L.fromChunks [s])
+    fromPathPiece = Just . L.fromChunks . return
     toPathPiece = S.concat . L.toChunks
 
 instance PathPiece Integer where
