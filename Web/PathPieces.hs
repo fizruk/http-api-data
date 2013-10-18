@@ -33,21 +33,21 @@ instance PathPiece L.Text where
 
 instance PathPiece Integer where
     fromPathPiece s =
-        case Data.Text.Read.decimal s of
+        case Data.Text.Read.signed Data.Text.Read.decimal s of
             Right (i, _) -> Just i
             Left _ -> Nothing
     toPathPiece = S.pack . show
 
 instance PathPiece Int where
     fromPathPiece s =
-        case Data.Text.Read.decimal s of
+        case Data.Text.Read.signed Data.Text.Read.decimal s of
             Right (i, _) -> Just i
             Left _ -> Nothing
     toPathPiece = S.pack . show
 
 instance PathPiece Int64 where
     fromPathPiece s =
-        case Data.Text.Read.decimal s of
+        case Data.Text.Read.signed Data.Text.Read.decimal s of
             Right (i, _) -> Just i
             Left _ -> Nothing
     toPathPiece = S.pack . show
