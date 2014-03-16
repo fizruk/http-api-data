@@ -9,7 +9,8 @@ module Web.PathPieces
     , fromMultiPiece
     ) where
 
-import Data.Int (Int64)
+import Data.Int (Int8, Int16, Int32, Int64)
+import Data.Word (Word, Word8, Word16, Word32, Word64)
 import qualified Data.Text as S
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Read
@@ -31,25 +32,60 @@ instance PathPiece L.Text where
     fromPathPiece = Just . L.fromChunks . return
     toPathPiece = S.concat . L.toChunks
 
+parseIntegral :: (Integral a, Bounded a, Ord a) => S.Text -> Maybe a
+parseIntegral s = n
+    where
+    n = case Data.Text.Read.signed Data.Text.Read.decimal s of
+        Right (i, _) | i <= top && i >= bot -> Just (fromInteger i)
+        _ -> Nothing
+    Just witness = n
+    top = toInteger (maxBound `asTypeOf` witness)
+    bot = toInteger (minBound `asTypeOf` witness)
+
 instance PathPiece Integer where
-    fromPathPiece s =
-        case Data.Text.Read.signed Data.Text.Read.decimal s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
+    fromPathPiece s = case Data.Text.Read.signed Data.Text.Read.decimal s of
+        Right (i, _) -> Just i
+        Left _ -> Nothing
     toPathPiece = S.pack . show
 
 instance PathPiece Int where
-    fromPathPiece s =
-        case Data.Text.Read.signed Data.Text.Read.decimal s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
+    fromPathPiece = parseIntegral
+    toPathPiece = S.pack . show
+
+instance PathPiece Int8 where
+    fromPathPiece = parseIntegral
+    toPathPiece = S.pack . show
+
+instance PathPiece Int16 where
+    fromPathPiece = parseIntegral
+    toPathPiece = S.pack . show
+
+instance PathPiece Int32 where
+    fromPathPiece = parseIntegral
     toPathPiece = S.pack . show
 
 instance PathPiece Int64 where
-    fromPathPiece s =
-        case Data.Text.Read.signed Data.Text.Read.decimal s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
+    fromPathPiece = parseIntegral
+    toPathPiece = S.pack . show
+
+instance PathPiece Word where
+    fromPathPiece = parseIntegral
+    toPathPiece = S.pack . show
+
+instance PathPiece Word8 where
+    fromPathPiece = parseIntegral
+    toPathPiece = S.pack . show
+
+instance PathPiece Word16 where
+    fromPathPiece = parseIntegral
+    toPathPiece = S.pack . show
+
+instance PathPiece Word32 where
+    fromPathPiece = parseIntegral
+    toPathPiece = S.pack . show
+
+instance PathPiece Word64 where
+    fromPathPiece = parseIntegral
     toPathPiece = S.pack . show
 
 instance PathPiece Day where
