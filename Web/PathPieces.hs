@@ -45,6 +45,13 @@ instance PathPiece Int where
             Left _ -> Nothing
     toPathPiece = S.pack . show
 
+instance PathPiece Bool where
+    fromPathPiece t =
+        case reads $ S.unpack t of
+            [(a,"")] -> Just a
+            _        -> Nothing
+    toPathPiece = S.pack . show
+
 instance PathPiece Int64 where
     fromPathPiece s =
         case Data.Text.Read.signed Data.Text.Read.decimal s of
