@@ -82,6 +82,14 @@ instance PathMultiPiece [L.Text] where
     fromPathMultiPiece = Just . map (L.fromChunks . return)
     toPathMultiPiece = map $ S.concat . L.toChunks
 
+instance (PathPiece a) => PathPiece (Maybe a) where
+    fromPathPiece s = case s of
+        "Nothing" -> Just Nothing
+        _ -> Just $ fromPathPiece s
+    toPathPiece m = case m of
+        Just s -> toPathPiece s
+        _ -> "Nothing"
+
 {-# DEPRECATED toSinglePiece "Use toPathPiece instead of toSinglePiece" #-}
 toSinglePiece :: PathPiece p => p -> S.Text
 toSinglePiece = toPathPiece
