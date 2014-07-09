@@ -10,6 +10,7 @@ module Web.PathPieces
     ) where
 
 import Data.Int (Int64)
+import Data.Maybe (fromJust)
 import qualified Data.Text as S
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Read
@@ -83,8 +84,8 @@ instance PathMultiPiece [L.Text] where
     toPathMultiPiece = map $ S.concat . L.toChunks
 
 instance (PathPiece a) => PathPiece (Maybe a) where
-    fromPathPiece s = if isPrefixOf "Just " s 
-        then Just $ fromPathPiece $ fromJust $ stripPrefix "Just " s
+    fromPathPiece s = if S.isPrefixOf "Just " s 
+        then Just $ fromPathPiece $ fromJust $ S.stripPrefix "Just " s
         else 
             if s == "Nothing"
             then Just Nothing
