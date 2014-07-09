@@ -10,7 +10,6 @@ module Web.PathPieces
     ) where
 
 import Data.Int (Int64)
-import Data.Maybe (fromJust)
 import qualified Data.Text as S
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Read
@@ -67,6 +66,16 @@ instance PathPiece Day where
             _ -> Nothing
     toPathPiece = S.pack . show
 
+instance (PathPiece a) => PathPiece (Maybe a) where
+    fromPathPiece s = case S.stripPrefix "Just " s of
+        Just r -> Just `fmap` fromPathPiece r
+        _ -> case s of
+            "Nothing" -> Just Nothing
+            _ -> Nothing
+    toPathPiece m = case m of
+        Just s -> "Just " `S.append` toPathPiece s
+        _ -> "Nothing"
+
 class PathMultiPiece s where
     fromPathMultiPiece :: [S.Text] -> Maybe s
     toPathMultiPiece :: s -> [S.Text]
@@ -82,16 +91,6 @@ instance PathMultiPiece [S.Text] where
 instance PathMultiPiece [L.Text] where
     fromPathMultiPiece = Just . map (L.fromChunks . return)
     toPathMultiPiece = map $ S.concat . L.toChunks
-
-instance (PathPiece a) => PathPiece (Maybe a) where
-    fromPathPiece s = case S.stripPrefix "Just " s of
-        Just r -> Just $ fromPathPiece r
-        _ -> case s of
-            "Nothing" -> Just Nothing
-            _ -> Nothing
-    toPathPiece m = case m of
-        Just s -> "Just " `S.append` toPathPiece s
-        _ -> "Nothing"
 
 {-# DEPRECATED toSinglePiece "Use toPathPiece instead of toSinglePiece" #-}
 toSinglePiece :: PathPiece p => p -> S.Text
