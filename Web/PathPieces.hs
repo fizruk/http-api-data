@@ -84,12 +84,11 @@ instance PathMultiPiece [L.Text] where
     toPathMultiPiece = map $ S.concat . L.toChunks
 
 instance (PathPiece a) => PathPiece (Maybe a) where
-    fromPathPiece s = if S.isPrefixOf "Just " s 
-        then Just $ fromPathPiece $ fromJust $ S.stripPrefix "Just " s
-        else 
-            if s == "Nothing"
-            then Just Nothing
-            else Nothing
+    fromPathPiece s = case S.stripPrefix "Just " s of
+        Just r -> Just $ fromPathPiece r
+        _ -> case s of
+            "Nothing" -> Just Nothing
+            _ -> Nothing
     toPathPiece m = case m of
         Just s -> "Just " `S.append` toPathPiece s
         _ -> "Nothing"
