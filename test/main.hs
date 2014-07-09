@@ -42,7 +42,7 @@ spec = do
         Nothing -> False
         Just pConverted -> p == pConverted
 
-    prop "toPathPiece <=> fromPathPiece String" $ \(p::Maybe String) ->
+    prop "toPathPiece <=> fromPathPiece Maybe String" $ \(p::Maybe String) ->
       case (fromPathPiece . toPathPiece) p of
         Nothing -> False
         Just pConverted -> p == pConverted

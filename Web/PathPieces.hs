@@ -91,7 +91,7 @@ instance (PathPiece a) => PathPiece (Maybe a) where
             then Just Nothing
             else Nothing
     toPathPiece m = case m of
-        Just s -> toPathPiece s
+        Just s -> "Just " `S.append` toPathPiece s
         _ -> "Nothing"
 
 {-# DEPRECATED toSinglePiece "Use toPathPiece instead of toSinglePiece" #-}
