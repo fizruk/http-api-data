@@ -27,17 +27,22 @@ spec = do
         Nothing -> null p
         Just pConverted -> p == pConverted
 
-    prop "toPathPiece <=> fromPathPiece String" $ \(p::T.Text) ->
+    prop "toPathPiece <=> fromPathPiece Text" $ \(p::T.Text) ->
       case (fromPathPiece . toPathPiece) p of
         Nothing -> T.null p
         Just pConverted -> p == pConverted
 
-    prop "toPathPiece <=> fromPathPiece String" $ \(p::Int) ->
+    prop "toPathPiece <=> fromPathPiece Int" $ \(p::Int) ->
       case (fromPathPiece . toPathPiece) p of
         Nothing -> False
         Just pConverted -> p == pConverted
 
-    prop "toPathPiece <=> fromPathPiece String" $ \(p::Bool) ->
+    prop "toPathPiece <=> fromPathPiece Bool" $ \(p::Bool) ->
+      case (fromPathPiece . toPathPiece) p of
+        Nothing -> False
+        Just pConverted -> p == pConverted
+
+    prop "toPathPiece <=> fromPathPiece Maybe String" $ \(p::Maybe String) ->
       case (fromPathPiece . toPathPiece) p of
         Nothing -> False
         Just pConverted -> p == pConverted
@@ -46,7 +51,7 @@ spec = do
     prop "toPathMultiPiece <=> fromPathMultiPiece String" $ \(p::[String]) ->
       p == (fromJust . fromPathMultiPiece . toPathMultiPiece) p
 
-    prop "toPathMultiPiece <=> fromPathMultiPiece String" $ \(p::[T.Text]) ->
+    prop "toPathMultiPiece <=> fromPathMultiPiece Text" $ \(p::[T.Text]) ->
       p == (fromJust . fromPathMultiPiece . toPathMultiPiece) p
 
 
@@ -56,12 +61,12 @@ spec = do
         Nothing -> null p
         Just pConverted -> p == pConverted
 
-    prop "toPathPiece <=> fromPathPiece String" $ \(p::T.Text) ->
+    prop "toPathPiece <=> fromPathPiece Text" $ \(p::T.Text) ->
       case (fromPathPiece . toPathPiece) p of
         Nothing -> T.null p
         Just pConverted -> p == pConverted
 
-    prop "toPathPiece <=> fromPathPiece String" $ \(p::Int) ->
+    prop "toPathPiece <=> fromPathPiece Int" $ \(p::Int) ->
       case (fromPathPiece . toPathPiece) p of
         Nothing -> p < 0
         Just pConverted -> p == pConverted
@@ -70,7 +75,7 @@ spec = do
     prop "toPathMultiPiece <=> fromPathMultiPiece String" $ \(p::[String]) ->
       p == (fromJust . fromPathMultiPiece . toPathMultiPiece) p
 
-    prop "toPathMultiPiece <=> fromPathMultiPiece String" $ \(p::[T.Text]) ->
+    prop "toPathMultiPiece <=> fromPathMultiPiece Text" $ \(p::[T.Text]) ->
       p == (fromJust . fromPathMultiPiece . toPathMultiPiece) p
 
   it "bad ints are rejected" $ fromPathPiece (T.pack "123hello")

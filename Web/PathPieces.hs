@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, OverloadedStrings  #-}
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, OverloadedStrings #-}
 module Web.PathPieces
     ( PathPiece (..)
     , PathMultiPiece (..)
@@ -66,6 +66,16 @@ instance PathPiece Day where
             [(a,"")] -> Just a
             _ -> Nothing
     toPathPiece = S.pack . show
+
+instance (PathPiece a) => PathPiece (Maybe a) where
+    fromPathPiece s = case S.stripPrefix "Just " s of
+        Just r -> Just `fmap` fromPathPiece r
+        _ -> case s of
+            "Nothing" -> Just Nothing
+            _ -> Nothing
+    toPathPiece m = case m of
+        Just s -> "Just " `S.append` toPathPiece s
+        _ -> "Nothing"
 
 class PathMultiPiece s where
     fromPathMultiPiece :: [S.Text] -> Maybe s
