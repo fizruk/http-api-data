@@ -72,3 +72,6 @@ spec = do
 
     prop "toPathMultiPiece <=> fromPathMultiPiece String" $ \(p::[T.Text]) ->
       p == (fromJust . fromPathMultiPiece . toPathMultiPiece) p
+
+  it "bad ints are rejected" $ fromPathPiece (T.pack "123hello")
+    `shouldBe` (Nothing :: Maybe Int)

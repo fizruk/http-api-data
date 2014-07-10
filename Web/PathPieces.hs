@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances  #-}
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, OverloadedStrings  #-}
 module Web.PathPieces
     ( PathPiece (..)
     , PathMultiPiece (..)
@@ -14,6 +14,7 @@ import qualified Data.Text as S
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Read
 import Data.Time (Day)
+import Control.Exception (assert)
 
 class PathPiece s where
     fromPathPiece :: S.Text -> Maybe s
@@ -34,29 +35,29 @@ instance PathPiece L.Text where
 instance PathPiece Integer where
     fromPathPiece s =
         case Data.Text.Read.signed Data.Text.Read.decimal s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
+            Right (i, "") -> Just i
+            _ -> Nothing
     toPathPiece = S.pack . show
 
 instance PathPiece Int where
     fromPathPiece s =
         case Data.Text.Read.signed Data.Text.Read.decimal s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
+            Right (i, "") -> Just i
+            _ -> Nothing
     toPathPiece = S.pack . show
 
 instance PathPiece Bool where
     fromPathPiece t =
-        case reads $ S.unpack t of
-            [(a,"")] -> Just a
+        case filter (null . snd) $ reads $ S.unpack t of
+            (a, s):_ -> assert (null s) (Just a)
             _        -> Nothing
     toPathPiece = S.pack . show
 
 instance PathPiece Int64 where
     fromPathPiece s =
         case Data.Text.Read.signed Data.Text.Read.decimal s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
+            Right (i, "") -> Just i
+            _ -> Nothing
     toPathPiece = S.pack . show
 
 instance PathPiece Day where
