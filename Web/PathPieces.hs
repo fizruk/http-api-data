@@ -118,17 +118,9 @@ class PathMultiPiece s where
     fromPathMultiPiece :: [S.Text] -> Maybe s
     toPathMultiPiece :: s -> [S.Text]
 
-instance PathMultiPiece [String] where
-    fromPathMultiPiece = Just . map S.unpack
-    toPathMultiPiece = map S.pack
-
-instance PathMultiPiece [S.Text] where
-    fromPathMultiPiece = Just
-    toPathMultiPiece = id
-
-instance PathMultiPiece [L.Text] where
-    fromPathMultiPiece = Just . map (L.fromChunks . return)
-    toPathMultiPiece = map $ S.concat . L.toChunks
+instance PathPiece a => PathMultiPiece [a] where
+    fromPathMultiPiece = mapM fromPathPiece
+    toPathMultiPiece = map toPathPiece
 
 {-# DEPRECATED toSinglePiece "Use toPathPiece instead of toSinglePiece" #-}
 toSinglePiece :: PathPiece p => p -> S.Text
