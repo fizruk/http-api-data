@@ -2,6 +2,8 @@
 module Web.PathPieces
     ( PathPiece (..)
     , PathMultiPiece (..)
+    , readFromPathPiece
+    , showToPathPiece
     -- * Deprecated
     , toSinglePiece
     , toMultiPiece
@@ -16,6 +18,7 @@ import qualified Data.Text.Lazy as L
 import qualified Data.Text.Read
 import Data.Time (Day)
 import Control.Exception (assert)
+import Text.Read (readMaybe)
 
 class PathPiece s where
     fromPathPiece :: S.Text -> Maybe s
@@ -121,6 +124,24 @@ class PathMultiPiece s where
 instance PathPiece a => PathMultiPiece [a] where
     fromPathMultiPiece = mapM fromPathPiece
     toPathMultiPiece = map toPathPiece
+
+-- | A function for helping generate free 'PathPiece'
+--   instances for enumeration data types 
+--   that have derive 'Read' and 'Show'.
+--   Intended to be used like this:
+--
+--   > data MyData = Foo | Bar | Baz
+--   >   deriving (Read,Show)
+--   > instance PathPiece MyData where
+--   >   fromPathPiece = readFromPathPiece
+--   >   toPathPiece = showToPathPiece
+--
+readFromPathPiece :: Read s => S.Text -> Maybe s
+readFromPathPiece = readMaybe . S.unpack
+
+-- | See the documentation for 'readFromPathPiece'.
+showToPathPiece :: Show s => s -> S.Text
+showToPathPiece = S.pack . show
 
 {-# DEPRECATED toSinglePiece "Use toPathPiece instead of toSinglePiece" #-}
 toSinglePiece :: PathPiece p => p -> S.Text
