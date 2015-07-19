@@ -125,9 +125,9 @@ instance PathPiece a => PathMultiPiece [a] where
     fromPathMultiPiece = mapM fromPathPiece
     toPathMultiPiece = map toPathPiece
 
--- | A function for helping generate free 'PathPiece'
+-- | Since 0.2.1. A function for helping generate free 'PathPiece'
 --   instances for enumeration data types 
---   that have derive 'Read' and 'Show'.
+--   that have derived 'Read' and 'Show' instances.
 --   Intended to be used like this:
 --
 --   > data MyData = Foo | Bar | Baz
@@ -139,7 +139,7 @@ instance PathPiece a => PathMultiPiece [a] where
 readFromPathPiece :: Read s => S.Text -> Maybe s
 readFromPathPiece = readMaybe . S.unpack
 
--- | See the documentation for 'readFromPathPiece'.
+-- | Since 0.2.1. See the documentation for 'readFromPathPiece'.
 showToPathPiece :: Show s => s -> S.Text
 showToPathPiece = S.pack . show
 
