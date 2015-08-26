@@ -24,6 +24,10 @@ class PathPiece s where
     fromPathPiece :: S.Text -> Maybe s
     toPathPiece :: s -> S.Text
 
+instance PathPiece () where
+    fromPathPiece t = if t == "_" then Just () else Nothing
+    toPathPiece () = "_"
+
 instance PathPiece String where
     fromPathPiece = Just . S.unpack
     toPathPiece = S.pack
