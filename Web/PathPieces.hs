@@ -15,11 +15,14 @@ import Text.Read (readMaybe)
 
 import Web.HttpApiData
 
+-- | Convert Haskell values to and from route pieces.
 class PathPiece s where
+  -- | Convert from route piece.
   fromPathPiece :: S.Text -> Maybe s
   default fromPathPiece :: FromHttpApiData s => S.Text -> Maybe s
   fromPathPiece = either (const Nothing) Just . parseUrlPiece
 
+  -- | Convert to route piece.
   toPathPiece :: s -> S.Text
   default toPathPiece :: ToHttpApiData s => s -> S.Text
   toPathPiece = toUrlPiece
@@ -56,9 +59,12 @@ instance (PathPiece a) => PathPiece (Maybe a) where
         Just s -> "Just " `S.append` toPathPiece s
         _ -> "Nothing"
 
+-- | Convert Haskell values to and from sequence of route pieces.
 class PathMultiPiece s where
-    fromPathMultiPiece :: [S.Text] -> Maybe s
-    toPathMultiPiece :: s -> [S.Text]
+  -- | Convert from sequence of route pieces.
+  fromPathMultiPiece :: [S.Text] -> Maybe s
+  -- | Convert to sequence of route pieces.
+  toPathMultiPiece :: s -> [S.Text]
 
 instance PathPiece a => PathMultiPiece [a] where
     fromPathMultiPiece = mapM fromPathPiece
