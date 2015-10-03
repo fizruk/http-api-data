@@ -18,8 +18,11 @@ extra-source-files:
 library
     build-depends:   base             >= 4       && < 5
                    , text             >= 0.5
+                   , bytestring
                    , time
-    exposed-modules: Web.PathPieces
+    exposed-modules:
+      Web.PathPieces
+      Web.HttpApiData
     ghc-options:     -Wall
 
 test-suite test
