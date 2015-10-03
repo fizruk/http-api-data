@@ -1,6 +1,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 module Web.HttpApiData (
   ToHttpApiData (..),
   FromHttpApiData (..),
@@ -93,7 +94,7 @@ instance ToHttpApiData Word8    where toUrlPiece = showUrlPiece
 instance ToHttpApiData Word16   where toUrlPiece = showUrlPiece
 instance ToHttpApiData Word32   where toUrlPiece = showUrlPiece
 instance ToHttpApiData Word64   where toUrlPiece = showUrlPiece
-instance ToHttpApiData [Char]   where toUrlPiece = Text.pack
+instance ToHttpApiData String   where toUrlPiece = Text.pack
 instance ToHttpApiData Text     where toUrlPiece = id
 instance ToHttpApiData TL.Text  where toUrlPiece = TL.toStrict
 instance ToHttpApiData Day      where toUrlPiece = showUrlPiece
@@ -112,7 +113,7 @@ instance FromHttpApiData Word8    where parseUrlPiece = runReader decimal
 instance FromHttpApiData Word16   where parseUrlPiece = runReader decimal
 instance FromHttpApiData Word32   where parseUrlPiece = runReader decimal
 instance FromHttpApiData Word64   where parseUrlPiece = runReader decimal
-instance FromHttpApiData [Char]   where parseUrlPiece = Right . Text.unpack
+instance FromHttpApiData String   where parseUrlPiece = Right . Text.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData TL.Text  where parseUrlPiece = Right . TL.fromStrict
 instance FromHttpApiData Day      where parseUrlPiece = readEitherUrlPiece

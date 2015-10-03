@@ -1,4 +1,7 @@
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, OverloadedStrings, DefaultSignatures #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 module Web.PathPieces
     ( PathPiece (..)
     , PathMultiPiece (..)
