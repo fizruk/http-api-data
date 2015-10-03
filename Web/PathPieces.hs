@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, OverloadedStrings, DefaultSignatures #-}
 module Web.PathPieces
     ( PathPiece (..)
     , PathMultiPiece (..)
@@ -15,9 +15,16 @@ import Data.Time (Day)
 import Control.Exception (assert)
 import Text.Read (readMaybe)
 
+import Web.HttpApiData
+
 class PathPiece s where
-    fromPathPiece :: S.Text -> Maybe s
-    toPathPiece :: s -> S.Text
+  fromPathPiece :: S.Text -> Maybe s
+  default fromPathPiece :: FromHttpApiData s => S.Text -> Maybe s
+  fromPathPiece = either (const Nothing) Just . parseUrlPiece
+
+  toPathPiece :: s -> S.Text
+  default toPathPiece :: ToHttpApiData s => s -> S.Text
+  toPathPiece = toUrlPiece
 
 instance PathPiece () where
     fromPathPiece t = if t == "_" then Just () else Nothing
