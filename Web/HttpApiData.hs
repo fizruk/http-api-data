@@ -1,4 +1,5 @@
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Web.HttpApiData (
   ToHttpApiData (..),
@@ -11,6 +12,9 @@ module Web.HttpApiData (
 
 import Data.Monoid
 import Data.ByteString (ByteString)
+
+import Data.Int
+import Data.Word
 
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
@@ -64,4 +68,38 @@ readMaybeUrlPiece = readMaybe . Text.unpack
 -- | Parse URL piece using @'Read'@ instance.
 readEitherUrlPiece :: Read a => Text -> Either Text a
 readEitherUrlPiece = parseMaybeUrlPiece readMaybeUrlPiece
+
+instance ToHttpApiData Bool     where toUrlPiece = showUrlPiece
+instance ToHttpApiData Double   where toUrlPiece = showUrlPiece
+instance ToHttpApiData Float    where toUrlPiece = showUrlPiece
+instance ToHttpApiData Int      where toUrlPiece = showUrlPiece
+instance ToHttpApiData Int8     where toUrlPiece = showUrlPiece
+instance ToHttpApiData Int16    where toUrlPiece = showUrlPiece
+instance ToHttpApiData Int32    where toUrlPiece = showUrlPiece
+instance ToHttpApiData Int64    where toUrlPiece = showUrlPiece
+instance ToHttpApiData Integer  where toUrlPiece = showUrlPiece
+instance ToHttpApiData Word     where toUrlPiece = showUrlPiece
+instance ToHttpApiData Word8    where toUrlPiece = showUrlPiece
+instance ToHttpApiData Word16   where toUrlPiece = showUrlPiece
+instance ToHttpApiData Word32   where toUrlPiece = showUrlPiece
+instance ToHttpApiData Word64   where toUrlPiece = showUrlPiece
+instance ToHttpApiData [Char]   where toUrlPiece = Text.pack
+instance ToHttpApiData Text     where toUrlPiece = id
+
+instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Double   where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Float    where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Int      where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Int8     where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Int16    where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Int32    where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Int64    where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Integer  where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Word     where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Word8    where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Word16   where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Word32   where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Word64   where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData [Char]   where parseUrlPiece = Right . Text.unpack
+instance FromHttpApiData Text     where parseUrlPiece = Right
 
