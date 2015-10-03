@@ -24,6 +24,8 @@ import Data.Text.Read (signed, decimal, rational, Reader)
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as TL
 
+import Data.Time (Day)
+
 import Text.Read (readMaybe)
 
 -- | Convert value to HTTP API data.
@@ -94,6 +96,7 @@ instance ToHttpApiData Word64   where toUrlPiece = showUrlPiece
 instance ToHttpApiData [Char]   where toUrlPiece = Text.pack
 instance ToHttpApiData Text     where toUrlPiece = id
 instance ToHttpApiData TL.Text  where toUrlPiece = TL.toStrict
+instance ToHttpApiData Day      where toUrlPiece = showUrlPiece
 
 instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
@@ -112,4 +115,4 @@ instance FromHttpApiData Word64   where parseUrlPiece = runReader decimal
 instance FromHttpApiData [Char]   where parseUrlPiece = Right . Text.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData TL.Text  where parseUrlPiece = Right . TL.fromStrict
-
+instance FromHttpApiData Day      where parseUrlPiece = readEitherUrlPiece

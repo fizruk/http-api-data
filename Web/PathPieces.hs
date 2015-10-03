@@ -40,17 +40,11 @@ instance PathPiece Word64
 instance PathPiece String
 instance PathPiece S.Text
 instance PathPiece L.Text
+instance PathPiece Day
 
 instance PathPiece () where
     fromPathPiece t = if t == "_" then Just () else Nothing
     toPathPiece () = "_"
-
-instance PathPiece Day where
-    fromPathPiece t =
-        case reads $ S.unpack t of
-            [(a,"")] -> Just a
-            _ -> Nothing
-    toPathPiece = S.pack . show
 
 instance (PathPiece a) => PathPiece (Maybe a) where
     fromPathPiece s = case S.stripPrefix "Just " s of
