@@ -5,7 +5,7 @@
 module Web.HttpApiData (
   ToHttpApiData (..),
   FromHttpApiData (..),
-  parseMaybeUrlPiece,
+  parseMaybeHttpApiData,
   showUrlPiece,
   readMaybeUrlPiece,
   readEitherUrlPiece,
@@ -58,10 +58,10 @@ class FromHttpApiData a where
   parseQueryParam = parseUrlPiece
 
 -- | Convert @'Maybe'@ parser into @'Either' 'Text'@ parser with default error message.
-parseMaybeUrlPiece :: (Text -> Maybe a) -> (Text -> Either Text a)
-parseMaybeUrlPiece parse input =
+parseMaybeHttpApiData :: (Text -> Maybe a) -> (Text -> Either Text a)
+parseMaybeHttpApiData parse input =
   case parse input of
-    Nothing  -> Left ("parseUrlPiece: could not convert: `" <> input <> "'")
+    Nothing  -> Left ("could not convert: `" <> input <> "'")
     Just val -> Right val
 
 -- | Convert to URL piece using @'Show'@ instance.
@@ -74,7 +74,7 @@ readMaybeUrlPiece = readMaybe . Text.unpack
 
 -- | Parse URL piece using @'Read'@ instance.
 readEitherUrlPiece :: Read a => Text -> Either Text a
-readEitherUrlPiece = parseMaybeUrlPiece readMaybeUrlPiece
+readEitherUrlPiece = parseMaybeHttpApiData readMaybeUrlPiece
 
 -- | Run @'Reader'@ as HTTP API data parser.
 runReader :: Reader a -> Text -> Either Text a
