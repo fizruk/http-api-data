@@ -3,10 +3,11 @@ version:         0.2.0
 license:         BSD3
 license-file:    LICENSE
 author:          Michael Snoyman <michael@snoyman.com>
-maintainer:      Michael Snoyman <michael@snoyman.com>
-synopsis:        Components of paths.
-description:    Hackage documentation generation is not reliable. For up to date documentation, please see: <http://www.stackage.org/package/path-pieces>.
-category:        Web, Yesod
+maintainer:      Nickolay Kudasov <nickolay.kudasov@gmail.com>
+synopsis:        Converting to/from HTTP API data like URL pieces, headers and query parameters.
+description:     Please see README.md
+homepage:        http://github.com/fizruk/http-api-data
+category:        Web
 stability:       unstable
 cabal-version:   >= 1.8
 build-type:      Simple
@@ -39,4 +40,4 @@ test-suite test
 
 source-repository head
   type:     git
-  location: https://github.com/yesodweb/path-pieces
+  location: https://github.com/fizruk/http-api-data
