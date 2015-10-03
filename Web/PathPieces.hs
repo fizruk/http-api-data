@@ -4,11 +4,6 @@ module Web.PathPieces
     , PathMultiPiece (..)
     , readFromPathPiece
     , showToPathPiece
-    -- * Deprecated
-    , toSinglePiece
-    , toMultiPiece
-    , fromSinglePiece
-    , fromMultiPiece
     ) where
 
 import Data.Int (Int8, Int16, Int32, Int64)
@@ -150,18 +145,3 @@ readFromPathPiece = readMaybe . S.unpack
 showToPathPiece :: Show s => s -> S.Text
 showToPathPiece = S.pack . show
 
-{-# DEPRECATED toSinglePiece "Use toPathPiece instead of toSinglePiece" #-}
-toSinglePiece :: PathPiece p => p -> S.Text
-toSinglePiece = toPathPiece
-
-{-# DEPRECATED fromSinglePiece "Use fromPathPiece instead of fromSinglePiece" #-}
-fromSinglePiece :: PathPiece p => S.Text -> Maybe p
-fromSinglePiece = fromPathPiece
-
-{-# DEPRECATED toMultiPiece "Use toPathMultiPiece instead of toMultiPiece" #-}
-toMultiPiece :: PathMultiPiece ps => ps -> [S.Text]
-toMultiPiece = toPathMultiPiece
-
-{-# DEPRECATED fromMultiPiece "Use fromPathMultiPiece instead of fromMultiPiece" #-}
-fromMultiPiece :: PathMultiPiece ps => [S.Text] -> Maybe ps
-fromMultiPiece = fromPathMultiPiece
