@@ -19,9 +19,10 @@ import Data.Int
 import Data.Word
 
 import Data.Text (Text)
-import Data.Text.Read (signed, decimal, rational, Reader)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
+import Data.Text.Read (signed, decimal, rational, Reader)
 import qualified Data.Text as Text
+import qualified Data.Text.Lazy as TL
 
 import Text.Read (readMaybe)
 
@@ -92,6 +93,7 @@ instance ToHttpApiData Word32   where toUrlPiece = showUrlPiece
 instance ToHttpApiData Word64   where toUrlPiece = showUrlPiece
 instance ToHttpApiData [Char]   where toUrlPiece = Text.pack
 instance ToHttpApiData Text     where toUrlPiece = id
+instance ToHttpApiData TL.Text  where toUrlPiece = TL.toStrict
 
 instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
@@ -109,4 +111,5 @@ instance FromHttpApiData Word32   where parseUrlPiece = runReader decimal
 instance FromHttpApiData Word64   where parseUrlPiece = runReader decimal
 instance FromHttpApiData [Char]   where parseUrlPiece = Right . Text.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
+instance FromHttpApiData TL.Text  where parseUrlPiece = Right . TL.fromStrict
 
