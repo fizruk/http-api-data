@@ -19,8 +19,6 @@ module Web.HttpApiData (
   readEitherUrlPiece,
 ) where
 
-import Control.Arrow ((+++))
-
 import Data.Monoid
 import Data.ByteString (ByteString)
 
@@ -93,7 +91,12 @@ readEitherUrlPiece = parseMaybeHttpApiData readMaybeUrlPiece
 
 -- | Run @'Reader'@ as HTTP API data parser.
 runReader :: Reader a -> Text -> Either Text a
-runReader reader = (Text.pack +++ fst) . reader
+runReader reader input =
+  case reader input of
+    Left err          -> Left (Text.pack err)
+    Right (x, rest)
+      | Text.null rest -> Right x
+      | otherwise      -> Left ("could not convert: `" <> input <> "'")
 
 instance ToHttpApiData Bool     where toUrlPiece = showUrlPiece
 instance ToHttpApiData Double   where toUrlPiece = showUrlPiece
