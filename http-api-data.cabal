@@ -19,6 +19,7 @@ extra-source-files:
 library
     build-depends:   base             >= 4       && < 5
                    , text             >= 0.5
+                   , text-show        >= 2
                    , bytestring
                    , time
     exposed-modules:
