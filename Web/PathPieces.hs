@@ -2,12 +2,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Web.PathPieces
-    ( PathPiece (..)
-    , PathMultiPiece (..)
-    , readFromPathPiece
-    , showToPathPiece
-    ) where
+-- |
+-- Convert Haskell values to and from route pieces.
+module Web.PathPieces (
+  PathPiece (..),
+  PathMultiPiece (..),
+  readFromPathPiece,
+  showToPathPiece,
+) where
 
 import Data.Int
 import Data.Word
@@ -18,7 +20,7 @@ import Text.Read (readMaybe)
 
 import Web.HttpApiData
 
--- | Convert Haskell values to and from route pieces.
+-- | Convert Haskell values to and from route piece.
 class PathPiece s where
   -- | Convert from route piece.
   fromPathPiece :: S.Text -> Maybe s
