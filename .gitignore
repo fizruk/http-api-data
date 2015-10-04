@@ -2,3 +2,4 @@
 /.shelly/
 /tarballs/
 *.swp
+.stack-work/
