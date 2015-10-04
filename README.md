@@ -1,5 +1,7 @@
 # http-api-data
 
+[![Build Status](https://secure.travis-ci.org/fizruk/http-api-data.png?branch=master)](http://travis-ci.org/fizruk/http-api-data)
+
 This package defines typeclasses used for converting Haskell data types to and from HTTP API data.
 
 ### Examples
