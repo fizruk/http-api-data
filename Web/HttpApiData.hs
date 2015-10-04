@@ -12,6 +12,7 @@ module Web.HttpApiData (
   -- * Classes
   ToHttpApiData (..),
   FromHttpApiData (..),
+
   -- * Utility functions
   parseMaybeHttpApiData,
   showUrlPiece,
@@ -28,8 +29,8 @@ import Data.Word
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Text.Read (signed, decimal, rational, Reader)
-import qualified Data.Text as Text
-import qualified Data.Text.Lazy as TL
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as L
 
 import Data.Time (Day)
 
@@ -79,11 +80,11 @@ parseMaybeHttpApiData parse input =
 
 -- | Convert to URL piece using @'Show'@ instance.
 showUrlPiece :: Show a => a -> Text
-showUrlPiece = Text.pack . show
+showUrlPiece = T.pack . show
 
 -- | Parse URL piece using @'Read'@ instance.
 readMaybeUrlPiece :: Read a => Text -> Maybe a
-readMaybeUrlPiece = readMaybe . Text.unpack
+readMaybeUrlPiece = readMaybe . T.unpack
 
 -- | Parse URL piece using @'Read'@ instance.
 readEitherUrlPiece :: Read a => Text -> Either Text a
@@ -93,10 +94,10 @@ readEitherUrlPiece = parseMaybeHttpApiData readMaybeUrlPiece
 runReader :: Reader a -> Text -> Either Text a
 runReader reader input =
   case reader input of
-    Left err          -> Left (Text.pack err)
+    Left err          -> Left (T.pack err)
     Right (x, rest)
-      | Text.null rest -> Right x
-      | otherwise      -> Left ("could not convert: `" <> input <> "'")
+      | T.null rest -> Right x
+      | otherwise   -> Left ("could not convert: `" <> input <> "'")
 
 instance ToHttpApiData Bool     where toUrlPiece = showUrlPiece
 instance ToHttpApiData Double   where toUrlPiece = showUrlPiece
@@ -112,9 +113,9 @@ instance ToHttpApiData Word8    where toUrlPiece = showUrlPiece
 instance ToHttpApiData Word16   where toUrlPiece = showUrlPiece
 instance ToHttpApiData Word32   where toUrlPiece = showUrlPiece
 instance ToHttpApiData Word64   where toUrlPiece = showUrlPiece
-instance ToHttpApiData String   where toUrlPiece = Text.pack
+instance ToHttpApiData String   where toUrlPiece = T.pack
 instance ToHttpApiData Text     where toUrlPiece = id
-instance ToHttpApiData TL.Text  where toUrlPiece = TL.toStrict
+instance ToHttpApiData L.Text   where toUrlPiece = L.toStrict
 instance ToHttpApiData Day      where toUrlPiece = showUrlPiece
 
 instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
@@ -131,9 +132,9 @@ instance FromHttpApiData Word8    where parseUrlPiece = runReader decimal
 instance FromHttpApiData Word16   where parseUrlPiece = runReader decimal
 instance FromHttpApiData Word32   where parseUrlPiece = runReader decimal
 instance FromHttpApiData Word64   where parseUrlPiece = runReader decimal
-instance FromHttpApiData String   where parseUrlPiece = Right . Text.unpack
+instance FromHttpApiData String   where parseUrlPiece = Right . T.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
-instance FromHttpApiData TL.Text  where parseUrlPiece = Right . TL.fromStrict
+instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 instance FromHttpApiData Day      where parseUrlPiece = readEitherUrlPiece
 
 -- $examples
