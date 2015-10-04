@@ -39,6 +39,7 @@ import Text.Read (readMaybe)
 -- $setup
 --
 -- >>> :set -XOverloadedStrings
+-- >>> import Control.Applicative
 -- >>> import Data.Time
 
 -- | Convert value to HTTP API data.
