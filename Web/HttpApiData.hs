@@ -44,6 +44,7 @@ import Text.Read (readMaybe)
 
 -- | Convert value to HTTP API data.
 class ToHttpApiData a where
+  {-# MINIMAL toUrlPiece | toQueryParam #-}
   -- | Convert to URL path piece.
   toUrlPiece :: a -> Text
   toUrlPiece = toQueryParam
@@ -58,6 +59,7 @@ class ToHttpApiData a where
 
 -- | Convert value from HTTP API data.
 class FromHttpApiData a where
+  {-# MINIMAL parseUrlPiece | parseQueryParam #-}
   -- | Parse URL path piece.
   parseUrlPiece :: Text -> Either Text a
   parseUrlPiece = parseQueryParam
