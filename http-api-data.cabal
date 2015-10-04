@@ -39,6 +39,12 @@ test-suite test
                    , text
                    , time
 
+test-suite doctest
+    build-depends:    base, doctest, Glob
+    hs-source-dirs:   test
+    main-is:          DocTest.hs
+    type:             exitcode-stdio-1.0
+
 source-repository head
   type:     git
   location: https://github.com/fizruk/http-api-data
