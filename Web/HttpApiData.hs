@@ -134,7 +134,7 @@ instance ToHttpApiData () where
 instance ToHttpApiData Char     where toUrlPiece = T.singleton
 
 -- |
--- >>> toUrlPiece (makeVersion [1, 2, 3])
+-- >>> toUrlPiece (Version [1, 2, 3] [])
 -- "1.2.3"
 instance ToHttpApiData Version where
   toUrlPiece = T.pack . showVersion
