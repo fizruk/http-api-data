@@ -77,7 +77,7 @@ class FromHttpApiData a where
 parseMaybeHttpApiData :: (Text -> Maybe a) -> (Text -> Either Text a)
 parseMaybeHttpApiData parse input =
   case parse input of
-    Nothing  -> Left ("could not convert: `" <> input <> "'")
+    Nothing  -> Left ("could not parse: `" <> input <> "'")
     Just val -> Right val
 
 -- | Convert to URL piece using @'Show'@ instance.
