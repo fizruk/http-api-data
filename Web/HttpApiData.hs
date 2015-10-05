@@ -164,6 +164,15 @@ instance ToHttpApiData Text     where toUrlPiece = id
 instance ToHttpApiData L.Text   where toUrlPiece = L.toStrict
 instance ToHttpApiData Day      where toUrlPiece = showUrlPiece
 
+instance ToHttpApiData All where toUrlPiece = toUrlPiece . getAll
+instance ToHttpApiData Any where toUrlPiece = toUrlPiece . getAny
+
+instance ToHttpApiData a => ToHttpApiData (Dual a)    where toUrlPiece = toUrlPiece . getDual
+instance ToHttpApiData a => ToHttpApiData (Sum a)     where toUrlPiece = toUrlPiece . getSum
+instance ToHttpApiData a => ToHttpApiData (Product a) where toUrlPiece = toUrlPiece . getProduct
+instance ToHttpApiData a => ToHttpApiData (First a)   where toUrlPiece = toUrlPiece . getFirst
+instance ToHttpApiData a => ToHttpApiData (Last a)    where toUrlPiece = toUrlPiece . getLast
+
 -- |
 -- >>> toUrlPiece (Just "Hello")
 -- "Just Hello"
@@ -193,6 +202,11 @@ instance FromHttpApiData Version where
       ((x, ""):_) -> return x
       _           -> defaultParseError s
 
+#if MIN_VERSION_base(4,8,0)
+instance FromHttpApiData Void where
+  parseUrlPiece _ = Left "Void cannot be parsed!"
+#endif
+
 instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
 instance FromHttpApiData Ordering where parseUrlPiece = readEitherUrlPiece
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
@@ -213,10 +227,14 @@ instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 instance FromHttpApiData Day      where parseUrlPiece = readEitherUrlPiece
 
-#if MIN_VERSION_base(4,8,0)
-instance FromHttpApiData Void where
-  parseUrlPiece _ = Left "Void cannot be parsed!"
-#endif
+instance FromHttpApiData All where parseUrlPiece = fmap All . parseUrlPiece
+instance FromHttpApiData Any where parseUrlPiece = fmap Any . parseUrlPiece
+
+instance FromHttpApiData a => FromHttpApiData (Dual a)    where parseUrlPiece = fmap Dual    . parseUrlPiece
+instance FromHttpApiData a => FromHttpApiData (Sum a)     where parseUrlPiece = fmap Sum     . parseUrlPiece
+instance FromHttpApiData a => FromHttpApiData (Product a) where parseUrlPiece = fmap Product . parseUrlPiece
+instance FromHttpApiData a => FromHttpApiData (First a)   where parseUrlPiece = fmap First   . parseUrlPiece
+instance FromHttpApiData a => FromHttpApiData (Last a)    where parseUrlPiece = fmap Last    . parseUrlPiece
 
 -- |
 -- >>> parseUrlPiece "Just 123" :: Either Text (Maybe Int)

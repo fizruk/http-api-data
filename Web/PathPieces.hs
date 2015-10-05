@@ -2,6 +2,8 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 -- |
 -- Convert Haskell values to and from route pieces.
@@ -13,6 +15,7 @@ module Web.PathPieces (
   WrappedPathPiece(..),
 ) where
 
+import Data.Monoid
 import Data.Int
 import Data.Word
 import qualified Data.Text as S
@@ -20,6 +23,8 @@ import qualified Data.Text.Lazy as L
 import Data.Version (Version)
 import Data.Time (Day)
 import Text.Read (readMaybe)
+
+import Unsafe.Coerce
 
 #if MIN_VERSION_base(4,8,0)
 import Data.Void (Void)
@@ -65,6 +70,33 @@ instance PathPiece Version
 instance PathPiece Void
 #endif
 
+instance PathPiece All
+instance PathPiece Any
+
+instance PathPiece a => PathPiece (Dual a) where
+  toPathPiece   = unsafeToPathPiece1
+  fromPathPiece = unsafeFromPathPiece1
+
+instance PathPiece a => PathPiece (Sum a) where
+  toPathPiece   = unsafeToPathPiece1
+  fromPathPiece = unsafeFromPathPiece1
+
+instance PathPiece a => PathPiece (Product a) where
+  toPathPiece   = unsafeToPathPiece1
+  fromPathPiece = unsafeFromPathPiece1
+
+instance PathPiece a => PathPiece (First a) where
+  toPathPiece   = unsafeToPathPiece1
+  fromPathPiece = unsafeFromPathPiece1
+
+instance PathPiece a => PathPiece (Last a) where
+  toPathPiece   = unsafeToPathPiece1
+  fromPathPiece = unsafeFromPathPiece1
+
+instance PathPiece a => PathPiece (Maybe a) where
+  toPathPiece   = unsafeToPathPiece1
+  fromPathPiece = unsafeFromPathPiece1
+
 -- | Wrapped @'PathPiece'@ value.
 newtype WrappedPathPiece a = WrappedPathPiece { unwrapPathPiece :: a }
 
@@ -74,9 +106,11 @@ instance PathPiece a => ToHttpApiData (WrappedPathPiece a) where
 instance PathPiece a => FromHttpApiData (WrappedPathPiece a) where
   parseUrlPiece = fmap WrappedPathPiece . parseMaybeHttpApiData fromPathPiece
 
-instance PathPiece a => PathPiece (Maybe a) where
-  toPathPiece   = toUrlPiece . fmap WrappedPathPiece
-  fromPathPiece = either (const Nothing) (Just . fmap unwrapPathPiece) . parseUrlPiece
+unsafeToPathPiece1 :: forall f a. (PathPiece a, ToHttpApiData (f (WrappedPathPiece a))) => f a -> S.Text
+unsafeToPathPiece1 = toUrlPiece . (unsafeCoerce :: f a -> f (WrappedPathPiece a))
+
+unsafeFromPathPiece1 :: forall f a. (PathPiece a, FromHttpApiData (f (WrappedPathPiece a))) => S.Text -> Maybe (f a)
+unsafeFromPathPiece1 = either (const Nothing) (Just . (unsafeCoerce :: f (WrappedPathPiece a) -> f a)) . parseUrlPiece
 
 -- | Convert Haskell values to and from sequence of route pieces.
 class PathMultiPiece s where
