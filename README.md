@@ -24,6 +24,8 @@ Numbers:
 "45.2"
 >>> parseUrlPiece "452" :: Either Text Int
 Right 452
+>>> parseUrlPiece "256" :: Either Text Int8
+Left "out of bounds: `256' (should be between -128 and 127)"
 ```
 
 Strings:
