@@ -185,7 +185,7 @@ instance FromHttpApiData Char where
 
 -- |
 -- >>> showVersion <$> parseUrlPiece "1.2.3"
--- 1.2.3
+-- Right "1.2.3"
 instance FromHttpApiData Version where
   parseUrlPiece s =
     case reverse (readP_to_S parseVersion (T.unpack s)) of
