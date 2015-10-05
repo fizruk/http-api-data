@@ -56,6 +56,10 @@ spec = do
     prop "toPathMultiPiece <=> fromPathMultiPiece String" $ \(p::[String]) -> (toPathMultiPiece <=> fromPathMultiPiece) p
     prop "toPathMultiPiece <=> fromPathMultiPiece Text"   $ \(p::[T.Text]) -> (toPathMultiPiece <=> fromPathMultiPiece) p
 
-  it "bad ints are rejected" $ fromPathPiece (T.pack "123hello")
-    `shouldBe` (Nothing :: Maybe Int)
+  it "bad integers are rejected" $ do
+    fromPathPiece (T.pack "123hello") `shouldBe` (Nothing :: Maybe Int)
+
+  it "bounds checking works" $ do
+    fromPathPiece (T.pack "256") `shouldBe` (Nothing :: Maybe Int8)
+    fromPathPiece (T.pack "-10") `shouldBe` (Nothing :: Maybe Word)
 
