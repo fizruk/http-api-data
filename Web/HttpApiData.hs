@@ -1,6 +1,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 -- |
 -- Convert Haskell values to and from HTTP API data
@@ -100,6 +101,17 @@ runReader reader input =
       | T.null rest -> Right x
       | otherwise   -> Left ("could not convert: `" <> input <> "'")
 
+-- | Run @'Reader'@ to parse bounded integral value with bounds checking.
+parseBounded :: forall a. (Bounded a, Integral a) => Reader Integer -> Text -> Either Text a
+parseBounded reader input = do
+  n <- runReader reader input
+  if (n > h || n < l)
+    then Left  ("out of bounds: `" <> input <> "' (should be between " <> T.pack (show l) <> " and " <> T.pack (show h) <> ")")
+    else Right (fromInteger n)
+  where
+    l = toInteger (minBound :: a)
+    h = toInteger (maxBound :: a)
+
 instance ToHttpApiData Bool     where toUrlPiece = showUrlPiece
 instance ToHttpApiData Double   where toUrlPiece = showUrlPiece
 instance ToHttpApiData Float    where toUrlPiece = showUrlPiece
@@ -122,17 +134,17 @@ instance ToHttpApiData Day      where toUrlPiece = showUrlPiece
 instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
 instance FromHttpApiData Float    where parseUrlPiece = runReader rational
-instance FromHttpApiData Int      where parseUrlPiece = runReader (signed decimal)
-instance FromHttpApiData Int8     where parseUrlPiece = runReader (signed decimal)
-instance FromHttpApiData Int16    where parseUrlPiece = runReader (signed decimal)
-instance FromHttpApiData Int32    where parseUrlPiece = runReader (signed decimal)
-instance FromHttpApiData Int64    where parseUrlPiece = runReader (signed decimal)
+instance FromHttpApiData Int      where parseUrlPiece = parseBounded (signed decimal)
+instance FromHttpApiData Int8     where parseUrlPiece = parseBounded (signed decimal)
+instance FromHttpApiData Int16    where parseUrlPiece = parseBounded (signed decimal)
+instance FromHttpApiData Int32    where parseUrlPiece = parseBounded (signed decimal)
+instance FromHttpApiData Int64    where parseUrlPiece = parseBounded (signed decimal)
 instance FromHttpApiData Integer  where parseUrlPiece = runReader (signed decimal)
-instance FromHttpApiData Word     where parseUrlPiece = runReader decimal
-instance FromHttpApiData Word8    where parseUrlPiece = runReader decimal
-instance FromHttpApiData Word16   where parseUrlPiece = runReader decimal
-instance FromHttpApiData Word32   where parseUrlPiece = runReader decimal
-instance FromHttpApiData Word64   where parseUrlPiece = runReader decimal
+instance FromHttpApiData Word     where parseUrlPiece = parseBounded decimal
+instance FromHttpApiData Word8    where parseUrlPiece = parseBounded decimal
+instance FromHttpApiData Word16   where parseUrlPiece = parseBounded decimal
+instance FromHttpApiData Word32   where parseUrlPiece = parseBounded decimal
+instance FromHttpApiData Word64   where parseUrlPiece = parseBounded decimal
 instance FromHttpApiData String   where parseUrlPiece = Right . T.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
@@ -155,6 +167,8 @@ instance FromHttpApiData Day      where parseUrlPiece = readEitherUrlPiece
 -- "45.2"
 -- >>> parseUrlPiece "452" :: Either Text Int
 -- Right 452
+-- >>> parseUrlPiece "256" :: Either Text Int8
+-- Left "out of bounds: `256' (should be between -128 and 127)"
 --
 -- Strings:
 --
