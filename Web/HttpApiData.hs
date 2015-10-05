@@ -73,11 +73,15 @@ class FromHttpApiData a where
   parseQueryParam :: Text -> Either Text a
   parseQueryParam = parseUrlPiece
 
+-- | Default parsing error.
+defaultParseError :: Text -> Either Text a
+defaultParseError input = Left ("could not convert: `" <> input <> "'")
+
 -- | Convert @'Maybe'@ parser into @'Either' 'Text'@ parser with default error message.
 parseMaybeHttpApiData :: (Text -> Maybe a) -> (Text -> Either Text a)
 parseMaybeHttpApiData parse input =
   case parse input of
-    Nothing  -> Left ("could not convert: `" <> input <> "'")
+    Nothing  -> defaultParseError input
     Just val -> Right val
 
 -- | Convert to URL piece using @'Show'@ instance.
@@ -99,7 +103,7 @@ runReader reader input =
     Left err          -> Left (T.pack err)
     Right (x, rest)
       | T.null rest -> Right x
-      | otherwise   -> Left ("could not convert: `" <> input <> "'")
+      | otherwise   -> defaultParseError input
 
 -- | Run @'Reader'@ to parse bounded integral value with bounds checking.
 parseBounded :: forall a. (Bounded a, Integral a) => Reader Integer -> Text -> Either Text a
@@ -111,6 +115,12 @@ parseBounded reader input = do
   where
     l = toInteger (minBound :: a)
     h = toInteger (maxBound :: a)
+
+-- |
+-- >>> toUrlPiece ()
+-- "_"
+instance ToHttpApiData () where
+  toUrlPiece () = "_"
 
 instance ToHttpApiData Bool     where toUrlPiece = showUrlPiece
 instance ToHttpApiData Double   where toUrlPiece = showUrlPiece
@@ -130,6 +140,13 @@ instance ToHttpApiData String   where toUrlPiece = T.pack
 instance ToHttpApiData Text     where toUrlPiece = id
 instance ToHttpApiData L.Text   where toUrlPiece = L.toStrict
 instance ToHttpApiData Day      where toUrlPiece = showUrlPiece
+
+-- |
+-- >>> parseUrlPiece "_" :: Either Text ()
+-- Right ()
+instance FromHttpApiData () where
+  parseUrlPiece "_" = pure ()
+  parseUrlPiece s   = defaultParseError s
 
 instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
