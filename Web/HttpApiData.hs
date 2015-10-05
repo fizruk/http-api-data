@@ -145,6 +145,7 @@ instance ToHttpApiData Void where
 #endif
 
 instance ToHttpApiData Bool     where toUrlPiece = showUrlPiece
+instance ToHttpApiData Ordering where toUrlPiece = showUrlPiece
 instance ToHttpApiData Double   where toUrlPiece = showUrlPiece
 instance ToHttpApiData Float    where toUrlPiece = showUrlPiece
 instance ToHttpApiData Int      where toUrlPiece = showUrlPiece
@@ -193,6 +194,7 @@ instance FromHttpApiData Version where
       _           -> defaultParseError s
 
 instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Ordering where parseUrlPiece = readEitherUrlPiece
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
 instance FromHttpApiData Float    where parseUrlPiece = runReader rational
 instance FromHttpApiData Int      where parseUrlPiece = parseBounded (signed decimal)

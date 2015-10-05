@@ -42,6 +42,7 @@ class PathPiece s where
 instance PathPiece ()
 instance PathPiece Char
 instance PathPiece Bool
+instance PathPiece Ordering
 instance PathPiece Double
 instance PathPiece Float
 instance PathPiece Int
