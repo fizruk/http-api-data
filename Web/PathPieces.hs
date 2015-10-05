@@ -75,32 +75,32 @@ instance PathPiece All
 instance PathPiece Any
 
 instance PathPiece a => PathPiece (Dual a) where
-  toPathPiece   = unsafeToPathPiece1
-  fromPathPiece = unsafeFromPathPiece1
+  toPathPiece   = toPathPiece1
+  fromPathPiece = fromPathPiece1
 
 instance PathPiece a => PathPiece (Sum a) where
-  toPathPiece   = unsafeToPathPiece1
-  fromPathPiece = unsafeFromPathPiece1
+  toPathPiece   = toPathPiece1
+  fromPathPiece = fromPathPiece1
 
 instance PathPiece a => PathPiece (Product a) where
-  toPathPiece   = unsafeToPathPiece1
-  fromPathPiece = unsafeFromPathPiece1
+  toPathPiece   = toPathPiece1
+  fromPathPiece = fromPathPiece1
 
 instance PathPiece a => PathPiece (First a) where
-  toPathPiece   = unsafeToPathPiece1
-  fromPathPiece = unsafeFromPathPiece1
+  toPathPiece   = toPathPiece1
+  fromPathPiece = fromPathPiece1
 
 instance PathPiece a => PathPiece (Last a) where
-  toPathPiece   = unsafeToPathPiece1
-  fromPathPiece = unsafeFromPathPiece1
+  toPathPiece   = toPathPiece1
+  fromPathPiece = fromPathPiece1
 
 instance PathPiece a => PathPiece (Maybe a) where
-  toPathPiece   = unsafeToPathPiece1
-  fromPathPiece = unsafeFromPathPiece1
+  toPathPiece   = toPathPiece1
+  fromPathPiece = fromPathPiece1
 
 instance (PathPiece a, PathPiece b) => PathPiece (Either a b) where
-  toPathPiece   = unsafeToPathPiece2
-  fromPathPiece = unsafeFromPathPiece2
+  toPathPiece   = toPathPiece2
+  fromPathPiece = fromPathPiece2
 
 -- | Wrapped @'PathPiece'@ value.
 newtype WrappedPathPiece a = WrappedPathPiece { unwrapPathPiece :: a }
@@ -111,17 +111,21 @@ instance PathPiece a => ToHttpApiData (WrappedPathPiece a) where
 instance PathPiece a => FromHttpApiData (WrappedPathPiece a) where
   parseUrlPiece = fmap WrappedPathPiece . parseMaybeHttpApiData fromPathPiece
 
-unsafeToPathPiece1 :: forall f a. (PathPiece a, ToHttpApiData (f (WrappedPathPiece a))) => f a -> S.Text
-unsafeToPathPiece1 = toUrlPiece . (unsafeCoerce :: f a -> f (WrappedPathPiece a))
+-- | Convert value to route piece using @'PathPiece'@ instance for its parameter.
+toPathPiece1 :: forall f a. (PathPiece a, ToHttpApiData (f (WrappedPathPiece a))) => f a -> S.Text
+toPathPiece1 = toUrlPiece . (unsafeCoerce :: f a -> f (WrappedPathPiece a))
 
-unsafeFromPathPiece1 :: forall f a. (PathPiece a, FromHttpApiData (f (WrappedPathPiece a))) => S.Text -> Maybe (f a)
-unsafeFromPathPiece1 = either (const Nothing) (Just . (unsafeCoerce :: f (WrappedPathPiece a) -> f a)) . parseUrlPiece
+-- | Parse value from route piece using @'PathPiece'@ instance for its parameter.
+fromPathPiece1 :: forall f a. (PathPiece a, FromHttpApiData (f (WrappedPathPiece a))) => S.Text -> Maybe (f a)
+fromPathPiece1 = either (const Nothing) (Just . (unsafeCoerce :: f (WrappedPathPiece a) -> f a)) . parseUrlPiece
 
-unsafeToPathPiece2 :: forall f a b. (PathPiece a, PathPiece b, ToHttpApiData (f (WrappedPathPiece a) (WrappedPathPiece b))) => f a b -> S.Text
-unsafeToPathPiece2 = toUrlPiece . (unsafeCoerce :: f a b -> f (WrappedPathPiece a) (WrappedPathPiece b))
+-- | Convert value to route piece using @'PathPiece'@ instance for its parameters.
+toPathPiece2 :: forall f a b. (PathPiece a, PathPiece b, ToHttpApiData (f (WrappedPathPiece a) (WrappedPathPiece b))) => f a b -> S.Text
+toPathPiece2 = toUrlPiece . (unsafeCoerce :: f a b -> f (WrappedPathPiece a) (WrappedPathPiece b))
 
-unsafeFromPathPiece2 :: forall f a b. (PathPiece a, PathPiece b, FromHttpApiData (f (WrappedPathPiece a) (WrappedPathPiece b))) => S.Text -> Maybe (f a b)
-unsafeFromPathPiece2 = either (const Nothing) (Just . (unsafeCoerce :: f (WrappedPathPiece a) (WrappedPathPiece b) -> f a b)) . parseUrlPiece
+-- | Parse value from route piece using @'PathPiece'@ instance for its parameters.
+fromPathPiece2 :: forall f a b. (PathPiece a, PathPiece b, FromHttpApiData (f (WrappedPathPiece a) (WrappedPathPiece b))) => S.Text -> Maybe (f a b)
+fromPathPiece2 = either (const Nothing) (Just . (unsafeCoerce :: f (WrappedPathPiece a) (WrappedPathPiece b) -> f a b)) . parseUrlPiece
 
 -- | Convert Haskell values to and from sequence of route pieces.
 class PathMultiPiece s where
