@@ -124,6 +124,8 @@ parseBounded reader input = do
 instance ToHttpApiData () where
   toUrlPiece () = "_"
 
+instance ToHttpApiData Char     where toUrlPiece = T.singleton
+
 instance ToHttpApiData Bool     where toUrlPiece = showUrlPiece
 instance ToHttpApiData Double   where toUrlPiece = showUrlPiece
 instance ToHttpApiData Float    where toUrlPiece = showUrlPiece
@@ -156,6 +158,12 @@ instance ToHttpApiData a => ToHttpApiData (Maybe a) where
 instance FromHttpApiData () where
   parseUrlPiece "_" = return ()
   parseUrlPiece s   = defaultParseError s
+
+instance FromHttpApiData Char where
+  parseUrlPiece s =
+    case T.uncons s of
+      Just (c, s') | T.null s' -> return c
+      _                        -> defaultParseError s
 
 instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational

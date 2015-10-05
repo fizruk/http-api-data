@@ -34,6 +34,7 @@ class PathPiece s where
   toPathPiece = toUrlPiece
 
 instance PathPiece ()
+instance PathPiece Char
 instance PathPiece Bool
 instance PathPiece Double
 instance PathPiece Float
