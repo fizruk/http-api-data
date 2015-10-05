@@ -98,6 +98,10 @@ instance PathPiece a => PathPiece (Maybe a) where
   toPathPiece   = unsafeToPathPiece1
   fromPathPiece = unsafeFromPathPiece1
 
+instance (PathPiece a, PathPiece b) => PathPiece (Either a b) where
+  toPathPiece   = unsafeToPathPiece2
+  fromPathPiece = unsafeFromPathPiece2
+
 -- | Wrapped @'PathPiece'@ value.
 newtype WrappedPathPiece a = WrappedPathPiece { unwrapPathPiece :: a }
 
@@ -112,6 +116,12 @@ unsafeToPathPiece1 = toUrlPiece . (unsafeCoerce :: f a -> f (WrappedPathPiece a)
 
 unsafeFromPathPiece1 :: forall f a. (PathPiece a, FromHttpApiData (f (WrappedPathPiece a))) => S.Text -> Maybe (f a)
 unsafeFromPathPiece1 = either (const Nothing) (Just . (unsafeCoerce :: f (WrappedPathPiece a) -> f a)) . parseUrlPiece
+
+unsafeToPathPiece2 :: forall f a b. (PathPiece a, PathPiece b, ToHttpApiData (f (WrappedPathPiece a) (WrappedPathPiece b))) => f a b -> S.Text
+unsafeToPathPiece2 = toUrlPiece . (unsafeCoerce :: f a b -> f (WrappedPathPiece a) (WrappedPathPiece b))
+
+unsafeFromPathPiece2 :: forall f a b. (PathPiece a, PathPiece b, FromHttpApiData (f (WrappedPathPiece a) (WrappedPathPiece b))) => S.Text -> Maybe (f a b)
+unsafeFromPathPiece2 = either (const Nothing) (Just . (unsafeCoerce :: f (WrappedPathPiece a) (WrappedPathPiece b) -> f a b)) . parseUrlPiece
 
 -- | Convert Haskell values to and from sequence of route pieces.
 class PathMultiPiece s where

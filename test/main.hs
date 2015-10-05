@@ -63,7 +63,8 @@ spec = do
     prop "toPathPiece <=> fromPathPiece Day"          $ \(p :: Day)       -> (toPathPiece <=> fromPathPiece) p
     prop "toPathPiece <=> fromPathPiece Version"      $ \(p :: Version)   -> (toPathPiece <=> fromPathPiece) p
 
-    prop "toPathPiece <=> fromPathPiece Maybe String" $ \(p::Maybe String) -> (toPathPiece <=> fromPathPiece) p
+    prop "toPathPiece <=> fromPathPiece Maybe String"        $ \(p::Maybe String)          -> (toPathPiece <=> fromPathPiece) p
+    prop "toPathPiece <=> fromPathPiece Either Integer Text" $ \(p::Either Integer T.Text) -> (toPathPiece <=> fromPathPiece) p
 
   describe "PathMultiPiece" $ do
     prop "toPathMultiPiece <=> fromPathMultiPiece String" $ \(p::[String]) -> (toPathMultiPiece <=> fromPathMultiPiece) p

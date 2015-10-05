@@ -181,6 +181,15 @@ instance ToHttpApiData a => ToHttpApiData (Maybe a) where
   toUrlPiece Nothing  = "Nothing"
 
 -- |
+-- >>> toUrlPiece (Left "err" :: Either String Int)
+-- "Left err"
+-- >>> toUrlPiece (Right 3 :: Either String Int)
+-- "Right 3"
+instance (ToHttpApiData a, ToHttpApiData b) => ToHttpApiData (Either a b) where
+  toUrlPiece (Left x)  = "Left " <> toUrlPiece x
+  toUrlPiece (Right x) = "Right " <> toUrlPiece x
+
+-- |
 -- >>> parseUrlPiece "_" :: Either Text ()
 -- Right ()
 instance FromHttpApiData () where
@@ -245,6 +254,17 @@ instance FromHttpApiData a => FromHttpApiData (Maybe a) where
     case T.stripPrefix "Just " s of
       Nothing -> defaultParseError s
       Just x  -> Just <$> parseUrlPiece x
+
+-- |
+-- >>> parseUrlPiece "Right 123" :: Either Text (Either String Int)
+-- Right (Right 123)
+instance (FromHttpApiData a, FromHttpApiData b) => FromHttpApiData (Either a b) where
+  parseUrlPiece s =
+    case T.stripPrefix "Right " s of
+      Just r -> Right <$> parseUrlPiece r
+      _ -> case T.stripPrefix "Left " s of
+        Just l -> Left <$> parseUrlPiece l
+        _ -> defaultParseError s
 
 -- $examples
 --
