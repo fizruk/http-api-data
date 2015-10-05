@@ -177,8 +177,8 @@ instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 instance FromHttpApiData Day      where parseUrlPiece = readEitherUrlPiece
 
 -- |
--- >>> parseUrlPiece "Just 123" :: Either Text Int
--- Just 123
+-- >>> parseUrlPiece "Just 123" :: Either Text (Maybe Int)
+-- Right (Just 123)
 instance FromHttpApiData a => FromHttpApiData (Maybe a) where
   parseUrlPiece "Nothing" = return Nothing
   parseUrlPiece s =
