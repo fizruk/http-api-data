@@ -9,6 +9,7 @@ module Web.PathPieces (
   PathMultiPiece (..),
   readFromPathPiece,
   showToPathPiece,
+  WrappedPathPiece(..),
 ) where
 
 import Data.Int
@@ -51,15 +52,18 @@ instance PathPiece S.Text
 instance PathPiece L.Text
 instance PathPiece Day
 
-instance (PathPiece a) => PathPiece (Maybe a) where
-    fromPathPiece s = case S.stripPrefix "Just " s of
-        Just r -> Just `fmap` fromPathPiece r
-        _ -> case s of
-            "Nothing" -> Just Nothing
-            _ -> Nothing
-    toPathPiece m = case m of
-        Just s -> "Just " `S.append` toPathPiece s
-        _ -> "Nothing"
+-- | Wrapped @'PathPiece'@ value.
+newtype WrappedPathPiece a = WrappedPathPiece { unwrapPathPiece :: a }
+
+instance PathPiece a => ToHttpApiData (WrappedPathPiece a) where
+  toUrlPiece = toPathPiece . unwrapPathPiece
+
+instance PathPiece a => FromHttpApiData (WrappedPathPiece a) where
+  parseUrlPiece = fmap WrappedPathPiece . parseMaybeHttpApiData fromPathPiece
+
+instance PathPiece a => PathPiece (Maybe a) where
+  toPathPiece   = toUrlPiece . fmap WrappedPathPiece
+  fromPathPiece = either (const Nothing) (Just . fmap unwrapPathPiece) . parseUrlPiece
 
 -- | Convert Haskell values to and from sequence of route pieces.
 class PathMultiPiece s where

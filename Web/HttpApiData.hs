@@ -21,6 +21,8 @@ module Web.HttpApiData (
   readEitherUrlPiece,
 ) where
 
+import Control.Applicative
+
 import Data.Monoid
 import Data.ByteString (ByteString)
 
@@ -142,10 +144,17 @@ instance ToHttpApiData L.Text   where toUrlPiece = L.toStrict
 instance ToHttpApiData Day      where toUrlPiece = showUrlPiece
 
 -- |
+-- >>> toUrlPiece (Just "Hello")
+-- "Just Hello"
+instance ToHttpApiData a => ToHttpApiData (Maybe a) where
+  toUrlPiece (Just x) = "Just " <> toUrlPiece x
+  toUrlPiece Nothing  = "Nothing"
+
+-- |
 -- >>> parseUrlPiece "_" :: Either Text ()
 -- Right ()
 instance FromHttpApiData () where
-  parseUrlPiece "_" = pure ()
+  parseUrlPiece "_" = return ()
   parseUrlPiece s   = defaultParseError s
 
 instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
@@ -166,6 +175,16 @@ instance FromHttpApiData String   where parseUrlPiece = Right . T.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 instance FromHttpApiData Day      where parseUrlPiece = readEitherUrlPiece
+
+-- |
+-- >>> parseUrlPiece "Just 123" :: Either Text Int
+-- Just 123
+instance FromHttpApiData a => FromHttpApiData (Maybe a) where
+  parseUrlPiece "Nothing" = return Nothing
+  parseUrlPiece s =
+    case T.stripPrefix "Just " s of
+      Nothing -> defaultParseError s
+      Just x  -> Just <$> parseUrlPiece x
 
 -- $examples
 --
