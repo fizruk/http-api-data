@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -37,6 +38,10 @@ import qualified Data.Text.Lazy as L
 
 import Data.Time (Day)
 import Data.Version
+
+#if MIN_VERSION_base(4,8,0)
+import Data.Void
+#endif
 
 import Text.Read (readMaybe)
 import Text.ParserCombinators.ReadP (readP_to_S)
@@ -134,6 +139,11 @@ instance ToHttpApiData Char     where toUrlPiece = T.singleton
 instance ToHttpApiData Version where
   toUrlPiece = T.pack . showVersion
 
+#if MIN_VERSION_base(4,8,0)
+instance ToHttpApiData Void where
+  toUrlPiece = absurd
+#endif
+
 instance ToHttpApiData Bool     where toUrlPiece = showUrlPiece
 instance ToHttpApiData Double   where toUrlPiece = showUrlPiece
 instance ToHttpApiData Float    where toUrlPiece = showUrlPiece
@@ -200,6 +210,11 @@ instance FromHttpApiData String   where parseUrlPiece = Right . T.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 instance FromHttpApiData Day      where parseUrlPiece = readEitherUrlPiece
+
+#if MIN_VERSION_base(4,8,0)
+instance FromHttpApiData Void where
+  parseUrlPiece _ = Left "Void cannot be parsed!"
+#endif
 
 -- |
 -- >>> parseUrlPiece "Just 123" :: Either Text (Maybe Int)

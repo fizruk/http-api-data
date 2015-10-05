@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -19,6 +20,10 @@ import qualified Data.Text.Lazy as L
 import Data.Version (Version)
 import Data.Time (Day)
 import Text.Read (readMaybe)
+
+#if MIN_VERSION_base(4,8,0)
+import Data.Void (Void)
+#endif
 
 import Web.HttpApiData
 
@@ -54,6 +59,10 @@ instance PathPiece S.Text
 instance PathPiece L.Text
 instance PathPiece Day
 instance PathPiece Version
+
+#if MIN_VERSION_base(4,8,0)
+instance PathPiece Void
+#endif
 
 -- | Wrapped @'PathPiece'@ value.
 newtype WrappedPathPiece a = WrappedPathPiece { unwrapPathPiece :: a }
