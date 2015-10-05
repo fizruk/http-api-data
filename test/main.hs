@@ -49,6 +49,8 @@ spec = do
     prop "toPathPiece <=> fromPathPiece Int8"         $ \(p :: Int8)      -> (toPathPiece <=> fromPathPiece) p
     prop "toPathPiece <=> fromPathPiece Int16"        $ \(p :: Int16)     -> (toPathPiece <=> fromPathPiece) p
     prop "toPathPiece <=> fromPathPiece Int32"        $ \(p :: Int32)     -> (toPathPiece <=> fromPathPiece) p
+    prop "toPathPiece <=> fromPathPiece Int64"        $ \(p :: Int64)     -> (toPathPiece <=> fromPathPiece) p
+    prop "toPathPiece <=> fromPathPiece Integer"      $ \(p :: Integer)   -> (toPathPiece <=> fromPathPiece) p
     prop "toPathPiece <=> fromPathPiece Word"         $ \(p :: Word)      -> (toPathPiece <=> fromPathPiece) p
     prop "toPathPiece <=> fromPathPiece Word8"        $ \(p :: Word8)     -> (toPathPiece <=> fromPathPiece) p
     prop "toPathPiece <=> fromPathPiece Word16"       $ \(p :: Word16)    -> (toPathPiece <=> fromPathPiece) p

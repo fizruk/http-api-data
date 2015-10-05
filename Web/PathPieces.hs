@@ -55,6 +55,7 @@ instance PathPiece Int8
 instance PathPiece Int16
 instance PathPiece Int32
 instance PathPiece Int64
+instance PathPiece Integer
 instance PathPiece Word
 instance PathPiece Word8
 instance PathPiece Word16
