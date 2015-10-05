@@ -16,6 +16,7 @@ import Data.Int
 import Data.Word
 import qualified Data.Text as S
 import qualified Data.Text.Lazy as L
+import Data.Version (Version)
 import Data.Time (Day)
 import Text.Read (readMaybe)
 
@@ -52,6 +53,7 @@ instance PathPiece String
 instance PathPiece S.Text
 instance PathPiece L.Text
 instance PathPiece Day
+instance PathPiece Version
 
 -- | Wrapped @'PathPiece'@ value.
 newtype WrappedPathPiece a = WrappedPathPiece { unwrapPathPiece :: a }

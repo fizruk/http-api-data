@@ -36,8 +36,10 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 
 import Data.Time (Day)
+import Data.Version
 
 import Text.Read (readMaybe)
+import Text.ParserCombinators.ReadP (readP_to_S)
 
 -- $setup
 --
@@ -126,6 +128,12 @@ instance ToHttpApiData () where
 
 instance ToHttpApiData Char     where toUrlPiece = T.singleton
 
+-- |
+-- >>> toUrlPiece (makeVersion [1, 2, 3])
+-- "1.2.3"
+instance ToHttpApiData Version where
+  toUrlPiece = T.pack . showVersion
+
 instance ToHttpApiData Bool     where toUrlPiece = showUrlPiece
 instance ToHttpApiData Double   where toUrlPiece = showUrlPiece
 instance ToHttpApiData Float    where toUrlPiece = showUrlPiece
@@ -164,6 +172,15 @@ instance FromHttpApiData Char where
     case T.uncons s of
       Just (c, s') | T.null s' -> return c
       _                        -> defaultParseError s
+
+-- |
+-- >>> showVersion <$> parseUrlPiece "1.2.3"
+-- 1.2.3
+instance FromHttpApiData Version where
+  parseUrlPiece s =
+    case reverse (readP_to_S parseVersion (T.unpack s)) of
+      ((x, ""):_) -> return x
+      _           -> defaultParseError s
 
 instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
