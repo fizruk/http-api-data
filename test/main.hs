@@ -27,8 +27,9 @@ instance Arbitrary Day where
   arbitrary = liftA3 fromGregorian (fmap abs arbitrary) arbitrary arbitrary
 
 instance Arbitrary Version where
-  arbitrary = (makeVersion . map abs) <$> nonempty
+  arbitrary = (version . map abs) <$> nonempty
     where
+      version branch = Version branch []
       nonempty = liftA2 (:) arbitrary arbitrary
 
 main :: IO ()
