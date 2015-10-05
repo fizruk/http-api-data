@@ -34,6 +34,7 @@ main = hspec spec
 spec :: Spec
 spec = do
   describe "PathPiece" $ do
+    prop "toPathPiece <=> fromPathPiece ()"           $ \(p :: ())     -> (toPathPiece <=> fromPathPiece) p
     prop "toPathPiece <=> fromPathPiece Bool"         $ \(p :: Bool)   -> (toPathPiece <=> fromPathPiece) p
     prop "toPathPiece <=> fromPathPiece Int"          $ \(p :: Int)    -> (toPathPiece <=> fromPathPiece) p
     prop "toPathPiece <=> fromPathPiece Int8"         $ \(p :: Int8)   -> (toPathPiece <=> fromPathPiece) p
