@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -36,8 +37,14 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 
 import Data.Time (Day)
+import Data.Version
+
+#if MIN_VERSION_base(4,8,0)
+import Data.Void
+#endif
 
 import Text.Read (readMaybe)
+import Text.ParserCombinators.ReadP (readP_to_S)
 
 -- $setup
 --
@@ -124,7 +131,21 @@ parseBounded reader input = do
 instance ToHttpApiData () where
   toUrlPiece () = "_"
 
+instance ToHttpApiData Char     where toUrlPiece = T.singleton
+
+-- |
+-- >>> toUrlPiece (Version [1, 2, 3] [])
+-- "1.2.3"
+instance ToHttpApiData Version where
+  toUrlPiece = T.pack . showVersion
+
+#if MIN_VERSION_base(4,8,0)
+instance ToHttpApiData Void where
+  toUrlPiece = absurd
+#endif
+
 instance ToHttpApiData Bool     where toUrlPiece = showUrlPiece
+instance ToHttpApiData Ordering where toUrlPiece = showUrlPiece
 instance ToHttpApiData Double   where toUrlPiece = showUrlPiece
 instance ToHttpApiData Float    where toUrlPiece = showUrlPiece
 instance ToHttpApiData Int      where toUrlPiece = showUrlPiece
@@ -143,6 +164,15 @@ instance ToHttpApiData Text     where toUrlPiece = id
 instance ToHttpApiData L.Text   where toUrlPiece = L.toStrict
 instance ToHttpApiData Day      where toUrlPiece = showUrlPiece
 
+instance ToHttpApiData All where toUrlPiece = toUrlPiece . getAll
+instance ToHttpApiData Any where toUrlPiece = toUrlPiece . getAny
+
+instance ToHttpApiData a => ToHttpApiData (Dual a)    where toUrlPiece = toUrlPiece . getDual
+instance ToHttpApiData a => ToHttpApiData (Sum a)     where toUrlPiece = toUrlPiece . getSum
+instance ToHttpApiData a => ToHttpApiData (Product a) where toUrlPiece = toUrlPiece . getProduct
+instance ToHttpApiData a => ToHttpApiData (First a)   where toUrlPiece = toUrlPiece . getFirst
+instance ToHttpApiData a => ToHttpApiData (Last a)    where toUrlPiece = toUrlPiece . getLast
+
 -- |
 -- >>> toUrlPiece (Just "Hello")
 -- "Just Hello"
@@ -151,13 +181,43 @@ instance ToHttpApiData a => ToHttpApiData (Maybe a) where
   toUrlPiece Nothing  = "Nothing"
 
 -- |
+-- >>> toUrlPiece (Left "err" :: Either String Int)
+-- "Left err"
+-- >>> toUrlPiece (Right 3 :: Either String Int)
+-- "Right 3"
+instance (ToHttpApiData a, ToHttpApiData b) => ToHttpApiData (Either a b) where
+  toUrlPiece (Left x)  = "Left " <> toUrlPiece x
+  toUrlPiece (Right x) = "Right " <> toUrlPiece x
+
+-- |
 -- >>> parseUrlPiece "_" :: Either Text ()
 -- Right ()
 instance FromHttpApiData () where
   parseUrlPiece "_" = return ()
   parseUrlPiece s   = defaultParseError s
 
+instance FromHttpApiData Char where
+  parseUrlPiece s =
+    case T.uncons s of
+      Just (c, s') | T.null s' -> return c
+      _                        -> defaultParseError s
+
+-- |
+-- >>> showVersion <$> parseUrlPiece "1.2.3"
+-- Right "1.2.3"
+instance FromHttpApiData Version where
+  parseUrlPiece s =
+    case reverse (readP_to_S parseVersion (T.unpack s)) of
+      ((x, ""):_) -> return x
+      _           -> defaultParseError s
+
+#if MIN_VERSION_base(4,8,0)
+instance FromHttpApiData Void where
+  parseUrlPiece _ = Left "Void cannot be parsed!"
+#endif
+
 instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Ordering where parseUrlPiece = readEitherUrlPiece
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
 instance FromHttpApiData Float    where parseUrlPiece = runReader rational
 instance FromHttpApiData Int      where parseUrlPiece = parseBounded (signed decimal)
@@ -176,6 +236,15 @@ instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 instance FromHttpApiData Day      where parseUrlPiece = readEitherUrlPiece
 
+instance FromHttpApiData All where parseUrlPiece = fmap All . parseUrlPiece
+instance FromHttpApiData Any where parseUrlPiece = fmap Any . parseUrlPiece
+
+instance FromHttpApiData a => FromHttpApiData (Dual a)    where parseUrlPiece = fmap Dual    . parseUrlPiece
+instance FromHttpApiData a => FromHttpApiData (Sum a)     where parseUrlPiece = fmap Sum     . parseUrlPiece
+instance FromHttpApiData a => FromHttpApiData (Product a) where parseUrlPiece = fmap Product . parseUrlPiece
+instance FromHttpApiData a => FromHttpApiData (First a)   where parseUrlPiece = fmap First   . parseUrlPiece
+instance FromHttpApiData a => FromHttpApiData (Last a)    where parseUrlPiece = fmap Last    . parseUrlPiece
+
 -- |
 -- >>> parseUrlPiece "Just 123" :: Either Text (Maybe Int)
 -- Right (Just 123)
@@ -185,6 +254,17 @@ instance FromHttpApiData a => FromHttpApiData (Maybe a) where
     case T.stripPrefix "Just " s of
       Nothing -> defaultParseError s
       Just x  -> Just <$> parseUrlPiece x
+
+-- |
+-- >>> parseUrlPiece "Right 123" :: Either Text (Either String Int)
+-- Right (Right 123)
+instance (FromHttpApiData a, FromHttpApiData b) => FromHttpApiData (Either a b) where
+  parseUrlPiece s =
+    case T.stripPrefix "Right " s of
+      Just r -> Right <$> parseUrlPiece r
+      _ -> case T.stripPrefix "Left " s of
+        Just l -> Left <$> parseUrlPiece l
+        _ -> defaultParseError s
 
 -- $examples
 --
