@@ -1,5 +1,5 @@
 name:            http-api-data
-version:         0.1.1
+version:         0.1.1.1
 license:         BSD3
 license-file:    LICENSE
 author:          Michael Snoyman <michael@snoyman.com>
@@ -17,7 +17,7 @@ extra-source-files:
   README.md
 
 flag use-text-show
-  description: Use @text-show@ library for efficient @'ToHttpApiData'@ implementations.
+  description: Use text-show library for efficient ToHttpApiData implementations.
   default: False
 
 library
