@@ -25,7 +25,7 @@ import Data.Void (Void)
 #endif
 
 import Web.HttpApiData
-import Web.HttpApiData.Internal (parseMaybeTextData)
+import Web.HttpApiData.Internal (parseMaybeTextData, parseUrlPieceMaybe)
 
 -- | Convert Haskell values to and from route piece.
 class PathPiece s where
@@ -112,7 +112,7 @@ defaultToPathPiece = toUrlPiece
 
 -- | Convert value from route piece using @'FromHttpApiData'@ implementation.
 defaultFromPathPiece :: FromHttpApiData a => S.Text -> Maybe a
-defaultFromPathPiece = either (const Nothing) Just . parseUrlPiece
+defaultFromPathPiece = parseUrlPieceMaybe
 
 -- | Convert value to route piece using @'PathPiece'@ instance for its parameter.
 defaultToPathPiece1 :: (PathPiece a, ToHttpApiData (f (WrappedPathPiece a))) => f a -> S.Text

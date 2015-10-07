@@ -64,6 +64,27 @@ class FromHttpApiData a where
   parseQueryParam :: Text -> Either Text a
   parseQueryParam = parseUrlPiece
 
+-- | Parse URL path piece in a @'Maybe'@.
+--
+-- >>> parseUrlPieceMaybe "12" :: Maybe Int
+-- Just 12
+parseUrlPieceMaybe :: FromHttpApiData a => Text -> Maybe a
+parseUrlPieceMaybe = either (const Nothing) Just . parseUrlPiece
+
+-- | Parse HTTP header value in a @'Maybe'@.
+--
+-- >>> parseHeaderMaybe "hello" :: Maybe Text
+-- Just "hello"
+parseHeaderMaybe :: FromHttpApiData a => ByteString -> Maybe a
+parseHeaderMaybe = either (const Nothing) Just . parseHeader
+
+-- | Parse query param value in a @'Maybe'@.
+--
+-- >>> parseQueryParamMaybe "true" :: Maybe Bool
+-- Just True
+parseQueryParamMaybe :: FromHttpApiData a => Text -> Maybe a
+parseQueryParamMaybe = either (const Nothing) Just . parseQueryParam
+
 -- | Default parsing error.
 defaultParseError :: Text -> Either Text a
 defaultParseError input = Left ("could not parse: `" <> input <> "'")

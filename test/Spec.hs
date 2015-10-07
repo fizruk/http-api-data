@@ -17,6 +17,7 @@ import Test.Hspec.QuickCheck(prop)
 import Test.QuickCheck
 
 import Web.HttpApiData
+import Web.HttpApiData.Internal
 
 instance Arbitrary T.Text where
   arbitrary = T.pack <$> arbitrary
@@ -63,13 +64,13 @@ instance ToHttpApiData a => ToHttpApiData (RandomCase a) where
 instance FromHttpApiData a => FromHttpApiData (RandomCase a) where
   parseUrlPiece s = RandomCase [] <$> parseUrlPiece s
 
--- | Check case insensitivity for @fromUrlPiece@.
+-- | Check case insensitivity for @parseUrlPiece@.
 checkUrlPieceI :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Show a, Arbitrary a) => Proxy a -> String -> Spec
 checkUrlPieceI _ = checkUrlPiece (Proxy :: Proxy (RandomCase a))
 
 spec :: Spec
 spec = do
-  describe "toUrlPiece <=> fromUrlPiece" $ do
+  describe "toUrlPiece <=> parseUrlPiece" $ do
     checkUrlPiece  (Proxy :: Proxy ())        "()"
     checkUrlPiece  (Proxy :: Proxy Char)      "Char"
     checkUrlPieceI (Proxy :: Proxy Bool)      "Bool"
@@ -97,12 +98,9 @@ spec = do
     checkUrlPieceI (Proxy :: Proxy (Either Version Day))      "Either Version Day"
 
   it "bad integers are rejected" $ do
-    fromUrlPiece (T.pack "123hello") `shouldBe` (Nothing :: Maybe Int)
+    parseUrlPieceMaybe (T.pack "123hello") `shouldBe` (Nothing :: Maybe Int)
 
   it "bounds checking works" $ do
-    fromUrlPiece (T.pack "256") `shouldBe` (Nothing :: Maybe Int8)
-    fromUrlPiece (T.pack "-10") `shouldBe` (Nothing :: Maybe Word)
-  where
-    fromUrlPiece :: FromHttpApiData a => T.Text -> Maybe a
-    fromUrlPiece = either (const Nothing) Just . parseUrlPiece
+    parseUrlPieceMaybe (T.pack "256") `shouldBe` (Nothing :: Maybe Int8)
+    parseUrlPieceMaybe (T.pack "-10") `shouldBe` (Nothing :: Maybe Word)
 
