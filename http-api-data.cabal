@@ -28,7 +28,7 @@ library
       Web.PathPieces.Internal
     ghc-options:     -Wall
 
-test-suite test
+test-suite spec
     type:          exitcode-stdio-1.0
     main-is:       Spec.hs
     hs-source-dirs: test
