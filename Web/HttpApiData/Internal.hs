@@ -146,6 +146,9 @@ runReader reader input =
       | otherwise   -> defaultParseError input
 
 -- | Run @'Reader'@ to parse bounded integral value with bounds checking.
+--
+-- >>> parseBounded decimal "256" :: Either Text Word8
+-- Left "out of bounds: `256' (should be between 0 and 255)"
 parseBounded :: forall a. (Bounded a, Integral a) => Reader Integer -> Text -> Either Text a
 parseBounded reader input = do
   n <- runReader reader input
