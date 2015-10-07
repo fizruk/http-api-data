@@ -38,10 +38,6 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 import TextShow (TextShow, showt)
 #endif
 
--- $setup
--- >>> :set -XDeriveGeneric
--- >>> import TextShow.Generic
-
 -- | Convert value to HTTP API data.
 class ToHttpApiData a where
   {-# MINIMAL toUrlPiece | toQueryParam #-}
@@ -113,10 +109,15 @@ parseMaybeTextData parse input =
 --
 -- This can be used as a default implementation for enumeration types:
 --
--- >>> data MyData = Foo | Bar | Baz deriving (Show)
--- >>> instance ToHttpApiData MyData where toUrlPiece = showTextData
--- >>> toUrlPiece Foo
--- "foo"
+-- @
+-- data MyData = Foo | Bar | Baz deriving (Generic)
+-- 
+-- instance TextShow MyData where
+--   showt = genericShowt
+--
+-- instance ToHttpApiData MyData where
+--   toUrlPiece = showTextData
+-- @
 showTextData :: TextShow a => a -> Text
 showTextData = T.toLower . showt
 #else
@@ -166,11 +167,15 @@ parseUrlPieceWithPrefix pattern input
 --
 -- This can be used as a default implementation for enumeration types:
 --
--- >>> data MyData = Foo | Bar | Baz deriving (Show, Bounded, Enum, Generic)
--- >>> instance TextShow MyData where showt = genericShowt
--- >>> instance FromHttpApiData MyData where parseUrlPiece = parseBoundedCaseInsensitiveTextData
--- >>> parseUrlPiece "foo" :: Either Text MyData
--- Right Foo
+-- @
+-- data MyData = Foo | Bar | Baz deriving (Show, Bounded, Enum, Generic)
+--
+-- instance TextShow MyData where
+--   showt = genericShowt
+--
+-- instance FromHttpApiData MyData where
+--   parseUrlPiece = parseBoundedCaseInsensitiveTextData
+-- @
 parseBoundedCaseInsensitiveTextData :: forall a. (TextShow a, Bounded a, Enum a) => Text -> Either Text a
 #else
 -- | Parse values case insensitively based on @'Show'@ instance.
