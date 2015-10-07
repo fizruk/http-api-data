@@ -1,5 +1,5 @@
 name:            http-api-data
-version:         0.2.0
+version:         0.1.0
 license:         BSD3
 license-file:    LICENSE
 author:          Michael Snoyman <michael@snoyman.com>
@@ -12,8 +12,8 @@ stability:       unstable
 cabal-version:   >= 1.8
 build-type:      Simple
 extra-source-files:
-  test/main.hs
-  ChangeLog.md
+  test/*.hs
+  CHANGELOG.md
   README.md
 
 library
@@ -22,13 +22,13 @@ library
                    , bytestring
                    , time
     exposed-modules:
-      Web.PathPieces
       Web.HttpApiData
+      Web.HttpApiData.Internal
     ghc-options:     -Wall
 
-test-suite test
+test-suite spec
     type:          exitcode-stdio-1.0
-    main-is:       main.hs
+    main-is:       Spec.hs
     hs-source-dirs: test
     ghc-options:   -Wall
     build-depends:   HUnit
