@@ -109,7 +109,7 @@ instance PathPiece a => ToHttpApiData (WrappedPathPiece a) where
   toUrlPiece = toPathPiece . unwrapPathPiece
 
 instance PathPiece a => FromHttpApiData (WrappedPathPiece a) where
-  parseUrlPiece = fmap WrappedPathPiece . parseMaybeHttpApiData fromPathPiece
+  parseUrlPiece = fmap WrappedPathPiece . parseMaybeTextData fromPathPiece
 
 -- | Convert value to route piece using @'PathPiece'@ instance for its parameter.
 toPathPiece1 :: forall f a. (PathPiece a, ToHttpApiData (f (WrappedPathPiece a))) => f a -> S.Text

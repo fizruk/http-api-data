@@ -16,13 +16,14 @@ module Web.HttpApiData (
   FromHttpApiData (..),
 
   -- * Utility functions
-  parseMaybeHttpApiData,
-  showUrlPiece,
-  readMaybeUrlPiece,
-  readEitherUrlPiece,
+  parseMaybeTextData,
+  showTextData,
+  readMaybeTextData,
+  readEitherTextData,
 ) where
 
 import Control.Applicative
+import Control.Arrow ((&&&))
 
 import Data.Monoid
 import Data.ByteString (ByteString)
@@ -87,23 +88,47 @@ defaultParseError :: Text -> Either Text a
 defaultParseError input = Left ("could not convert: `" <> input <> "'")
 
 -- | Convert @'Maybe'@ parser into @'Either' 'Text'@ parser with default error message.
-parseMaybeHttpApiData :: (Text -> Maybe a) -> (Text -> Either Text a)
-parseMaybeHttpApiData parse input =
+parseMaybeTextData :: (Text -> Maybe a) -> (Text -> Either Text a)
+parseMaybeTextData parse input =
   case parse input of
     Nothing  -> defaultParseError input
     Just val -> Right val
 
 -- | Convert to URL piece using @'Show'@ instance.
-showUrlPiece :: Show a => a -> Text
-showUrlPiece = T.pack . show
+showTextData :: Show a => a -> Text
+showTextData = T.toLower . T.pack . show
+
+-- | Parse given text case insensitive and return the rest of the input.
+--
+-- >>> parseUrlPieceWithPrefix "Just " "just 10" :: Either Text Int
+-- Right 10
+-- >>> parseUrlPieceWithPrefix "Left " "left" :: Either Text Bool
+-- Left "could not convert: `left'"
+parseUrlPieceWithPrefix :: FromHttpApiData a => Text -> Text -> Either Text a
+parseUrlPieceWithPrefix pattern input
+  | T.toLower pattern == T.toLower prefix = parseUrlPiece rest
+  | otherwise                             = defaultParseError input
+  where
+    (prefix, rest) = T.splitAt (T.length pattern) input
+
+-- | Parse values case insensitively based on @'Show'@ instance.
+--
+-- >>> parseBoundedCaseInsensitiveTextData "true" :: Either Text Bool
+-- Right True
+-- >>> parseBoundedCaseInsensitiveTextData "FALSE" :: Either Text Bool
+-- Right False
+parseBoundedCaseInsensitiveTextData :: forall a. (Show a, Bounded a, Enum a) => Text -> Either Text a
+parseBoundedCaseInsensitiveTextData = parseMaybeTextData (flip lookup values . T.toLower)
+  where
+    values = map (showTextData &&& id) [minBound..maxBound :: a]
 
 -- | Parse URL piece using @'Read'@ instance.
-readMaybeUrlPiece :: Read a => Text -> Maybe a
-readMaybeUrlPiece = readMaybe . T.unpack
+readMaybeTextData :: Read a => Text -> Maybe a
+readMaybeTextData = readMaybe . T.unpack
 
 -- | Parse URL piece using @'Read'@ instance.
-readEitherUrlPiece :: Read a => Text -> Either Text a
-readEitherUrlPiece = parseMaybeHttpApiData readMaybeUrlPiece
+readEitherTextData :: Read a => Text -> Either Text a
+readEitherTextData = parseMaybeTextData readMaybeTextData
 
 -- | Run @'Reader'@ as HTTP API data parser.
 runReader :: Reader a -> Text -> Either Text a
@@ -144,25 +169,25 @@ instance ToHttpApiData Void where
   toUrlPiece = absurd
 #endif
 
-instance ToHttpApiData Bool     where toUrlPiece = showUrlPiece
-instance ToHttpApiData Ordering where toUrlPiece = showUrlPiece
-instance ToHttpApiData Double   where toUrlPiece = showUrlPiece
-instance ToHttpApiData Float    where toUrlPiece = showUrlPiece
-instance ToHttpApiData Int      where toUrlPiece = showUrlPiece
-instance ToHttpApiData Int8     where toUrlPiece = showUrlPiece
-instance ToHttpApiData Int16    where toUrlPiece = showUrlPiece
-instance ToHttpApiData Int32    where toUrlPiece = showUrlPiece
-instance ToHttpApiData Int64    where toUrlPiece = showUrlPiece
-instance ToHttpApiData Integer  where toUrlPiece = showUrlPiece
-instance ToHttpApiData Word     where toUrlPiece = showUrlPiece
-instance ToHttpApiData Word8    where toUrlPiece = showUrlPiece
-instance ToHttpApiData Word16   where toUrlPiece = showUrlPiece
-instance ToHttpApiData Word32   where toUrlPiece = showUrlPiece
-instance ToHttpApiData Word64   where toUrlPiece = showUrlPiece
+instance ToHttpApiData Bool     where toUrlPiece = showTextData
+instance ToHttpApiData Ordering where toUrlPiece = showTextData
+instance ToHttpApiData Double   where toUrlPiece = showTextData
+instance ToHttpApiData Float    where toUrlPiece = showTextData
+instance ToHttpApiData Int      where toUrlPiece = showTextData
+instance ToHttpApiData Int8     where toUrlPiece = showTextData
+instance ToHttpApiData Int16    where toUrlPiece = showTextData
+instance ToHttpApiData Int32    where toUrlPiece = showTextData
+instance ToHttpApiData Int64    where toUrlPiece = showTextData
+instance ToHttpApiData Integer  where toUrlPiece = showTextData
+instance ToHttpApiData Word     where toUrlPiece = showTextData
+instance ToHttpApiData Word8    where toUrlPiece = showTextData
+instance ToHttpApiData Word16   where toUrlPiece = showTextData
+instance ToHttpApiData Word32   where toUrlPiece = showTextData
+instance ToHttpApiData Word64   where toUrlPiece = showTextData
 instance ToHttpApiData String   where toUrlPiece = T.pack
 instance ToHttpApiData Text     where toUrlPiece = id
 instance ToHttpApiData L.Text   where toUrlPiece = L.toStrict
-instance ToHttpApiData Day      where toUrlPiece = showUrlPiece
+instance ToHttpApiData Day      where toUrlPiece = showTextData
 
 instance ToHttpApiData All where toUrlPiece = toUrlPiece . getAll
 instance ToHttpApiData Any where toUrlPiece = toUrlPiece . getAny
@@ -175,19 +200,19 @@ instance ToHttpApiData a => ToHttpApiData (Last a)    where toUrlPiece = toUrlPi
 
 -- |
 -- >>> toUrlPiece (Just "Hello")
--- "Just Hello"
+-- "just Hello"
 instance ToHttpApiData a => ToHttpApiData (Maybe a) where
-  toUrlPiece (Just x) = "Just " <> toUrlPiece x
-  toUrlPiece Nothing  = "Nothing"
+  toUrlPiece (Just x) = "just " <> toUrlPiece x
+  toUrlPiece Nothing  = "nothing"
 
 -- |
 -- >>> toUrlPiece (Left "err" :: Either String Int)
--- "Left err"
+-- "left err"
 -- >>> toUrlPiece (Right 3 :: Either String Int)
--- "Right 3"
+-- "right 3"
 instance (ToHttpApiData a, ToHttpApiData b) => ToHttpApiData (Either a b) where
-  toUrlPiece (Left x)  = "Left " <> toUrlPiece x
-  toUrlPiece (Right x) = "Right " <> toUrlPiece x
+  toUrlPiece (Left x)  = "left " <> toUrlPiece x
+  toUrlPiece (Right x) = "right " <> toUrlPiece x
 
 -- |
 -- >>> parseUrlPiece "_" :: Either Text ()
@@ -216,8 +241,8 @@ instance FromHttpApiData Void where
   parseUrlPiece _ = Left "Void cannot be parsed!"
 #endif
 
-instance FromHttpApiData Bool     where parseUrlPiece = readEitherUrlPiece
-instance FromHttpApiData Ordering where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Bool     where parseUrlPiece = parseBoundedCaseInsensitiveTextData
+instance FromHttpApiData Ordering where parseUrlPiece = parseBoundedCaseInsensitiveTextData
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
 instance FromHttpApiData Float    where parseUrlPiece = runReader rational
 instance FromHttpApiData Int      where parseUrlPiece = parseBounded (signed decimal)
@@ -234,7 +259,7 @@ instance FromHttpApiData Word64   where parseUrlPiece = parseBounded decimal
 instance FromHttpApiData String   where parseUrlPiece = Right . T.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
-instance FromHttpApiData Day      where parseUrlPiece = readEitherUrlPiece
+instance FromHttpApiData Day      where parseUrlPiece = readEitherTextData
 
 instance FromHttpApiData All where parseUrlPiece = fmap All . parseUrlPiece
 instance FromHttpApiData Any where parseUrlPiece = fmap Any . parseUrlPiece
@@ -249,30 +274,29 @@ instance FromHttpApiData a => FromHttpApiData (Last a)    where parseUrlPiece = 
 -- >>> parseUrlPiece "Just 123" :: Either Text (Maybe Int)
 -- Right (Just 123)
 instance FromHttpApiData a => FromHttpApiData (Maybe a) where
-  parseUrlPiece "Nothing" = return Nothing
-  parseUrlPiece s =
-    case T.stripPrefix "Just " s of
-      Nothing -> defaultParseError s
-      Just x  -> Just <$> parseUrlPiece x
+  parseUrlPiece s
+    | T.toLower (T.take 7 s) == "nothing" = return Nothing
+    | otherwise                           = Just <$> parseUrlPieceWithPrefix "Just " s
 
 -- |
 -- >>> parseUrlPiece "Right 123" :: Either Text (Either String Int)
 -- Right (Right 123)
 instance (FromHttpApiData a, FromHttpApiData b) => FromHttpApiData (Either a b) where
   parseUrlPiece s =
-    case T.stripPrefix "Right " s of
-      Just r -> Right <$> parseUrlPiece r
-      _ -> case T.stripPrefix "Left " s of
-        Just l -> Left <$> parseUrlPiece l
-        _ -> defaultParseError s
+        Right <$> parseUrlPieceWithPrefix "Right " s
+    <!> Left  <$> parseUrlPieceWithPrefix "Left " s
+    where
+      infixl 3 <!>
+      Left _ <!> y = y
+      x      <!> _ = x
 
 -- $examples
 --
 -- Booleans:
 --
 -- >>> toUrlPiece True
--- "True"
--- >>> parseUrlPiece "False" :: Either Text Bool
+-- "true"
+-- >>> parseUrlPiece "false" :: Either Text Bool
 -- Right False
 -- >>> parseUrlPiece "something else" :: Either Text Bool
 -- Left "could not convert: `something else'"
