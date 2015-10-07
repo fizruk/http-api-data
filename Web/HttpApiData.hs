@@ -31,7 +31,7 @@ import Web.HttpApiData.Internal
 -- >>> parseUrlPiece "false" :: Either Text Bool
 -- Right False
 -- >>> parseUrlPiece "something else" :: Either Text Bool
--- Left "could not convert: `something else'"
+-- Left "could not parse: `something else'"
 --
 -- Numbers:
 --

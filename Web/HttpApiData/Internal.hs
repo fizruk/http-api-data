@@ -49,7 +49,7 @@ class ToHttpApiData a where
   toQueryParam :: a -> Text
   toQueryParam = toUrlPiece
 
--- | Convert value from HTTP API data.
+-- | Parse value from HTTP API data.
 class FromHttpApiData a where
   {-# MINIMAL parseUrlPiece | parseQueryParam #-}
   -- | Parse URL path piece.
@@ -66,7 +66,7 @@ class FromHttpApiData a where
 
 -- | Default parsing error.
 defaultParseError :: Text -> Either Text a
-defaultParseError input = Left ("could not convert: `" <> input <> "'")
+defaultParseError input = Left ("could not parse: `" <> input <> "'")
 
 -- | Convert @'Maybe'@ parser into @'Either' 'Text'@ parser with default error message.
 parseMaybeTextData :: (Text -> Maybe a) -> (Text -> Either Text a)
@@ -95,7 +95,7 @@ showTextData = T.toLower . T.pack . show
 -- >>> parseUrlPieceWithPrefix "Just " "just 10" :: Either Text Int
 -- Right 10
 -- >>> parseUrlPieceWithPrefix "Left " "left" :: Either Text Bool
--- Left "could not convert: `left'"
+-- Left "could not parse: `left'"
 --
 -- This can be used to implement @'FromHttpApiData'@ for single field constructors:
 --
