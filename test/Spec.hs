@@ -16,7 +16,7 @@ import Test.Hspec
 import Test.Hspec.QuickCheck(prop)
 import Test.QuickCheck
 
-import Web.PathPieces
+import Web.HttpApiData
 
 instance Arbitrary T.Text where
   arbitrary = T.pack <$> arbitrary
@@ -36,21 +36,18 @@ instance Arbitrary Version where
 main :: IO ()
 main = hspec spec
 
-(<=>) :: Eq a => (a -> b) -> (b -> Maybe a) -> a -> Bool
-(f <=> g) x = g (f x) == Just x
+(<=>) :: Eq a => (a -> b) -> (b -> Either T.Text a) -> a -> Bool
+(f <=> g) x = g (f x) == Right x
 
 data Proxy a = Proxy
 
-checkPathPiece :: forall a. (Eq a, PathPiece a, Show a, Arbitrary a) => Proxy a -> String -> Spec
-checkPathPiece _ name = prop ("toPathPiece <=> fromPathPiece " ++ name) (toPathPiece <=> fromPathPiece :: a -> Bool)
-
-checkPathMultiPiece :: forall a. (Eq a, PathMultiPiece a, Show a, Arbitrary a) => Proxy a -> String -> Spec
-checkPathMultiPiece _ name = prop ("toPathMultiPiece <=> fromPathMultiPiece " ++ name) (toPathMultiPiece <=> fromPathMultiPiece :: a -> Bool)
+checkUrlPiece :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Show a, Arbitrary a) => Proxy a -> String -> Spec
+checkUrlPiece _ name = prop name (toUrlPiece <=> parseUrlPiece :: a -> Bool)
 
 data RandomCase a = RandomCase [Bool] a
 
-instance PathPiece a => Show (RandomCase a) where
-  show rc@(RandomCase _ x) = show (toPathPiece rc) ++ " (original: " ++ show (toPathPiece x) ++ ")"
+instance ToHttpApiData a => Show (RandomCase a) where
+  show rc@(RandomCase _ x) = show (toUrlPiece rc) ++ " (original: " ++ show (toUrlPiece x) ++ ")"
 
 instance Eq a => Eq (RandomCase a) where
   RandomCase _ x == RandomCase _ y = x == y
@@ -60,51 +57,52 @@ instance Arbitrary a => Arbitrary (RandomCase a) where
     where
       nonempty = liftA2 (:) arbitrary arbitrary
 
-instance PathPiece a => PathPiece (RandomCase a) where
-  toPathPiece (RandomCase us x) = T.pack (zipWith (\u -> if u then toUpper else toLower) (cycle us) (T.unpack (toPathPiece x)))
-  fromPathPiece s = RandomCase [] <$> fromPathPiece s
+instance ToHttpApiData a => ToHttpApiData (RandomCase a) where
+  toUrlPiece (RandomCase us x) = T.pack (zipWith (\u -> if u then toUpper else toLower) (cycle us) (T.unpack (toUrlPiece x)))
 
--- | Check case insensitivity for @fromPathPiece@.
-checkPathPieceI :: forall a. (Eq a, PathPiece a, Show a, Arbitrary a) => Proxy a -> String -> Spec
-checkPathPieceI _ = checkPathPiece (Proxy :: Proxy (RandomCase a))
+instance FromHttpApiData a => FromHttpApiData (RandomCase a) where
+  parseUrlPiece s = RandomCase [] <$> parseUrlPiece s
+
+-- | Check case insensitivity for @fromUrlPiece@.
+checkUrlPieceI :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Show a, Arbitrary a) => Proxy a -> String -> Spec
+checkUrlPieceI _ = checkUrlPiece (Proxy :: Proxy (RandomCase a))
 
 spec :: Spec
 spec = do
-  describe "PathPiece" $ do
-    checkPathPiece  (Proxy :: Proxy ())        "()"
-    checkPathPiece  (Proxy :: Proxy Char)      "Char"
-    checkPathPieceI (Proxy :: Proxy Bool)      "Bool"
-    checkPathPieceI (Proxy :: Proxy Ordering)  "Ordering"
-    checkPathPiece  (Proxy :: Proxy Int)       "Int"
-    checkPathPiece  (Proxy :: Proxy Int8)      "Int8"
-    checkPathPiece  (Proxy :: Proxy Int16)     "Int16"
-    checkPathPiece  (Proxy :: Proxy Int32)     "Int32"
-    checkPathPiece  (Proxy :: Proxy Int64)     "Int64"
-    checkPathPiece  (Proxy :: Proxy Integer)   "Integer"
-    checkPathPiece  (Proxy :: Proxy Word)      "Word"
-    checkPathPiece  (Proxy :: Proxy Word8)     "Word8"
-    checkPathPiece  (Proxy :: Proxy Word16)    "Word16"
-    checkPathPiece  (Proxy :: Proxy Word32)    "Word32"
-    checkPathPiece  (Proxy :: Proxy Word64)    "Word64"
-    checkPathPiece  (Proxy :: Proxy String)    "String"
-    checkPathPiece  (Proxy :: Proxy T.Text)    "Text.Strict"
-    checkPathPiece  (Proxy :: Proxy L.Text)    "Text.Lazy"
-    checkPathPiece  (Proxy :: Proxy Day)       "Day"
-    checkPathPiece  (Proxy :: Proxy Version)   "Version"
+  describe "toUrlPiece <=> fromUrlPiece" $ do
+    checkUrlPiece  (Proxy :: Proxy ())        "()"
+    checkUrlPiece  (Proxy :: Proxy Char)      "Char"
+    checkUrlPieceI (Proxy :: Proxy Bool)      "Bool"
+    checkUrlPieceI (Proxy :: Proxy Ordering)  "Ordering"
+    checkUrlPiece  (Proxy :: Proxy Int)       "Int"
+    checkUrlPiece  (Proxy :: Proxy Int8)      "Int8"
+    checkUrlPiece  (Proxy :: Proxy Int16)     "Int16"
+    checkUrlPiece  (Proxy :: Proxy Int32)     "Int32"
+    checkUrlPiece  (Proxy :: Proxy Int64)     "Int64"
+    checkUrlPiece  (Proxy :: Proxy Integer)   "Integer"
+    checkUrlPiece  (Proxy :: Proxy Word)      "Word"
+    checkUrlPiece  (Proxy :: Proxy Word8)     "Word8"
+    checkUrlPiece  (Proxy :: Proxy Word16)    "Word16"
+    checkUrlPiece  (Proxy :: Proxy Word32)    "Word32"
+    checkUrlPiece  (Proxy :: Proxy Word64)    "Word64"
+    checkUrlPiece  (Proxy :: Proxy String)    "String"
+    checkUrlPiece  (Proxy :: Proxy T.Text)    "Text.Strict"
+    checkUrlPiece  (Proxy :: Proxy L.Text)    "Text.Lazy"
+    checkUrlPiece  (Proxy :: Proxy Day)       "Day"
+    checkUrlPiece  (Proxy :: Proxy Version)   "Version"
 
-    checkPathPiece  (Proxy :: Proxy (Maybe String))            "Maybe String"
-    checkPathPieceI (Proxy :: Proxy (Maybe Integer))           "Maybe Integer"
-    checkPathPiece  (Proxy :: Proxy (Either Integer T.Text))   "Either Integer Text"
-    checkPathPieceI (Proxy :: Proxy (Either Version Day))      "Either Version Day"
-
-  describe "PathMultiPiece" $ do
-    checkPathMultiPiece (Proxy :: Proxy [String])   "[String]"
-    checkPathMultiPiece (Proxy :: Proxy [T.Text])   "[Text]"
+    checkUrlPiece  (Proxy :: Proxy (Maybe String))            "Maybe String"
+    checkUrlPieceI (Proxy :: Proxy (Maybe Integer))           "Maybe Integer"
+    checkUrlPiece  (Proxy :: Proxy (Either Integer T.Text))   "Either Integer Text"
+    checkUrlPieceI (Proxy :: Proxy (Either Version Day))      "Either Version Day"
 
   it "bad integers are rejected" $ do
-    fromPathPiece (T.pack "123hello") `shouldBe` (Nothing :: Maybe Int)
+    fromUrlPiece (T.pack "123hello") `shouldBe` (Nothing :: Maybe Int)
 
   it "bounds checking works" $ do
-    fromPathPiece (T.pack "256") `shouldBe` (Nothing :: Maybe Int8)
-    fromPathPiece (T.pack "-10") `shouldBe` (Nothing :: Maybe Word)
+    fromUrlPiece (T.pack "256") `shouldBe` (Nothing :: Maybe Int8)
+    fromUrlPiece (T.pack "-10") `shouldBe` (Nothing :: Maybe Word)
+  where
+    fromUrlPiece :: FromHttpApiData a => T.Text -> Maybe a
+    fromUrlPiece = either (const Nothing) Just . parseUrlPiece
 
