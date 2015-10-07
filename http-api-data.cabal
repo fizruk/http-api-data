@@ -12,7 +12,7 @@ stability:       unstable
 cabal-version:   >= 1.8
 build-type:      Simple
 extra-source-files:
-  test/main.hs
+  test/*.hs
   ChangeLog.md
   README.md
 
