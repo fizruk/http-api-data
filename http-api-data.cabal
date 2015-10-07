@@ -22,9 +22,10 @@ library
                    , bytestring
                    , time
     exposed-modules:
-      Web.PathPieces
       Web.HttpApiData
       Web.HttpApiData.Internal
+      Web.PathPieces
+      Web.PathPieces.Internal
     ghc-options:     -Wall
 
 test-suite test
