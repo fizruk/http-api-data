@@ -34,6 +34,14 @@ import Data.Void
 import Text.Read (readMaybe)
 import Text.ParserCombinators.ReadP (readP_to_S)
 
+#if USE_TEXT_SHOW
+import TextShow (TextShow, showt)
+#endif
+
+-- $setup
+-- >>> :set -XDeriveGeneric
+-- >>> import TextShow.Generic
+
 -- | Convert value to HTTP API data.
 class ToHttpApiData a where
   {-# MINIMAL toUrlPiece | toQueryParam #-}
@@ -96,6 +104,22 @@ parseMaybeTextData parse input =
     Nothing  -> defaultParseError input
     Just val -> Right val
 
+#if USE_TEXT_SHOW
+-- | Convert to URL piece using @'TextShow'@ instance.
+-- The result is always lower cased.
+--
+-- >>> showTextData True
+-- "true"
+--
+-- This can be used as a default implementation for enumeration types:
+--
+-- >>> data MyData = Foo | Bar | Baz deriving (Show)
+-- >>> instance ToHttpApiData MyData where toUrlPiece = showTextData
+-- >>> toUrlPiece Foo
+-- "foo"
+showTextData :: TextShow a => a -> Text
+showTextData = T.toLower . showt
+#else
 -- | Convert to URL piece using @'Show'@ instance.
 -- The result is always lower cased.
 --
@@ -110,6 +134,7 @@ parseMaybeTextData parse input =
 -- "foo"
 showTextData :: Show a => a -> Text
 showTextData = T.toLower . T.pack . show
+#endif
 
 -- | Parse given text case insensitive and return the rest of the input.
 --
@@ -131,6 +156,23 @@ parseUrlPieceWithPrefix pattern input
   where
     (prefix, rest) = T.splitAt (T.length pattern) input
 
+#if USE_TEXT_SHOW
+-- | Parse values case insensitively based on @'TextShow'@ instance.
+--
+-- >>> parseBoundedCaseInsensitiveTextData "true" :: Either Text Bool
+-- Right True
+-- >>> parseBoundedCaseInsensitiveTextData "FALSE" :: Either Text Bool
+-- Right False
+--
+-- This can be used as a default implementation for enumeration types:
+--
+-- >>> data MyData = Foo | Bar | Baz deriving (Show, Bounded, Enum, Generic)
+-- >>> instance TextShow MyData where showt = genericShowt
+-- >>> instance FromHttpApiData MyData where parseUrlPiece = parseBoundedCaseInsensitiveTextData
+-- >>> parseUrlPiece "foo" :: Either Text MyData
+-- Right Foo
+parseBoundedCaseInsensitiveTextData :: forall a. (TextShow a, Bounded a, Enum a) => Text -> Either Text a
+#else
 -- | Parse values case insensitively based on @'Show'@ instance.
 --
 -- >>> parseBoundedCaseInsensitiveTextData "true" :: Either Text Bool
@@ -145,6 +187,7 @@ parseUrlPieceWithPrefix pattern input
 -- >>> parseUrlPiece "foo" :: Either Text MyData
 -- Right Foo
 parseBoundedCaseInsensitiveTextData :: forall a. (Show a, Bounded a, Enum a) => Text -> Either Text a
+#endif
 parseBoundedCaseInsensitiveTextData = parseMaybeTextData (flip lookup values . T.toLower)
   where
     values = map (showTextData &&& id) [minBound..maxBound :: a]
@@ -201,6 +244,23 @@ instance ToHttpApiData Void where
 
 instance ToHttpApiData Bool     where toUrlPiece = showTextData
 instance ToHttpApiData Ordering where toUrlPiece = showTextData
+
+#if USE_TEXT_SHOW
+instance ToHttpApiData Double   where toUrlPiece = showt
+instance ToHttpApiData Float    where toUrlPiece = showt
+instance ToHttpApiData Int      where toUrlPiece = showt
+instance ToHttpApiData Int8     where toUrlPiece = showt
+instance ToHttpApiData Int16    where toUrlPiece = showt
+instance ToHttpApiData Int32    where toUrlPiece = showt
+instance ToHttpApiData Int64    where toUrlPiece = showt
+instance ToHttpApiData Integer  where toUrlPiece = showt
+instance ToHttpApiData Word     where toUrlPiece = showt
+instance ToHttpApiData Word8    where toUrlPiece = showt
+instance ToHttpApiData Word16   where toUrlPiece = showt
+instance ToHttpApiData Word32   where toUrlPiece = showt
+instance ToHttpApiData Word64   where toUrlPiece = showt
+instance ToHttpApiData Day      where toUrlPiece = T.pack . show
+#else
 instance ToHttpApiData Double   where toUrlPiece = showTextData
 instance ToHttpApiData Float    where toUrlPiece = showTextData
 instance ToHttpApiData Int      where toUrlPiece = showTextData
@@ -214,10 +274,12 @@ instance ToHttpApiData Word8    where toUrlPiece = showTextData
 instance ToHttpApiData Word16   where toUrlPiece = showTextData
 instance ToHttpApiData Word32   where toUrlPiece = showTextData
 instance ToHttpApiData Word64   where toUrlPiece = showTextData
+instance ToHttpApiData Day      where toUrlPiece = showTextData
+#endif
+
 instance ToHttpApiData String   where toUrlPiece = T.pack
 instance ToHttpApiData Text     where toUrlPiece = id
 instance ToHttpApiData L.Text   where toUrlPiece = L.toStrict
-instance ToHttpApiData Day      where toUrlPiece = showTextData
 
 instance ToHttpApiData All where toUrlPiece = toUrlPiece . getAll
 instance ToHttpApiData Any where toUrlPiece = toUrlPiece . getAny
