@@ -1,8 +1,12 @@
 env:
- - GHCVER=7.6.3 CABALVER=1.18
- - GHCVER=7.8.4 CABALVER=1.18
- - GHCVER=7.10.2 CABALVER=1.22
- - GHCVER=head CABALVER=head
+ - GHCVER=7.6.3   CABALVER=1.18   CABAL_FLAGS=
+ - GHCVER=7.8.4   CABALVER=1.18   CABAL_FLAGS=
+ - GHCVER=7.10.2  CABALVER=1.22   CABAL_FLAGS=
+ - GHCVER=head    CABALVER=head   CABAL_FLAGS=
+ - GHCVER=7.6.3   CABALVER=1.18   CABAL_FLAGS=use-text-show
+ - GHCVER=7.8.4   CABALVER=1.18   CABAL_FLAGS=use-text-show
+ - GHCVER=7.10.2  CABALVER=1.22   CABAL_FLAGS=use-text-show
+ - GHCVER=head    CABALVER=head   CABAL_FLAGS=use-text-show
 
 matrix:
   allow_failures:
@@ -17,10 +21,10 @@ before_install:
 
 install:
  - cabal update
- - cabal install --only-dependencies --enable-tests
+ - cabal install --only-dependencies --enable-tests --flags=$CABAL_FLAGS
 
 script:
- - cabal configure --enable-tests -v2
+ - cabal configure --enable-tests -v2 --flags=$CABAL_FLAGS
  - cabal build 
  - cabal test
  - cabal check
