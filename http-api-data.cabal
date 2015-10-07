@@ -2,7 +2,7 @@ name:            http-api-data
 version:         0.1.1.1
 license:         BSD3
 license-file:    LICENSE
-author:          Michael Snoyman <michael@snoyman.com>
+author:          Nickolay Kudasov <nickolay.kudasov@gmail.com>
 maintainer:      Nickolay Kudasov <nickolay.kudasov@gmail.com>
 synopsis:        Converting to/from HTTP API data like URL pieces, headers and query parameters.
 description:     Please see README.md
