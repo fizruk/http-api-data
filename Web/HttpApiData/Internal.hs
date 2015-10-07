@@ -76,6 +76,17 @@ parseMaybeTextData parse input =
     Just val -> Right val
 
 -- | Convert to URL piece using @'Show'@ instance.
+-- The result is always lower cased.
+--
+-- >>> showTextData True
+-- "true"
+--
+-- This can be used as a default implementation for enumeration types:
+--
+-- >>> data MyData = Foo | Bar | Baz deriving (Show)
+-- >>> instance ToHttpApiData MyData where toUrlPiece = showTextData
+-- >>> toUrlPiece Foo
+-- "foo"
 showTextData :: Show a => a -> Text
 showTextData = T.toLower . T.pack . show
 
@@ -85,6 +96,13 @@ showTextData = T.toLower . T.pack . show
 -- Right 10
 -- >>> parseUrlPieceWithPrefix "Left " "left" :: Either Text Bool
 -- Left "could not convert: `left'"
+--
+-- This can be used to implement @'FromHttpApiData'@ for single field constructors:
+--
+-- >>> data Foo = Foo Int deriving (Show)
+-- >>> instance FromHttpApiData Foo where parseUrlPiece s = Foo <$> parseUrlPieceWithPrefix "Foo " s
+-- >>> parseUrlPiece "foo 1" :: Either Text Foo
+-- Right (Foo 1)
 parseUrlPieceWithPrefix :: FromHttpApiData a => Text -> Text -> Either Text a
 parseUrlPieceWithPrefix pattern input
   | T.toLower pattern == T.toLower prefix = parseUrlPiece rest
@@ -98,6 +116,13 @@ parseUrlPieceWithPrefix pattern input
 -- Right True
 -- >>> parseBoundedCaseInsensitiveTextData "FALSE" :: Either Text Bool
 -- Right False
+--
+-- This can be used as a default implementation for enumeration types:
+--
+-- >>> data MyData = Foo | Bar | Baz deriving (Show, Bounded, Enum)
+-- >>> instance FromHttpApiData MyData where parseUrlPiece = parseBoundedCaseInsensitiveTextData
+-- >>> parseUrlPiece "foo" :: Either Text MyData
+-- Right Foo
 parseBoundedCaseInsensitiveTextData :: forall a. (Show a, Bounded a, Enum a) => Text -> Either Text a
 parseBoundedCaseInsensitiveTextData = parseMaybeTextData (flip lookup values . T.toLower)
   where
