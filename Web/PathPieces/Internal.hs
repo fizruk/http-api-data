@@ -32,12 +32,12 @@ class PathPiece s where
   -- | Convert from route piece.
   fromPathPiece :: S.Text -> Maybe s
   default fromPathPiece :: FromHttpApiData s => S.Text -> Maybe s
-  fromPathPiece = either (const Nothing) Just . parseUrlPiece
+  fromPathPiece = defaultFromPathPiece
 
   -- | Convert to route piece.
   toPathPiece :: s -> S.Text
   default toPathPiece :: ToHttpApiData s => s -> S.Text
-  toPathPiece = toUrlPiece
+  toPathPiece = defaultToPathPiece
 
 instance PathPiece ()
 instance PathPiece Char
@@ -70,32 +70,32 @@ instance PathPiece All
 instance PathPiece Any
 
 instance PathPiece a => PathPiece (Dual a) where
-  toPathPiece   = toPathPiece1
-  fromPathPiece = fromPathPiece1
+  toPathPiece   = defaultToPathPiece1
+  fromPathPiece = defaultFromPathPiece1
 
 instance PathPiece a => PathPiece (Sum a) where
-  toPathPiece   = toPathPiece1
-  fromPathPiece = fromPathPiece1
+  toPathPiece   = defaultToPathPiece1
+  fromPathPiece = defaultFromPathPiece1
 
 instance PathPiece a => PathPiece (Product a) where
-  toPathPiece   = toPathPiece1
-  fromPathPiece = fromPathPiece1
+  toPathPiece   = defaultToPathPiece1
+  fromPathPiece = defaultFromPathPiece1
 
 instance PathPiece a => PathPiece (First a) where
-  toPathPiece   = toPathPiece1
-  fromPathPiece = fromPathPiece1
+  toPathPiece   = defaultToPathPiece1
+  fromPathPiece = defaultFromPathPiece1
 
 instance PathPiece a => PathPiece (Last a) where
-  toPathPiece   = toPathPiece1
-  fromPathPiece = fromPathPiece1
+  toPathPiece   = defaultToPathPiece1
+  fromPathPiece = defaultFromPathPiece1
 
 instance PathPiece a => PathPiece (Maybe a) where
-  toPathPiece   = toPathPiece1
-  fromPathPiece = fromPathPiece1
+  toPathPiece   = defaultToPathPiece1
+  fromPathPiece = defaultFromPathPiece1
 
 instance (PathPiece a, PathPiece b) => PathPiece (Either a b) where
-  toPathPiece   = toPathPiece2
-  fromPathPiece = fromPathPiece2
+  toPathPiece   = defaultToPathPiece2
+  fromPathPiece = defaultFromPathPiece2
 
 -- | Wrapped @'PathPiece'@ value.
 newtype WrappedPathPiece a = WrappedPathPiece { unwrapPathPiece :: a }
@@ -106,21 +106,29 @@ instance PathPiece a => ToHttpApiData (WrappedPathPiece a) where
 instance PathPiece a => FromHttpApiData (WrappedPathPiece a) where
   parseUrlPiece = fmap WrappedPathPiece . parseMaybeTextData fromPathPiece
 
+-- | Convert value to route piece using @'ToHttpApiData'@ implementation.
+defaultToPathPiece :: ToHttpApiData a => a -> S.Text
+defaultToPathPiece = toUrlPiece
+
+-- | Convert value from route piece using @'FromHttpApiData'@ implementation.
+defaultFromPathPiece :: FromHttpApiData a => S.Text -> Maybe a
+defaultFromPathPiece = either (const Nothing) Just . parseUrlPiece
+
 -- | Convert value to route piece using @'PathPiece'@ instance for its parameter.
-toPathPiece1 :: forall f a. (PathPiece a, ToHttpApiData (f (WrappedPathPiece a))) => f a -> S.Text
-toPathPiece1 = toUrlPiece . (unsafeCoerce :: f a -> f (WrappedPathPiece a))
+defaultToPathPiece1 :: (PathPiece a, ToHttpApiData (f (WrappedPathPiece a))) => f a -> S.Text
+defaultToPathPiece1 = toUrlPiece . (unsafeCoerce :: f a -> f (WrappedPathPiece a))
 
 -- | Parse value from route piece using @'PathPiece'@ instance for its parameter.
-fromPathPiece1 :: forall f a. (PathPiece a, FromHttpApiData (f (WrappedPathPiece a))) => S.Text -> Maybe (f a)
-fromPathPiece1 = either (const Nothing) (Just . (unsafeCoerce :: f (WrappedPathPiece a) -> f a)) . parseUrlPiece
+defaultFromPathPiece1 :: (PathPiece a, FromHttpApiData (f (WrappedPathPiece a))) => S.Text -> Maybe (f a)
+defaultFromPathPiece1 = fmap (unsafeCoerce :: f (WrappedPathPiece a) -> f a) . defaultFromPathPiece
 
 -- | Convert value to route piece using @'PathPiece'@ instance for its parameters.
-toPathPiece2 :: forall f a b. (PathPiece a, PathPiece b, ToHttpApiData (f (WrappedPathPiece a) (WrappedPathPiece b))) => f a b -> S.Text
-toPathPiece2 = toUrlPiece . (unsafeCoerce :: f a b -> f (WrappedPathPiece a) (WrappedPathPiece b))
+defaultToPathPiece2 :: (PathPiece a, PathPiece b, ToHttpApiData (f (WrappedPathPiece a) (WrappedPathPiece b))) => f a b -> S.Text
+defaultToPathPiece2 = toUrlPiece . (unsafeCoerce :: f a b -> f (WrappedPathPiece a) (WrappedPathPiece b))
 
 -- | Parse value from route piece using @'PathPiece'@ instance for its parameters.
-fromPathPiece2 :: forall f a b. (PathPiece a, PathPiece b, FromHttpApiData (f (WrappedPathPiece a) (WrappedPathPiece b))) => S.Text -> Maybe (f a b)
-fromPathPiece2 = either (const Nothing) (Just . (unsafeCoerce :: f (WrappedPathPiece a) (WrappedPathPiece b) -> f a b)) . parseUrlPiece
+defaultFromPathPiece2 :: (PathPiece a, PathPiece b, FromHttpApiData (f (WrappedPathPiece a) (WrappedPathPiece b))) => S.Text -> Maybe (f a b)
+defaultFromPathPiece2 = fmap (unsafeCoerce :: f (WrappedPathPiece a) (WrappedPathPiece b) -> f a b) . defaultFromPathPiece
 
 -- | Convert Haskell values to and from sequence of route pieces.
 class PathMultiPiece s where
