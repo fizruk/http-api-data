@@ -134,7 +134,11 @@ showTextData = T.toLower . showt
 -- >>> toUrlPiece Foo
 -- "foo"
 showTextData :: Show a => a -> Text
-showTextData = T.toLower . T.pack . show
+showTextData = T.toLower . showt
+
+-- | Like @'show'@, but returns @'Text'@.
+showt :: Show a => a -> Text
+showt = T.pack . show
 #endif
 
 -- | Parse given text case insensitive and return the rest of the input.
@@ -250,7 +254,6 @@ instance ToHttpApiData Void where
 instance ToHttpApiData Bool     where toUrlPiece = showTextData
 instance ToHttpApiData Ordering where toUrlPiece = showTextData
 
-#if USE_TEXT_SHOW
 instance ToHttpApiData Double   where toUrlPiece = showt
 instance ToHttpApiData Float    where toUrlPiece = showt
 instance ToHttpApiData Int      where toUrlPiece = showt
@@ -265,22 +268,6 @@ instance ToHttpApiData Word16   where toUrlPiece = showt
 instance ToHttpApiData Word32   where toUrlPiece = showt
 instance ToHttpApiData Word64   where toUrlPiece = showt
 instance ToHttpApiData Day      where toUrlPiece = T.pack . show
-#else
-instance ToHttpApiData Double   where toUrlPiece = showTextData
-instance ToHttpApiData Float    where toUrlPiece = showTextData
-instance ToHttpApiData Int      where toUrlPiece = showTextData
-instance ToHttpApiData Int8     where toUrlPiece = showTextData
-instance ToHttpApiData Int16    where toUrlPiece = showTextData
-instance ToHttpApiData Int32    where toUrlPiece = showTextData
-instance ToHttpApiData Int64    where toUrlPiece = showTextData
-instance ToHttpApiData Integer  where toUrlPiece = showTextData
-instance ToHttpApiData Word     where toUrlPiece = showTextData
-instance ToHttpApiData Word8    where toUrlPiece = showTextData
-instance ToHttpApiData Word16   where toUrlPiece = showTextData
-instance ToHttpApiData Word32   where toUrlPiece = showTextData
-instance ToHttpApiData Word64   where toUrlPiece = showTextData
-instance ToHttpApiData Day      where toUrlPiece = showTextData
-#endif
 
 instance ToHttpApiData String   where toUrlPiece = T.pack
 instance ToHttpApiData Text     where toUrlPiece = id
