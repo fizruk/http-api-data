@@ -1,5 +1,5 @@
 name:            http-api-data
-version:         0.1.0
+version:         0.1.1
 license:         BSD3
 license-file:    LICENSE
 author:          Michael Snoyman <michael@snoyman.com>
@@ -16,11 +16,18 @@ extra-source-files:
   CHANGELOG.md
   README.md
 
+flag use-text-show
+  description: Use @text-show@ library for efficient @'ToHttpApiData'@ implementations.
+  default: False
+
 library
     build-depends:   base             >= 4       && < 5
                    , text             >= 0.5
                    , bytestring
                    , time
+    if flag(use-text-show)
+      cpp-options: -DUSE_TEXT_SHOW
+      build-depends: text-show        >= 2
     exposed-modules:
       Web.HttpApiData
       Web.HttpApiData.Internal
