@@ -24,8 +24,6 @@ library
     exposed-modules:
       Web.HttpApiData
       Web.HttpApiData.Internal
-      Web.PathPieces
-      Web.PathPieces.Internal
     ghc-options:     -Wall
 
 test-suite spec
