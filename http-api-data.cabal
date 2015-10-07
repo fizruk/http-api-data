@@ -1,5 +1,5 @@
 name:            http-api-data
-version:         0.2.0
+version:         0.1.0
 license:         BSD3
 license-file:    LICENSE
 author:          Michael Snoyman <michael@snoyman.com>
@@ -13,7 +13,7 @@ cabal-version:   >= 1.8
 build-type:      Simple
 extra-source-files:
   test/*.hs
-  ChangeLog.md
+  CHANGELOG.md
   README.md
 
 library
