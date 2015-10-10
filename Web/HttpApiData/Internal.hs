@@ -9,7 +9,7 @@
 -- such as URL pieces, headers and query parameters.
 module Web.HttpApiData.Internal where
 
-#if __GLASGOW_HASKELL__ < 707
+#if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
 #endif
 import Control.Arrow ((&&&))
