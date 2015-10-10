@@ -190,7 +190,7 @@ parseUrlPieceWithPrefix pattern input
 -- instance FromHttpApiData MyData where
 --   parseUrlPiece = parseBoundedTextData
 -- @
-parseBoundedTextData :: forall a. (TextShow a, Bounded a, Enum a) => Text -> Either Text a
+parseBoundedTextData :: (TextShow a, Bounded a, Enum a) => Text -> Either Text a
 #else
 -- | /Case insensitive/.
 --
@@ -207,11 +207,11 @@ parseBoundedTextData :: forall a. (TextShow a, Bounded a, Enum a) => Text -> Eit
 -- >>> instance FromHttpApiData MyData where parseUrlPiece = parseBoundedTextData
 -- >>> parseUrlPiece "foo" :: Either Text MyData
 -- Right Foo
-parseBoundedTextData :: forall a. (Show a, Bounded a, Enum a) => Text -> Either Text a
+parseBoundedTextData :: (Show a, Bounded a, Enum a) => Text -> Either Text a
 #endif
 parseBoundedTextData = parseMaybeTextData (flip lookup values . T.toLower)
   where
-    values = map (showTextData &&& id) [minBound..maxBound :: a]
+    values = map (showTextData &&& id) [minBound..maxBound]
 
 -- | Parse URL piece using @'Read'@ instance.
 --
