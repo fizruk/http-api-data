@@ -24,7 +24,7 @@ import Data.Text.Read (signed, decimal, rational, Reader)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 
-import Data.Time (Day)
+import Data.Time
 import Data.Version
 
 #if MIN_VERSION_base(4,8,0)
@@ -37,9 +37,6 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 #if USE_TEXT_SHOW
 import TextShow (TextShow, showt)
 #endif
-
--- $setup
--- >>> import Data.Time
 
 -- | Convert value to HTTP API data.
 class ToHttpApiData a where
