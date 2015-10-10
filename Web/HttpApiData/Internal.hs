@@ -38,6 +38,9 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 import TextShow (TextShow, showt)
 #endif
 
+-- $setup
+-- >>> import Data.Time
+
 -- | Convert value to HTTP API data.
 class ToHttpApiData a where
   {-# MINIMAL toUrlPiece | toQueryParam #-}
@@ -267,6 +270,10 @@ instance ToHttpApiData Word8    where toUrlPiece = showt
 instance ToHttpApiData Word16   where toUrlPiece = showt
 instance ToHttpApiData Word32   where toUrlPiece = showt
 instance ToHttpApiData Word64   where toUrlPiece = showt
+
+-- |
+-- >>> toUrlPiece (fromGregorian 2015 10 03)
+-- "2015-10-03"
 instance ToHttpApiData Day      where toUrlPiece = T.pack . show
 
 instance ToHttpApiData String   where toUrlPiece = T.pack
@@ -321,6 +328,7 @@ instance FromHttpApiData Version where
       _           -> defaultParseError s
 
 #if MIN_VERSION_base(4,8,0)
+-- | Parsing a @'Void'@ value is always an error, considering @'Void'@ as a data type with no constructors.
 instance FromHttpApiData Void where
   parseUrlPiece _ = Left "Void cannot be parsed!"
 #endif
@@ -343,6 +351,10 @@ instance FromHttpApiData Word64   where parseUrlPiece = parseBounded decimal
 instance FromHttpApiData String   where parseUrlPiece = Right . T.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
+
+-- |
+-- >>> toGregorian <$> parseUrlPiece "2016-12-01"
+-- Right (2016,12,1)
 instance FromHttpApiData Day      where parseUrlPiece = readEitherTextData
 
 instance FromHttpApiData All where parseUrlPiece = fmap All . parseUrlPiece
