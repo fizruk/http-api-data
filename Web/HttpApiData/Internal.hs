@@ -325,13 +325,13 @@ instance (ToHttpApiData a, ToHttpApiData b) => ToHttpApiData (Either a b) where
 -- >>> parseUrlPiece "_" :: Either Text ()
 -- Right ()
 instance FromHttpApiData () where
-  parseUrlPiece "_" = return ()
+  parseUrlPiece "_" = pure ()
   parseUrlPiece s   = defaultParseError s
 
 instance FromHttpApiData Char where
   parseUrlPiece s =
     case T.uncons s of
-      Just (c, s') | T.null s' -> return c
+      Just (c, s') | T.null s' -> pure c
       _                        -> defaultParseError s
 
 -- |
@@ -340,7 +340,7 @@ instance FromHttpApiData Char where
 instance FromHttpApiData Version where
   parseUrlPiece s =
     case reverse (readP_to_S parseVersion (T.unpack s)) of
-      ((x, ""):_) -> return x
+      ((x, ""):_) -> pure x
       _           -> defaultParseError s
 
 #if MIN_VERSION_base(4,8,0)
@@ -387,7 +387,7 @@ instance FromHttpApiData a => FromHttpApiData (Last a)    where parseUrlPiece = 
 -- Right (Just 123)
 instance FromHttpApiData a => FromHttpApiData (Maybe a) where
   parseUrlPiece s
-    | T.toLower (T.take 7 s) == "nothing" = return Nothing
+    | T.toLower (T.take 7 s) == "nothing" = pure Nothing
     | otherwise                           = Just <$> parseUrlPieceWithPrefix "Just " s
 
 -- |
