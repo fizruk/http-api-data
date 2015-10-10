@@ -215,10 +215,6 @@ parseBoundedTextData = parseMaybeTextData (flip lookup values . T.toLower)
     values = map (showTextData &&& id) [minBound..maxBound :: a]
 
 -- | Parse URL piece using @'Read'@ instance.
-readMaybeTextData :: Read a => Text -> Maybe a
-readMaybeTextData = readMaybe . T.unpack
-
--- | Parse URL piece using @'Read'@ instance.
 --
 -- Use for types which do not involve letters:
 --
@@ -233,7 +229,7 @@ readMaybeTextData = readMaybe . T.unpack
 --
 -- See @'parseBoundedTextData'@.
 readTextData :: Read a => Text -> Either Text a
-readTextData = parseMaybeTextData readMaybeTextData
+readTextData = parseMaybeTextData (readMaybe . T.unpack)
 
 -- | Run @'Reader'@ as HTTP API data parser.
 runReader :: Reader a -> Text -> Either Text a
