@@ -247,7 +247,7 @@ parseBounded :: forall a. (Bounded a, Integral a) => Reader Integer -> Text -> E
 parseBounded reader input = do
   n <- runReader reader input
   if (n > h || n < l)
-    then Left  ("out of bounds: `" <> input <> "' (should be between " <> T.pack (show l) <> " and " <> T.pack (show h) <> ")")
+    then Left  ("out of bounds: `" <> input <> "' (should be between " <> showt l <> " and " <> showt h <> ")")
     else Right (fromInteger n)
   where
     l = toInteger (minBound :: a)
