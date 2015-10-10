@@ -104,7 +104,9 @@ parseMaybeTextData parse input =
     Just val -> Right val
 
 #if USE_TEXT_SHOW
--- | Convert to URL piece using @'TextShow'@ instance.
+-- | /Lower case/.
+--
+-- Convert to URL piece using @'TextShow'@ instance.
 -- The result is always lower cased.
 --
 -- >>> showTextData True
@@ -124,7 +126,9 @@ parseMaybeTextData parse input =
 showTextData :: TextShow a => a -> Text
 showTextData = T.toLower . showt
 #else
--- | Convert to URL piece using @'Show'@ instance.
+-- | /Lower case/.
+--
+-- Convert to URL piece using @'Show'@ instance.
 -- The result is always lower cased.
 --
 -- >>> showTextData True
@@ -144,7 +148,9 @@ showt :: Show a => a -> Text
 showt = T.pack . show
 #endif
 
--- | Parse given text case insensitive and return the rest of the input.
+-- | /Case insensitive/.
+--
+-- Parse given text case insensitive and return the rest of the input.
 --
 -- >>> parseUrlPieceWithPrefix "Just " "just 10" :: Either Text Int
 -- Right 10
@@ -165,7 +171,9 @@ parseUrlPieceWithPrefix pattern input
     (prefix, rest) = T.splitAt (T.length pattern) input
 
 #if USE_TEXT_SHOW
--- | Parse values case insensitively based on @'TextShow'@ instance.
+-- | /Case insensitive/.
+--
+-- Parse values case insensitively based on @'TextShow'@ instance.
 --
 -- >>> parseBoundedTextData "true" :: Either Text Bool
 -- Right True
@@ -185,7 +193,9 @@ parseUrlPieceWithPrefix pattern input
 -- @
 parseBoundedTextData :: forall a. (TextShow a, Bounded a, Enum a) => Text -> Either Text a
 #else
--- | Parse values case insensitively based on @'Show'@ instance.
+-- | /Case insensitive/.
+--
+-- Parse values case insensitively based on @'Show'@ instance.
 --
 -- >>> parseBoundedTextData "true" :: Either Text Bool
 -- Right True
