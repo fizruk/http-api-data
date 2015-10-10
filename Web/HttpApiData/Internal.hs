@@ -209,8 +209,21 @@ readMaybeTextData :: Read a => Text -> Maybe a
 readMaybeTextData = readMaybe . T.unpack
 
 -- | Parse URL piece using @'Read'@ instance.
-readEitherTextData :: Read a => Text -> Either Text a
-readEitherTextData = parseMaybeTextData readMaybeTextData
+--
+-- Use for types which do not involve letters:
+--
+-- >>> readTextData "1991-06-02" :: Either Text Day
+-- Right 1991-06-02
+--
+-- This parser is case sensitive and will not match @'showTextData'@
+-- in presense of letters:
+--
+-- >>> readTextData "true" :: Either Text Bool
+-- Left "could not parse: `true'"
+--
+-- See @'parseBoundedCaseInsensitiveTextData'@.
+readTextData :: Read a => Text -> Either Text a
+readTextData = parseMaybeTextData readMaybeTextData
 
 -- | Run @'Reader'@ as HTTP API data parser.
 runReader :: Reader a -> Text -> Either Text a
@@ -355,7 +368,7 @@ instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 -- |
 -- >>> toGregorian <$> parseUrlPiece "2016-12-01"
 -- Right (2016,12,1)
-instance FromHttpApiData Day      where parseUrlPiece = readEitherTextData
+instance FromHttpApiData Day      where parseUrlPiece = readTextData
 
 instance FromHttpApiData All where parseUrlPiece = fmap All . parseUrlPiece
 instance FromHttpApiData Any where parseUrlPiece = fmap Any . parseUrlPiece
