@@ -9,7 +9,9 @@
 -- such as URL pieces, headers and query parameters.
 module Web.HttpApiData.Internal where
 
+#if __GLASGOW_HASKELL__ < 707
 import Control.Applicative
+#endif
 import Control.Arrow ((&&&))
 
 import Data.Monoid
