@@ -17,7 +17,7 @@ module Web.HttpApiData (
   -- * Helpers
   showTextData,
   readTextData,
-  parseBoundedCaseInsensitiveTextData,
+  parseBoundedTextData,
   parseUrlPieceWithPrefix,
 ) where
 

@@ -167,9 +167,9 @@ parseUrlPieceWithPrefix pattern input
 #if USE_TEXT_SHOW
 -- | Parse values case insensitively based on @'TextShow'@ instance.
 --
--- >>> parseBoundedCaseInsensitiveTextData "true" :: Either Text Bool
+-- >>> parseBoundedTextData "true" :: Either Text Bool
 -- Right True
--- >>> parseBoundedCaseInsensitiveTextData "FALSE" :: Either Text Bool
+-- >>> parseBoundedTextData "FALSE" :: Either Text Bool
 -- Right False
 --
 -- This can be used as a default implementation for enumeration types:
@@ -181,26 +181,26 @@ parseUrlPieceWithPrefix pattern input
 --   showt = genericShowt
 --
 -- instance FromHttpApiData MyData where
---   parseUrlPiece = parseBoundedCaseInsensitiveTextData
+--   parseUrlPiece = parseBoundedTextData
 -- @
-parseBoundedCaseInsensitiveTextData :: forall a. (TextShow a, Bounded a, Enum a) => Text -> Either Text a
+parseBoundedTextData :: forall a. (TextShow a, Bounded a, Enum a) => Text -> Either Text a
 #else
 -- | Parse values case insensitively based on @'Show'@ instance.
 --
--- >>> parseBoundedCaseInsensitiveTextData "true" :: Either Text Bool
+-- >>> parseBoundedTextData "true" :: Either Text Bool
 -- Right True
--- >>> parseBoundedCaseInsensitiveTextData "FALSE" :: Either Text Bool
+-- >>> parseBoundedTextData "FALSE" :: Either Text Bool
 -- Right False
 --
 -- This can be used as a default implementation for enumeration types:
 --
 -- >>> data MyData = Foo | Bar | Baz deriving (Show, Bounded, Enum)
--- >>> instance FromHttpApiData MyData where parseUrlPiece = parseBoundedCaseInsensitiveTextData
+-- >>> instance FromHttpApiData MyData where parseUrlPiece = parseBoundedTextData
 -- >>> parseUrlPiece "foo" :: Either Text MyData
 -- Right Foo
-parseBoundedCaseInsensitiveTextData :: forall a. (Show a, Bounded a, Enum a) => Text -> Either Text a
+parseBoundedTextData :: forall a. (Show a, Bounded a, Enum a) => Text -> Either Text a
 #endif
-parseBoundedCaseInsensitiveTextData = parseMaybeTextData (flip lookup values . T.toLower)
+parseBoundedTextData = parseMaybeTextData (flip lookup values . T.toLower)
   where
     values = map (showTextData &&& id) [minBound..maxBound :: a]
 
@@ -221,7 +221,7 @@ readMaybeTextData = readMaybe . T.unpack
 -- >>> readTextData "true" :: Either Text Bool
 -- Left "could not parse: `true'"
 --
--- See @'parseBoundedCaseInsensitiveTextData'@.
+-- See @'parseBoundedTextData'@.
 readTextData :: Read a => Text -> Either Text a
 readTextData = parseMaybeTextData readMaybeTextData
 
@@ -346,8 +346,8 @@ instance FromHttpApiData Void where
   parseUrlPiece _ = Left "Void cannot be parsed!"
 #endif
 
-instance FromHttpApiData Bool     where parseUrlPiece = parseBoundedCaseInsensitiveTextData
-instance FromHttpApiData Ordering where parseUrlPiece = parseBoundedCaseInsensitiveTextData
+instance FromHttpApiData Bool     where parseUrlPiece = parseBoundedTextData
+instance FromHttpApiData Ordering where parseUrlPiece = parseBoundedTextData
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
 instance FromHttpApiData Float    where parseUrlPiece = runReader rational
 instance FromHttpApiData Int      where parseUrlPiece = parseBounded (signed decimal)
