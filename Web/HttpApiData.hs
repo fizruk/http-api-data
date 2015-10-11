@@ -8,6 +8,21 @@ module Web.HttpApiData (
   -- * Classes
   ToHttpApiData (..),
   FromHttpApiData (..),
+
+  -- * @'Maybe'@ parsers
+  parseUrlPieceMaybe,
+  parseHeaderMaybe,
+  parseQueryParamMaybe,
+
+  -- * Prefix parsers
+  parseUrlPieceWithPrefix,
+  parseHeaderWithPrefix,
+  parseQueryParamWithPrefix,
+
+  -- * Other helpers
+  showTextData,
+  readTextData,
+  parseBoundedTextData,
 ) where
 
 import Web.HttpApiData.Internal

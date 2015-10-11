@@ -9,11 +9,14 @@
 -- such as URL pieces, headers and query parameters.
 module Web.HttpApiData.Internal where
 
+#if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
+#endif
 import Control.Arrow ((&&&))
 
 import Data.Monoid
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 
 import Data.Int
 import Data.Word
@@ -24,7 +27,7 @@ import Data.Text.Read (signed, decimal, rational, Reader)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 
-import Data.Time (Day)
+import Data.Time
 import Data.Version
 
 #if MIN_VERSION_base(4,8,0)
@@ -37,9 +40,6 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 #if USE_TEXT_SHOW
 import TextShow (TextShow, showt)
 #endif
-
--- $setup
--- >>> import Data.Time
 
 -- | Convert value to HTTP API data.
 class ToHttpApiData a where
@@ -104,7 +104,9 @@ parseMaybeTextData parse input =
     Just val -> Right val
 
 #if USE_TEXT_SHOW
--- | Convert to URL piece using @'TextShow'@ instance.
+-- | /Lower case/.
+--
+-- Convert to URL piece using @'TextShow'@ instance.
 -- The result is always lower cased.
 --
 -- >>> showTextData True
@@ -124,7 +126,9 @@ parseMaybeTextData parse input =
 showTextData :: TextShow a => a -> Text
 showTextData = T.toLower . showt
 #else
--- | Convert to URL piece using @'Show'@ instance.
+-- | /Lower case/.
+--
+-- Convert to URL piece using @'Show'@ instance.
 -- The result is always lower cased.
 --
 -- >>> showTextData True
@@ -144,7 +148,10 @@ showt :: Show a => a -> Text
 showt = T.pack . show
 #endif
 
--- | Parse given text case insensitive and return the rest of the input.
+-- | /Case insensitive/.
+--
+-- Parse given text case insensitive and then parse the rest of the input
+-- using @'parseUrlPiece'@.
 --
 -- >>> parseUrlPieceWithPrefix "Just " "just 10" :: Either Text Int
 -- Right 10
@@ -164,12 +171,49 @@ parseUrlPieceWithPrefix pattern input
   where
     (prefix, rest) = T.splitAt (T.length pattern) input
 
-#if USE_TEXT_SHOW
--- | Parse values case insensitively based on @'TextShow'@ instance.
+-- $setup
+-- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
+-- >>> instance FromHttpApiData BasicAuthToken where parseHeader h = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h; parseQueryParam p = BasicAuthToken <$> parseQueryParam p
+
+-- | Parse given bytestring then parse the rest of the input using @'parseHeader'@.
 --
--- >>> parseBoundedCaseInsensitiveTextData "true" :: Either Text Bool
+-- @
+-- data BasicAuthToken = BasicAuthToken Text deriving (Show)
+--
+-- instance FromHttpApiData BasicAuthToken where
+--   parseHeader h     = BasicAuthToken \<$\> parseHeaderWithPrefix "Basic " h
+--   parseQueryParam p = BasicAuthToken \<$\> parseQueryParam p
+-- @
+--
+-- >>> parseHeader "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" :: Either Text BasicAuthToken
+-- Right (BasicAuthToken "QWxhZGRpbjpvcGVuIHNlc2FtZQ==")
+parseHeaderWithPrefix :: FromHttpApiData a => ByteString -> ByteString -> Either Text a
+parseHeaderWithPrefix pattern input
+  | pattern `BS.isPrefixOf` input = parseHeader (BS.drop (BS.length pattern) input)
+  | otherwise                     = defaultParseError (showt input)
+
+-- | /Case insensitive/.
+--
+-- Parse given text case insensitive and then parse the rest of the input
+-- using @'parseQueryParam'@.
+--
+-- >>> parseQueryParamWithPrefix "z" "z10" :: Either Text Int
+-- Right 10
+parseQueryParamWithPrefix :: FromHttpApiData a => Text -> Text -> Either Text a
+parseQueryParamWithPrefix pattern input
+  | T.toLower pattern == T.toLower prefix = parseQueryParam rest
+  | otherwise                             = defaultParseError input
+  where
+    (prefix, rest) = T.splitAt (T.length pattern) input
+
+#if USE_TEXT_SHOW
+-- | /Case insensitive/.
+--
+-- Parse values case insensitively based on @'TextShow'@ instance.
+--
+-- >>> parseBoundedTextData "true" :: Either Text Bool
 -- Right True
--- >>> parseBoundedCaseInsensitiveTextData "FALSE" :: Either Text Bool
+-- >>> parseBoundedTextData "FALSE" :: Either Text Bool
 -- Right False
 --
 -- This can be used as a default implementation for enumeration types:
@@ -181,36 +225,47 @@ parseUrlPieceWithPrefix pattern input
 --   showt = genericShowt
 --
 -- instance FromHttpApiData MyData where
---   parseUrlPiece = parseBoundedCaseInsensitiveTextData
+--   parseUrlPiece = parseBoundedTextData
 -- @
-parseBoundedCaseInsensitiveTextData :: forall a. (TextShow a, Bounded a, Enum a) => Text -> Either Text a
+parseBoundedTextData :: (TextShow a, Bounded a, Enum a) => Text -> Either Text a
 #else
--- | Parse values case insensitively based on @'Show'@ instance.
+-- | /Case insensitive/.
 --
--- >>> parseBoundedCaseInsensitiveTextData "true" :: Either Text Bool
+-- Parse values case insensitively based on @'Show'@ instance.
+--
+-- >>> parseBoundedTextData "true" :: Either Text Bool
 -- Right True
--- >>> parseBoundedCaseInsensitiveTextData "FALSE" :: Either Text Bool
+-- >>> parseBoundedTextData "FALSE" :: Either Text Bool
 -- Right False
 --
 -- This can be used as a default implementation for enumeration types:
 --
 -- >>> data MyData = Foo | Bar | Baz deriving (Show, Bounded, Enum)
--- >>> instance FromHttpApiData MyData where parseUrlPiece = parseBoundedCaseInsensitiveTextData
+-- >>> instance FromHttpApiData MyData where parseUrlPiece = parseBoundedTextData
 -- >>> parseUrlPiece "foo" :: Either Text MyData
 -- Right Foo
-parseBoundedCaseInsensitiveTextData :: forall a. (Show a, Bounded a, Enum a) => Text -> Either Text a
+parseBoundedTextData :: (Show a, Bounded a, Enum a) => Text -> Either Text a
 #endif
-parseBoundedCaseInsensitiveTextData = parseMaybeTextData (flip lookup values . T.toLower)
+parseBoundedTextData = parseMaybeTextData (flip lookup values . T.toLower)
   where
-    values = map (showTextData &&& id) [minBound..maxBound :: a]
+    values = map (showTextData &&& id) [minBound..maxBound]
 
 -- | Parse URL piece using @'Read'@ instance.
-readMaybeTextData :: Read a => Text -> Maybe a
-readMaybeTextData = readMaybe . T.unpack
-
--- | Parse URL piece using @'Read'@ instance.
-readEitherTextData :: Read a => Text -> Either Text a
-readEitherTextData = parseMaybeTextData readMaybeTextData
+--
+-- Use for types which do not involve letters:
+--
+-- >>> readTextData "1991-06-02" :: Either Text Day
+-- Right 1991-06-02
+--
+-- This parser is case sensitive and will not match @'showTextData'@
+-- in presense of letters:
+--
+-- >>> readTextData (showTextData True) :: Either Text Bool
+-- Left "could not parse: `true'"
+--
+-- See @'parseBoundedTextData'@.
+readTextData :: Read a => Text -> Either Text a
+readTextData = parseMaybeTextData (readMaybe . T.unpack)
 
 -- | Run @'Reader'@ as HTTP API data parser.
 runReader :: Reader a -> Text -> Either Text a
@@ -229,7 +284,7 @@ parseBounded :: forall a. (Bounded a, Integral a) => Reader Integer -> Text -> E
 parseBounded reader input = do
   n <- runReader reader input
   if (n > h || n < l)
-    then Left  ("out of bounds: `" <> input <> "' (should be between " <> T.pack (show l) <> " and " <> T.pack (show h) <> ")")
+    then Left  ("out of bounds: `" <> input <> "' (should be between " <> showt l <> " and " <> showt h <> ")")
     else Right (fromInteger n)
   where
     l = toInteger (minBound :: a)
@@ -309,13 +364,13 @@ instance (ToHttpApiData a, ToHttpApiData b) => ToHttpApiData (Either a b) where
 -- >>> parseUrlPiece "_" :: Either Text ()
 -- Right ()
 instance FromHttpApiData () where
-  parseUrlPiece "_" = return ()
+  parseUrlPiece "_" = pure ()
   parseUrlPiece s   = defaultParseError s
 
 instance FromHttpApiData Char where
   parseUrlPiece s =
     case T.uncons s of
-      Just (c, s') | T.null s' -> return c
+      Just (c, s') | T.null s' -> pure c
       _                        -> defaultParseError s
 
 -- |
@@ -324,7 +379,7 @@ instance FromHttpApiData Char where
 instance FromHttpApiData Version where
   parseUrlPiece s =
     case reverse (readP_to_S parseVersion (T.unpack s)) of
-      ((x, ""):_) -> return x
+      ((x, ""):_) -> pure x
       _           -> defaultParseError s
 
 #if MIN_VERSION_base(4,8,0)
@@ -333,8 +388,8 @@ instance FromHttpApiData Void where
   parseUrlPiece _ = Left "Void cannot be parsed!"
 #endif
 
-instance FromHttpApiData Bool     where parseUrlPiece = parseBoundedCaseInsensitiveTextData
-instance FromHttpApiData Ordering where parseUrlPiece = parseBoundedCaseInsensitiveTextData
+instance FromHttpApiData Bool     where parseUrlPiece = parseBoundedTextData
+instance FromHttpApiData Ordering where parseUrlPiece = parseBoundedTextData
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
 instance FromHttpApiData Float    where parseUrlPiece = runReader rational
 instance FromHttpApiData Int      where parseUrlPiece = parseBounded (signed decimal)
@@ -355,7 +410,7 @@ instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 -- |
 -- >>> toGregorian <$> parseUrlPiece "2016-12-01"
 -- Right (2016,12,1)
-instance FromHttpApiData Day      where parseUrlPiece = readEitherTextData
+instance FromHttpApiData Day      where parseUrlPiece = readTextData
 
 instance FromHttpApiData All where parseUrlPiece = fmap All . parseUrlPiece
 instance FromHttpApiData Any where parseUrlPiece = fmap Any . parseUrlPiece
@@ -371,7 +426,7 @@ instance FromHttpApiData a => FromHttpApiData (Last a)    where parseUrlPiece = 
 -- Right (Just 123)
 instance FromHttpApiData a => FromHttpApiData (Maybe a) where
   parseUrlPiece s
-    | T.toLower (T.take 7 s) == "nothing" = return Nothing
+    | T.toLower (T.take 7 s) == "nothing" = pure Nothing
     | otherwise                           = Just <$> parseUrlPieceWithPrefix "Just " s
 
 -- |
