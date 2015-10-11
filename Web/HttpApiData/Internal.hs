@@ -255,7 +255,7 @@ parseBoundedTextData = parseMaybeTextData (flip lookup values . T.toLower)
 -- This parser is case sensitive and will not match @'showTextData'@
 -- in presense of letters:
 --
--- >>> readTextData "true" :: Either Text Bool
+-- >>> readTextData (showTextData True) :: Either Text Bool
 -- Left "could not parse: `true'"
 --
 -- See @'parseBoundedTextData'@.
