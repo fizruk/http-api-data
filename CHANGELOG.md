@@ -1,4 +1,4 @@
-Unreleased changes
+0.2
 ---
 
 * Export helper functions from `Web.HttpApiData`:
