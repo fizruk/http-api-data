@@ -1,3 +1,12 @@
+Unreleased changes
+---
+
+* Export helper functions from `Web.HttpApiData`:
+    * `parseUrlPieceMaybe`, `parseHeaderMaybe`, `parseQueryParamMaybe`
+    * `parseUrlPieceWithPrefix`, `parseHeaderWithPrefix`, `parseQueryParamWithPrefix`
+    * `showTextData`, `readTextData`, `parseBoundedTextData`
+* Fix AMP related warnings
+
 0.1.1
 ---
 
