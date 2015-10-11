@@ -14,11 +14,15 @@ module Web.HttpApiData (
   parseHeaderMaybe,
   parseQueryParamMaybe,
 
-  -- * Helpers
+  -- * Prefix parsers
+  parseUrlPieceWithPrefix,
+  parseHeaderWithPrefix,
+  parseQueryParamWithPrefix,
+
+  -- * Other helpers
   showTextData,
   readTextData,
   parseBoundedTextData,
-  parseUrlPieceWithPrefix,
 ) where
 
 import Web.HttpApiData.Internal

@@ -16,6 +16,7 @@ import Control.Arrow ((&&&))
 
 import Data.Monoid
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 
 import Data.Int
 import Data.Word
@@ -149,7 +150,8 @@ showt = T.pack . show
 
 -- | /Case insensitive/.
 --
--- Parse given text case insensitive and return the rest of the input.
+-- Parse given text case insensitive and then parse the rest of the input
+-- using @'parseUrlPiece'@.
 --
 -- >>> parseUrlPieceWithPrefix "Just " "just 10" :: Either Text Int
 -- Right 10
@@ -165,6 +167,36 @@ showt = T.pack . show
 parseUrlPieceWithPrefix :: FromHttpApiData a => Text -> Text -> Either Text a
 parseUrlPieceWithPrefix pattern input
   | T.toLower pattern == T.toLower prefix = parseUrlPiece rest
+  | otherwise                             = defaultParseError input
+  where
+    (prefix, rest) = T.splitAt (T.length pattern) input
+
+-- | Parse given bytestring then parse the rest of the input using @'parseHeader'@.
+--
+-- >>> :{
+-- newtype BasicAuthToken = BasicAuthToken Text deriving (Show)
+-- instance FromHttpApiData BasicAuthToken where
+--   parseHeader h     = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h
+--   parseQueryParam p = BasicAuthToken <$> parseQueryParam p
+-- :}
+--
+-- >>> parseHeader "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" :: Either Text BasicAuthToken
+-- Right (BasicAuthToken "QWxhZGRpbjpvcGVuIHNlc2FtZQ==")
+parseHeaderWithPrefix :: FromHttpApiData a => ByteString -> ByteString -> Either Text a
+parseHeaderWithPrefix pattern input
+  | pattern `BS.isPrefixOf` input = parseHeader (BS.drop (BS.length pattern) input)
+  | otherwise                     = defaultParseError (showt input)
+
+-- | /Case insensitive/.
+--
+-- Parse given text case insensitive and then parse the rest of the input
+-- using @'parseQueryParam'@.
+--
+-- >>> parseQueryParamWithPrefix "z" "z10" :: Either Text Int
+-- Right 10
+parseQueryParamWithPrefix :: FromHttpApiData a => Text -> Text -> Either Text a
+parseQueryParamWithPrefix pattern input
+  | T.toLower pattern == T.toLower prefix = parseQueryParam rest
   | otherwise                             = defaultParseError input
   where
     (prefix, rest) = T.splitAt (T.length pattern) input
