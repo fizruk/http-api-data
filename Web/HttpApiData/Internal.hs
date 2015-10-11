@@ -174,7 +174,7 @@ parseUrlPieceWithPrefix pattern input
 -- | Parse given bytestring then parse the rest of the input using @'parseHeader'@.
 --
 -- >>> :{
--- newtype BasicAuthToken = BasicAuthToken Text deriving (Show)
+-- data BasicAuthToken = BasicAuthToken Text deriving (Show)
 -- instance FromHttpApiData BasicAuthToken where
 --   parseHeader h     = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h
 --   parseQueryParam p = BasicAuthToken <$> parseQueryParam p
