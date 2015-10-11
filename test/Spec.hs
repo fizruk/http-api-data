@@ -17,7 +17,6 @@ import Test.Hspec.QuickCheck(prop)
 import Test.QuickCheck
 
 import Web.HttpApiData
-import Web.HttpApiData.Internal
 
 instance Arbitrary T.Text where
   arbitrary = T.pack <$> arbitrary
