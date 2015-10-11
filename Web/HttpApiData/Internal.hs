@@ -171,14 +171,19 @@ parseUrlPieceWithPrefix pattern input
   where
     (prefix, rest) = T.splitAt (T.length pattern) input
 
+-- $setup
+-- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
+-- >>> instance FromHttpApiData BasicAuthToken where parseHeader h = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h; parseQueryParam p = BasicAuthToken <$> parseQueryParam p
+
 -- | Parse given bytestring then parse the rest of the input using @'parseHeader'@.
 --
--- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
--- >>> :{
+-- @
+-- data BasicAuthToken = BasicAuthToken Text deriving (Show)
+--
 -- instance FromHttpApiData BasicAuthToken where
---   parseHeader h     = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h
---   parseQueryParam p = BasicAuthToken <$> parseQueryParam p
--- :}
+--   parseHeader h     = BasicAuthToken \<$\> parseHeaderWithPrefix "Basic " h
+--   parseQueryParam p = BasicAuthToken \<$\> parseQueryParam p
+-- @
 --
 -- >>> parseHeader "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" :: Either Text BasicAuthToken
 -- Right (BasicAuthToken "QWxhZGRpbjpvcGVuIHNlc2FtZQ==")
