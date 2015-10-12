@@ -84,7 +84,7 @@ toUrlPieces = fmap toUrlPiece
 -- >>> parseUrlPieces ["true", "false"] :: Either Text [Bool]
 -- Right [True,False]
 -- >>> parseUrlPieces ["123", "hello", "world"] :: Either Text [Int]
--- Left "input does not start with a digit"
+-- Left "could not parse: `hello' (input does not start with a digit)"
 parseUrlPieces :: (Traversable t, FromHttpApiData a) => t Text -> Either Text (t a)
 parseUrlPieces = traverse parseUrlPiece
 
@@ -304,7 +304,7 @@ readTextData = parseMaybeTextData (readMaybe . T.unpack)
 runReader :: Reader a -> Text -> Either Text a
 runReader reader input =
   case reader input of
-    Left err          -> Left (T.pack err)
+    Left err          -> Left ("could not parse: `" <> input <> "' (" <> T.pack err <> ")")
     Right (x, rest)
       | T.null rest -> Right x
       | otherwise   -> defaultParseError input
