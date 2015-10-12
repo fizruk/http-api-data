@@ -1,3 +1,10 @@
+Unreleased changes
+---
+
+* Add helpers for multiple URL pieces and query params:
+    * `toUrlPieces`, `parseUrlPieces`
+    * `toQueryParams`, `parseQueryParams`
+
 0.2
 ---
 
