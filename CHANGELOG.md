@@ -1,4 +1,4 @@
-Unreleased changes
+0.2.1
 ---
 
 * Add helpers for multiple URL pieces and query params:
