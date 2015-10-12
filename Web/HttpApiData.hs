@@ -19,6 +19,10 @@ module Web.HttpApiData (
   parseHeaderWithPrefix,
   parseQueryParamWithPrefix,
 
+  -- * Multiple URL pieces
+  toUrlPieces,
+  parseUrlPieces,
+
   -- * Other helpers
   showTextData,
   readTextData,

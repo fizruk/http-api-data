@@ -71,6 +71,22 @@ class FromHttpApiData a where
   parseQueryParam :: Text -> Either Text a
   parseQueryParam = parseUrlPiece
 
+-- | Convert multiple values to a list of URL pieces.
+--
+-- >>> toUrlPieces [1, 2, 3]
+-- ["1","2","3"]
+toUrlPieces :: (Functor t, ToHttpApiData a) => t a -> t Text
+toUrlPieces = fmap toUrlPiece
+
+-- | Parse multiple URL pieces.
+--
+-- >>> parseUrlPieces ["true", "false"] :: Either Text [Bool]
+-- Right [True,False]
+-- >>> parseUrlPieces ["123", "hello", "world"] :: Either Text [Int]
+-- Left "input does not start with a digit"
+parseUrlPieces :: (Traversable t, FromHttpApiData a) => t Text -> Either Text (t a)
+parseUrlPieces = traverse parseUrlPiece
+
 -- | Parse URL path piece in a @'Maybe'@.
 --
 -- >>> parseUrlPieceMaybe "12" :: Maybe Int
