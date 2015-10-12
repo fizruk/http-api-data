@@ -19,6 +19,14 @@ module Web.HttpApiData (
   parseHeaderWithPrefix,
   parseQueryParamWithPrefix,
 
+  -- * Multiple URL pieces
+  toUrlPieces,
+  parseUrlPieces,
+
+  -- * Multiple query params
+  toQueryParams,
+  parseQueryParams,
+
   -- * Other helpers
   showTextData,
   readTextData,
@@ -45,17 +53,19 @@ import Web.HttpApiData.Internal
 -- "true"
 -- >>> parseUrlPiece "false" :: Either Text Bool
 -- Right False
--- >>> parseUrlPiece "something else" :: Either Text Bool
--- Left "could not parse: `something else'"
+-- >>> parseUrlPieces ["true", "false", "undefined"] :: Either Text [Bool]
+-- Left "could not parse: `undefined'"
 --
 -- Numbers:
 --
--- >>> toUrlPiece 45.2
+-- >>> toQueryParam 45.2
 -- "45.2"
--- >>> parseUrlPiece "452" :: Either Text Int
+-- >>> parseQueryParam "452" :: Either Text Int
 -- Right 452
--- >>> parseUrlPiece "256" :: Either Text Int8
--- Left "out of bounds: `256' (should be between -128 and 127)"
+-- >>> toQueryParams [1..5]
+-- ["1","2","3","4","5"]
+-- >>> parseQueryParams ["127", "255"] :: Either Text [Int8]
+-- Left "out of bounds: `255' (should be between -128 and 127)"
 --
 -- Strings:
 --
@@ -70,3 +80,4 @@ import Web.HttpApiData.Internal
 -- "2015-10-03"
 -- >>> toGregorian <$> parseQueryParam "2016-12-01"
 -- Right (2016,12,1)
+

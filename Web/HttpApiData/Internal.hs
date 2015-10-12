@@ -11,6 +11,7 @@ module Web.HttpApiData.Internal where
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
+import Data.Traversable (Traversable(traverse))
 #endif
 import Control.Arrow ((&&&))
 
@@ -70,6 +71,38 @@ class FromHttpApiData a where
   -- | Parse query param value.
   parseQueryParam :: Text -> Either Text a
   parseQueryParam = parseUrlPiece
+
+-- | Convert multiple values to a list of URL pieces.
+--
+-- >>> toUrlPieces [1, 2, 3]
+-- ["1","2","3"]
+toUrlPieces :: (Functor t, ToHttpApiData a) => t a -> t Text
+toUrlPieces = fmap toUrlPiece
+
+-- | Parse multiple URL pieces.
+--
+-- >>> parseUrlPieces ["true", "false"] :: Either Text [Bool]
+-- Right [True,False]
+-- >>> parseUrlPieces ["123", "hello", "world"] :: Either Text [Int]
+-- Left "could not parse: `hello' (input does not start with a digit)"
+parseUrlPieces :: (Traversable t, FromHttpApiData a) => t Text -> Either Text (t a)
+parseUrlPieces = traverse parseUrlPiece
+
+-- | Convert multiple values to a list of query parameter values.
+--
+-- >>> toQueryParams [fromGregorian 2015 10 03, fromGregorian 2015 12 01]
+-- ["2015-10-03","2015-12-01"]
+toQueryParams :: (Functor t, ToHttpApiData a) => t a -> t Text
+toQueryParams = fmap toQueryParam
+
+-- | Parse multiple query parameters.
+--
+-- >>> parseQueryParams ["1", "2", "3"] :: Either Text [Int]
+-- Right [1,2,3]
+-- >>> parseQueryParams ["64", "128", "256"] :: Either Text [Word8]
+-- Left "out of bounds: `256' (should be between 0 and 255)"
+parseQueryParams :: (Traversable t, FromHttpApiData a) => t Text -> Either Text (t a)
+parseQueryParams = traverse parseQueryParam
 
 -- | Parse URL path piece in a @'Maybe'@.
 --
@@ -271,7 +304,7 @@ readTextData = parseMaybeTextData (readMaybe . T.unpack)
 runReader :: Reader a -> Text -> Either Text a
 runReader reader input =
   case reader input of
-    Left err          -> Left (T.pack err)
+    Left err          -> Left ("could not parse: `" <> input <> "' (" <> T.pack err <> ")")
     Right (x, rest)
       | T.null rest -> Right x
       | otherwise   -> defaultParseError input
