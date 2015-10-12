@@ -23,6 +23,10 @@ module Web.HttpApiData (
   toUrlPieces,
   parseUrlPieces,
 
+  -- * Multiple query params
+  toQueryParams,
+  parseQueryParams,
+
   -- * Other helpers
   showTextData,
   readTextData,

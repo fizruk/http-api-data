@@ -11,6 +11,7 @@ module Web.HttpApiData.Internal where
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
+import Data.Traversable (traverse)
 #endif
 import Control.Arrow ((&&&))
 
@@ -86,6 +87,22 @@ toUrlPieces = fmap toUrlPiece
 -- Left "input does not start with a digit"
 parseUrlPieces :: (Traversable t, FromHttpApiData a) => t Text -> Either Text (t a)
 parseUrlPieces = traverse parseUrlPiece
+
+-- | Convert multiple values to a list of query parameter values.
+--
+-- >>> toQueryParams [fromGregorian 2015 10 03, fromGregorian 2015 12 01]
+-- ["2015-10-03","2015-12-01"]
+toQueryParams :: (Functor t, ToHttpApiData a) => t a -> t Text
+toQueryParams = fmap toQueryParam
+
+-- | Parse multiple query parameters.
+--
+-- >>> parseQueryParams ["1", "2", "3"] :: Either Text [Int]
+-- Right [1,2,3]
+-- >>> parseQueryParams ["64", "128", "256"] :: Either Text [Word8]
+-- Left "out of bounds: `256' (should be between 0 and 255)"
+parseQueryParams :: (Traversable t, FromHttpApiData a) => t Text -> Either Text (t a)
+parseQueryParams = traverse parseQueryParam
 
 -- | Parse URL path piece in a @'Maybe'@.
 --
