@@ -11,7 +11,7 @@ module Web.HttpApiData.Internal where
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
-import Data.Traversable (traverse)
+import Data.Traversable (Traversable(traverse))
 #endif
 import Control.Arrow ((&&&))
 
