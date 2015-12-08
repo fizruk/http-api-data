@@ -364,6 +364,26 @@ instance ToHttpApiData Word64   where toUrlPiece = showt
 -- "2015-10-03"
 instance ToHttpApiData Day      where toUrlPiece = T.pack . show
 
+timeToUrlPiece :: FormatTime t => String -> t -> Text
+timeToUrlPiece fmt = T.pack . formatTime defaultTimeLocale (iso8601DateFormat (Just fmt))
+
+-- |
+-- >>> toUrlPiece $ LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 01)
+-- "2015-10-03T14:55:01"
+instance ToHttpApiData LocalTime where toUrlPiece = timeToUrlPiece "%H:%M:%S"
+
+-- |
+-- >>> toUrlPiece $ ZonedTime (LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 01)) utc
+-- "2015-10-03T14:55:01+0000"
+instance ToHttpApiData ZonedTime where toUrlPiece = timeToUrlPiece "%H:%M:%S%z"
+
+-- |
+-- >>> toUrlPiece $ UTCTime (fromGregorian 2015 10 03) 864
+-- "2015-10-03T00:14:24Z"
+instance ToHttpApiData UTCTime   where toUrlPiece = timeToUrlPiece "%H:%M:%SZ"
+
+instance ToHttpApiData NominalDiffTime where toUrlPiece = toUrlPiece . fromEnum
+
 instance ToHttpApiData String   where toUrlPiece = T.pack
 instance ToHttpApiData Text     where toUrlPiece = id
 instance ToHttpApiData L.Text   where toUrlPiece = L.toStrict
@@ -444,6 +464,28 @@ instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 -- >>> toGregorian <$> parseUrlPiece "2016-12-01"
 -- Right (2016,12,1)
 instance FromHttpApiData Day      where parseUrlPiece = readTextData
+
+timeParseUrlPiece :: ParseTime t => String -> Text -> Either Text t
+timeParseUrlPiece fmt = parseMaybeTextData (timeParseUrlPieceMaybe . T.unpack)
+  where
+    timeParseUrlPieceMaybe = parseTimeM False defaultTimeLocale (iso8601DateFormat (Just fmt))
+
+-- |
+-- >>> parseUrlPiece "2015-10-03T14:55:01" :: Either Text LocalTime
+-- Right 2015-10-03 14:55:01
+instance FromHttpApiData LocalTime where parseUrlPiece = timeParseUrlPiece "%H:%M:%S"
+
+-- |
+-- >>> parseUrlPiece "2015-10-03T14:55:01+0000" :: Either Text ZonedTime
+-- Right 2015-10-03 14:55:01 +0000
+instance FromHttpApiData ZonedTime where parseUrlPiece = timeParseUrlPiece "%H:%M:%S%z"
+
+-- |
+-- >>> parseUrlPiece "2015-10-03T00:14:24Z" :: Either Text UTCTime
+-- Right 2015-10-03 00:14:24 UTC
+instance FromHttpApiData UTCTime   where parseUrlPiece = timeParseUrlPiece "%H:%M:%SZ"
+
+instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap fromInteger . parseUrlPiece
 
 instance FromHttpApiData All where parseUrlPiece = fmap All . parseUrlPiece
 instance FromHttpApiData Any where parseUrlPiece = fmap Any . parseUrlPiece
