@@ -25,6 +25,7 @@ library
                    , text             >= 0.5
                    , bytestring
                    , time
+                   , time-locale-compat
     if flag(use-text-show)
       cpp-options: -DUSE_TEXT_SHOW
       build-depends: text-show        >= 2

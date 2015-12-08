@@ -28,6 +28,7 @@ import Data.Text.Read (signed, decimal, rational, Reader)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 
+import Data.Time.Locale.Compat
 import Data.Time
 import Data.Version
 
@@ -468,7 +469,7 @@ instance FromHttpApiData Day      where parseUrlPiece = readTextData
 timeParseUrlPiece :: ParseTime t => String -> Text -> Either Text t
 timeParseUrlPiece fmt = parseMaybeTextData (timeParseUrlPieceMaybe . T.unpack)
   where
-    timeParseUrlPieceMaybe = parseTimeM False defaultTimeLocale (iso8601DateFormat (Just fmt))
+    timeParseUrlPieceMaybe = parseTime defaultTimeLocale (iso8601DateFormat (Just fmt))
 
 -- |
 -- >>> parseUrlPiece "2015-10-03T14:55:01" :: Either Text LocalTime
