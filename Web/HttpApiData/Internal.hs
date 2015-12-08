@@ -382,7 +382,7 @@ instance ToHttpApiData ZonedTime where toUrlPiece = timeToUrlPiece "%H:%M:%S%z"
 -- "2015-10-03T00:14:24Z"
 instance ToHttpApiData UTCTime   where toUrlPiece = timeToUrlPiece "%H:%M:%SZ"
 
-instance ToHttpApiData NominalDiffTime where toUrlPiece = toUrlPiece . fromEnum
+instance ToHttpApiData NominalDiffTime where toUrlPiece = toUrlPiece . (floor :: NominalDiffTime -> Integer)
 
 instance ToHttpApiData String   where toUrlPiece = T.pack
 instance ToHttpApiData Text     where toUrlPiece = id
