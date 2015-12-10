@@ -10,7 +10,9 @@ env:
 
 matrix:
   allow_failures:
+   - env: GHCVER=7.6.3   CABALVER=1.18   CABAL_FLAGS=
    - env: GHCVER=head    CABALVER=head   CABAL_FLAGS=
+   - env: GHCVER=7.6.3   CABALVER=1.18   CABAL_FLAGS=use-text-show
    - env: GHCVER=head    CABALVER=head   CABAL_FLAGS=use-text-show
 
 before_install:
