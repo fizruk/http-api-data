@@ -1,3 +1,6 @@
+0.2.2
+---
+
 * Add instances for more `time` types: `LocalTime`, `ZonedTime`, `UTCTime` and `NominalDiffTime`
 
 0.2.1
