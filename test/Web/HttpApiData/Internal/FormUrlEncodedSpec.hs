@@ -25,5 +25,15 @@ genericSpec = describe "Default (generic) instances" $ do
 
     it "contains the correct record values" $ property $ \(x :: SimpleRec) -> do
       let f = unForm $ toForm x
-      M.lookup "rec1" f `shouldBe` Just (Just (rec1 x))
-      M.lookup "rec2" f `shouldBe` Just (Just (rec2 x))
+      M.lookup "rec1" f `shouldBe` Just (rec1 x)
+      M.lookup "rec2" f `shouldBe` Just (rec2 x)
+
+  context "FromFormUrlEncoded" $ do
+
+    it "is the left inverse of ToFormUrlEncoded" $ property $ \(x :: SimpleRec) -> do
+      fromForm (toForm x) `shouldBe` Right x
+
+    it "is the right inverse of ToFormUrlEncoded" $ property $ \x y -> do
+      let f = Form $ M.fromList [("rec1", x), ("rec2", y)]
+          Right r = fromForm f :: Either String SimpleRec
+      toForm r `shouldBe` f

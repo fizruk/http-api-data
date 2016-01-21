@@ -77,6 +77,7 @@ data SimpleRec = SimpleRec { rec1 :: T.Text, rec2 :: T.Text }
   deriving (Eq, Show, Read, Generic)
 
 instance ToFormUrlEncoded SimpleRec
+instance FromFormUrlEncoded SimpleRec
 
 instance Arbitrary SimpleRec where
   arbitrary = SimpleRec <$> arbitrary <*> arbitrary
