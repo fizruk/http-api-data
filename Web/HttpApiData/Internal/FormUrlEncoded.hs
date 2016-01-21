@@ -9,11 +9,11 @@
 {-# LANGUAGE TypeOperators              #-}
 module Web.HttpApiData.Internal.FormUrlEncoded where
 
-import           Control.Arrow                        (first, second)
+import           Control.Arrow       (first, second)
 import           Control.Monad.State
-import qualified Data.Map                         as M
+import qualified Data.Map            as M
 import           Data.Monoid
-import qualified Data.Text                            as T
+import qualified Data.Text           as T
 import           GHC.Generics
 
 import           Web.HttpApiData.Internal.HttpApiData
@@ -28,15 +28,14 @@ class ToFormUrlEncoded a where
   default toForm :: (Generic a, GToFormUrlEncoded (Rep a)) => a -> Form
   toForm = genericToForm
 
-instance ToFormUrlEncoded [(T.Text, Maybe T.Text)] where
-  toForm = Form . M.fromList
-
-instance ToFormUrlEncoded (M.Map T.Text (Maybe T.Text)) where
-  toForm = Form
+instance ToFormUrlEncoded [(T.Text, Maybe T.Text)] where toForm = Form . M.fromList
+instance ToFormUrlEncoded (M.Map T.Text (Maybe T.Text)) where toForm = Form
+instance ToFormUrlEncoded Form where toForm = id
 
 genericToForm :: (Generic a, GToFormUrlEncoded (Rep a)) => a -> Form
 genericToForm x = evalState (unGenericToFormS . gToForm $ from x) (Nothing, 0)
--- | A datatype for generically generating forms. The state keep track of the
+
+-- | A datatype for generically generating forms. The state keeps track of the
 -- record name currently being inspected (if any) and the field number.
 newtype GenericToFormS a = GenericToFormS {
   unGenericToFormS :: State (Maybe T.Text, Int) a
@@ -56,10 +55,18 @@ instance (GToFormUrlEncoded f, GToFormUrlEncoded g) => GToFormUrlEncoded (f :+: 
   gToForm (L1 a) = gToForm a
   gToForm (R1 a) = gToForm a
 
-instance (GToFormUrlEncoded f) => GToFormUrlEncoded (M1 S NoSelector f) where
+instance (GToFormUrlEncoded f) => GToFormUrlEncoded (M1 D x f) where
   gToForm (M1 a) = gToForm a
 
-instance (Selector sel, GToFormUrlEncoded f) => GToFormUrlEncoded (M1 S sel f) where
+instance (GToFormUrlEncoded f) => GToFormUrlEncoded (M1 C x f) where
+  gToForm (M1 a) = gToForm a
+
+instance {-# OVERLAPPING #-} (GToFormUrlEncoded f)
+    => GToFormUrlEncoded (M1 S NoSelector f) where
+  gToForm (M1 a) = gToForm a
+
+instance {-# OVERLAPPABLE #-} (Selector sel, GToFormUrlEncoded f)
+    => GToFormUrlEncoded (M1 S sel f) where
   gToForm (M1 a) = modify (first $ const sel) >> gToForm a
     where sel = Just . T.pack $ selName (Proxy3 :: Proxy3 sel g p)
 

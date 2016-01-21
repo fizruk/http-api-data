@@ -2,7 +2,10 @@
 {-# Language DeriveGeneric        #-}
 {-# Language ScopedTypeVariables  #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Web.HttpApiData.Internal.TestInstances (RandomCase(RandomCase)) where
+module Web.HttpApiData.Internal.TestInstances
+   ( RandomCase(..)
+   , SimpleRec(..)
+   ) where
 
 import           Control.Applicative
 import           Data.Char
@@ -70,8 +73,10 @@ instance ToHttpApiData a => ToHttpApiData (RandomCase a) where
 instance FromHttpApiData a => FromHttpApiData (RandomCase a) where
   parseUrlPiece s = RandomCase [] <$> parseUrlPiece s
 
-data Person = Person { name :: String, age :: Int }
-  deriving (Eq, Show, Read, Generic, ToFormUrlEncoded)
+data SimpleRec = SimpleRec { rec1 :: T.Text, rec2 :: T.Text }
+  deriving (Eq, Show, Read, Generic)
 
-instance Arbitrary Person where
-  arbitrary = Person <$> arbitrary <*> arbitrary
+instance ToFormUrlEncoded SimpleRec
+
+instance Arbitrary SimpleRec where
+  arbitrary = SimpleRec <$> arbitrary <*> arbitrary
