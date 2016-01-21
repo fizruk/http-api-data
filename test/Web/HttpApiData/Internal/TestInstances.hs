@@ -1,17 +1,21 @@
-{-# Language ScopedTypeVariables #-}
+{-# Language DeriveAnyClass       #-}
+{-# Language DeriveGeneric        #-}
+{-# Language ScopedTypeVariables  #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Web.HttpApiData.Internal.TestInstances (RandomCase(RandomCase)) where
 
-import Control.Applicative
-import Data.Char
-import Data.Time
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as L
-import Data.Version
+import           Control.Applicative
+import           Data.Char
+import qualified Data.Text                            as T
+import qualified Data.Text.Lazy                       as L
+import           Data.Time
+import           Data.Version
+import           GHC.Generics
 
-import Test.QuickCheck
+import           Test.QuickCheck
 
-import Web.HttpApiData.Internal.HttpApiData
+import           Web.HttpApiData.Internal.HttpApiData
+import           Web.HttpApiData.Internal.FormUrlEncoded
 
 instance Arbitrary T.Text where
   arbitrary = T.pack <$> arbitrary

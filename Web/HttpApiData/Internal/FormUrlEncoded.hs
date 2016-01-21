@@ -1,5 +1,6 @@
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures             #-}
@@ -10,7 +11,7 @@ module Web.HttpApiData.Internal.FormUrlEncoded where
 
 import           Control.Arrow                        (first, second)
 import           Control.Monad.State
-import qualified Data.HashMap                         as H
+import qualified Data.Map                         as M
 import           Data.Monoid
 import qualified Data.Text                            as T
 import           GHC.Generics
@@ -18,19 +19,23 @@ import           GHC.Generics
 import           Web.HttpApiData.Internal.HttpApiData
 
 -- | The contents of a form, not yet url-encoded.
-newtype Form = Form { unForm :: H.HashMap T.Text (Maybe T.Text) }
+newtype Form = Form { unForm :: M.Map T.Text (Maybe T.Text) }
   deriving (Eq, Show, Read, Generic, Monoid)
 
 -- | A type that can be converted to @application/x-www-form-urlencoded@
 class ToFormUrlEncoded a where
   toForm :: a -> Form
+  default toForm :: (Generic a, GToFormUrlEncoded (Rep a)) => a -> Form
+  toForm = genericToForm
 
 instance ToFormUrlEncoded [(T.Text, Maybe T.Text)] where
-  toForm = Form . H.fromList
+  toForm = Form . M.fromList
 
-instance ToFormUrlEncoded (H.HashMap T.Text (Maybe T.Text)) where
+instance ToFormUrlEncoded (M.Map T.Text (Maybe T.Text)) where
   toForm = Form
 
+genericToForm :: (Generic a, GToFormUrlEncoded (Rep a)) => a -> Form
+genericToForm x = evalState (unGenericToFormS . gToForm $ from x) (Nothing, 0)
 -- | A datatype for generically generating forms. The state keep track of the
 -- record name currently being inspected (if any) and the field number.
 newtype GenericToFormS a = GenericToFormS {
@@ -61,12 +66,9 @@ instance (Selector sel, GToFormUrlEncoded f) => GToFormUrlEncoded (M1 S sel f) w
 instance (ToHttpApiData f) => GToFormUrlEncoded (K1 i f) where
   gToForm (K1 a) = do
     s <- get
-    return . Form $ H.insert (name s) (Just $ toUrlPiece a) $ mempty
+    return . Form $ M.insert (name s) (Just $ toUrlPiece a) $ mempty
     where name (Nothing, i) = T.pack $ show i
           name (Just x,  _) = x
-
-{-genericToFormUrlEncoded :: GToFormUrlEncoded a => a -> H.HashMap T.Text (Maybe T.Text)-}
-{-genericToFormUrlEncoded a = -}
 
 -- | A type that can be converted from @application/x-www-form-urlencoded@,
 -- with the possibility of failure.

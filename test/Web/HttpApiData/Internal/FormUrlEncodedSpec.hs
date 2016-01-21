@@ -2,7 +2,7 @@
 module Web.HttpApiData.Internal.FormUrlEncodedSpec (spec) where
 
 import Test.Hspec
-import qualified Data.HashMap as H
+import qualified Data.Map as M
 
 import Web.HttpApiData.Internal.FormUrlEncoded
 
