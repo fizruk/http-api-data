@@ -8,6 +8,8 @@ module Web.HttpApiData (
   -- * Classes
   ToHttpApiData (..),
   FromHttpApiData (..),
+  ToForm (..),
+  FromForm (..),
 
   -- * @'Maybe'@ parsers
   parseUrlPieceMaybe,
@@ -27,13 +29,18 @@ module Web.HttpApiData (
   toQueryParams,
   parseQueryParams,
 
+  -- * Encoding and decoding forms,
+  encodeForm,
+  decodeForm,
+
   -- * Other helpers
   showTextData,
   readTextData,
   parseBoundedTextData,
 ) where
 
-import Web.HttpApiData.Internal
+import Web.HttpApiData.Internal.FormUrlEncoded
+import Web.HttpApiData.Internal.HttpApiData
 
 -- $setup
 --
