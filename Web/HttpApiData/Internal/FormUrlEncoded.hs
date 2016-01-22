@@ -62,10 +62,6 @@ instance (GToFormUrlEncoded f) => GToFormUrlEncoded (M1 D x f) where
 instance (GToFormUrlEncoded f) => GToFormUrlEncoded (M1 C x f) where
   gToForm (M1 a) = gToForm a
 
-instance {-# OVERLAPPING #-} (GToFormUrlEncoded f)
-    => GToFormUrlEncoded (M1 S NoSelector f) where
-  gToForm (M1 a) = gToForm a
-
 instance {-# OVERLAPPABLE #-} (Selector sel, GToFormUrlEncoded f)
     => GToFormUrlEncoded (M1 S sel f) where
   gToForm (M1 a) = modify (first $ const sel) >> gToForm a
