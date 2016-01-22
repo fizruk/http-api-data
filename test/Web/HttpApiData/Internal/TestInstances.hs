@@ -73,7 +73,7 @@ instance ToHttpApiData a => ToHttpApiData (RandomCase a) where
 instance FromHttpApiData a => FromHttpApiData (RandomCase a) where
   parseUrlPiece s = RandomCase [] <$> parseUrlPiece s
 
-data SimpleRec = SimpleRec { rec1 :: T.Text, rec2 :: T.Text }
+data SimpleRec = SimpleRec { rec1 :: T.Text, rec2 :: Int }
   deriving (Eq, Show, Read, Generic)
 
 instance ToFormUrlEncoded SimpleRec
