@@ -45,7 +45,7 @@ import TextShow (TextShow, showt)
 
 -- | Convert value to HTTP API data.
 -- WARNING: Do not derive this using DeriveAnyClass as the generated
--- instance will loop indenfinitely.
+-- instance will loop indefinitely.
 class ToHttpApiData a where
   {-# MINIMAL toUrlPiece | toQueryParam #-}
   -- | Convert to URL path piece.
