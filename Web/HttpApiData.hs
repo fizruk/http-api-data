@@ -33,7 +33,8 @@ module Web.HttpApiData (
   parseBoundedTextData,
 ) where
 
-import Web.HttpApiData.Internal
+import Web.HttpApiData.Internal.FormUrlEncoded
+import Web.HttpApiData.Internal.HttpApiData
 
 -- $setup
 --
