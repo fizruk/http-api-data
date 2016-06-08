@@ -31,6 +31,9 @@ module Web.HttpApiData (
   showTextData,
   readTextData,
   parseBoundedTextData,
+  parseBoundedUrlPiece,
+  parseBoundedQueryParam,
+  parseBoundedHeader,
 ) where
 
 import Web.HttpApiData.Internal
