@@ -284,6 +284,21 @@ parseBoundedTextData = parseMaybeTextData (flip lookup values . T.toLower)
   where
     values = map (showTextData &&& id) [minBound..maxBound]
 
+parseBoundedUrlPiece :: (ToHttpApiData a, Bounded a, Enum a) => Text -> Either Text a
+parseBoundedUrlPiece = parseMaybeTextData (flip lookup values . T.toLower)
+  where
+    values = map (toUrlPiece &&& id) [minBound..maxBound]
+
+parseBoundedQueryParam :: (ToHttpApiData a, Bounded a, Enum a) => Text -> Either Text a
+parseBoundedQueryParam = parseMaybeTextData (flip lookup values . T.toLower)
+  where
+    values = map (toQueryParam &&& id) [minBound..maxBound]
+
+parseBoundedHeader :: (ToHttpApiData a, Bounded a, Enum a) => Text -> Either Text a
+parseBoundedHeader = parseMaybeTextData (flip lookup values . T.toLower)
+  where
+    values = map (decodeUtf8 . toHeader &&& id) [minBound..maxBound]
+
 -- | Parse URL piece using @'Read'@ instance.
 --
 -- Use for types which do not involve letters:
