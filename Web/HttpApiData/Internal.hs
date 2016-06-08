@@ -284,16 +284,31 @@ parseBoundedTextData = parseMaybeTextData (flip lookup values . T.toLower)
   where
     values = map (showTextData &&& id) [minBound..maxBound]
 
+-- | /Case insensitive/.
+--
+-- Parse values case insensitively based on @'ToHttpApiData'@ instance.
+-- Uses @'toUrlPiece'@ to get possible values.
+--
 parseBoundedUrlPiece :: (ToHttpApiData a, Bounded a, Enum a) => Text -> Either Text a
 parseBoundedUrlPiece = parseMaybeTextData (flip lookup values . T.toLower)
   where
     values = map (toUrlPiece &&& id) [minBound..maxBound]
 
+-- | /Case insensitive/.
+--
+-- Parse values case insensitively based on @'ToHttpApiData'@ instance.
+-- Uses @'toQueryParam'@ to get possible values.
+--
 parseBoundedQueryParam :: (ToHttpApiData a, Bounded a, Enum a) => Text -> Either Text a
 parseBoundedQueryParam = parseMaybeTextData (flip lookup values . T.toLower)
   where
     values = map (toQueryParam &&& id) [minBound..maxBound]
 
+-- | /Case insensitive/.
+--
+-- Parse values case insensitively based on @'ToHttpApiData'@ instance.
+-- Uses @'toHeader'@ to get possible values.
+--
 parseBoundedHeader :: (ToHttpApiData a, Bounded a, Enum a) => Text -> Either Text a
 parseBoundedHeader = parseMaybeTextData (flip lookup values . T.toLower)
   where
