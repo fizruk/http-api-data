@@ -44,6 +44,9 @@ import TextShow (TextShow, showt)
 #endif
 
 -- | Convert value to HTTP API data.
+--
+-- __WARNING__: Do not derive this using @DeriveAnyClass@ as the generated
+-- instance will loop indefinitely.
 class ToHttpApiData a where
   {-# MINIMAL toUrlPiece | toQueryParam #-}
   -- | Convert to URL path piece.
@@ -59,6 +62,9 @@ class ToHttpApiData a where
   toQueryParam = toUrlPiece
 
 -- | Parse value from HTTP API data.
+--
+-- __WARNING__: Do not derive this using @DeriveAnyClass@ as the generated
+-- instance will loop indefinitely.
 class FromHttpApiData a where
   {-# MINIMAL parseUrlPiece | parseQueryParam #-}
   -- | Parse URL path piece.
