@@ -44,6 +44,9 @@ import TextShow (TextShow, showt)
 #endif
 
 -- | Convert value to HTTP API data.
+--
+-- __WARNING__: Do not derive this using @DeriveAnyClass@ as the generated
+-- instance will loop indefinitely.
 class ToHttpApiData a where
   {-# MINIMAL toUrlPiece | toQueryParam #-}
   -- | Convert to URL path piece.
@@ -59,6 +62,9 @@ class ToHttpApiData a where
   toQueryParam = toUrlPiece
 
 -- | Parse value from HTTP API data.
+--
+-- __WARNING__: Do not derive this using @DeriveAnyClass@ as the generated
+-- instance will loop indefinitely.
 class FromHttpApiData a where
   {-# MINIMAL parseUrlPiece | parseQueryParam #-}
   -- | Parse URL path piece.
@@ -280,9 +286,53 @@ parseBoundedTextData :: (TextShow a, Bounded a, Enum a) => Text -> Either Text a
 -- Right Foo
 parseBoundedTextData :: (Show a, Bounded a, Enum a) => Text -> Either Text a
 #endif
-parseBoundedTextData = parseMaybeTextData (flip lookup values . T.toLower)
-  where
-    values = map (showTextData &&& id) [minBound..maxBound]
+parseBoundedTextData = parseBoundedEnumOfI showTextData
+
+-- | Lookup values based on a precalculated mapping of their representations.
+lookupBoundedEnumOf :: (Bounded a, Enum a, Eq b) => (a -> b) -> b -> Maybe a
+lookupBoundedEnumOf f = flip lookup (map (f &&& id) [minBound..maxBound])
+
+-- | Parse values based on a precalculated mapping of their @'Text'@ representation.
+--
+-- >>> parseBoundedEnumOf toUrlPiece "true" :: Either Text Bool
+-- Right True
+--
+-- For case sensitive parser see 'parseBoundedEnumOfI'.
+parseBoundedEnumOf :: (Bounded a, Enum a) => (a -> Text) -> Text -> Either Text a
+parseBoundedEnumOf = parseMaybeTextData . lookupBoundedEnumOf
+
+-- | /Case insensitive/.
+--
+-- Parse values case insensitively based on a precalculated mapping
+-- of their @'Text'@ representations.
+--
+-- >>> parseBoundedEnumOfI toUrlPiece "FALSE" :: Either Text Bool
+-- Right False
+--
+-- For case sensitive parser see 'parseBoundedEnumOf'.
+parseBoundedEnumOfI :: (Bounded a, Enum a) => (a -> Text) -> Text -> Either Text a
+parseBoundedEnumOfI f = parseBoundedEnumOf (T.toLower . f) . T.toLower
+
+-- | /Case insensitive/.
+--
+-- Parse values case insensitively based on @'ToHttpApiData'@ instance.
+-- Uses @'toUrlPiece'@ to get possible values.
+parseBoundedUrlPiece :: (ToHttpApiData a, Bounded a, Enum a) => Text -> Either Text a
+parseBoundedUrlPiece = parseBoundedEnumOfI toUrlPiece
+
+-- | /Case insensitive/.
+--
+-- Parse values case insensitively based on @'ToHttpApiData'@ instance.
+-- Uses @'toQueryParam'@ to get possible values.
+parseBoundedQueryParam :: (ToHttpApiData a, Bounded a, Enum a) => Text -> Either Text a
+parseBoundedQueryParam = parseBoundedEnumOfI toQueryParam
+
+-- | Parse values based on @'ToHttpApiData'@ instance.
+-- Uses @'toHeader'@ to get possible values.
+parseBoundedHeader :: (ToHttpApiData a, Bounded a, Enum a) => ByteString -> Either Text a
+parseBoundedHeader bs = case lookupBoundedEnumOf toHeader bs of
+  Nothing -> defaultParseError (decodeUtf8 bs)
+  Just x  -> return x
 
 -- | Parse URL piece using @'Read'@ instance.
 --
@@ -442,8 +492,8 @@ instance FromHttpApiData Void where
   parseUrlPiece _ = Left "Void cannot be parsed!"
 #endif
 
-instance FromHttpApiData Bool     where parseUrlPiece = parseBoundedTextData
-instance FromHttpApiData Ordering where parseUrlPiece = parseBoundedTextData
+instance FromHttpApiData Bool     where parseUrlPiece = parseBoundedUrlPiece
+instance FromHttpApiData Ordering where parseUrlPiece = parseBoundedUrlPiece
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
 instance FromHttpApiData Float    where parseUrlPiece = runReader rational
 instance FromHttpApiData Int      where parseUrlPiece = parseBounded (signed decimal)

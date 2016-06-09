@@ -27,10 +27,17 @@ module Web.HttpApiData (
   toQueryParams,
   parseQueryParams,
 
+  -- * Parsers for @'Bounded'@ @'Enum'@s
+  parseBoundedUrlPiece,
+  parseBoundedQueryParam,
+  parseBoundedHeader,
+  parseBoundedEnumOf,
+  parseBoundedEnumOfI,
+  parseBoundedTextData,
+
   -- * Other helpers
   showTextData,
   readTextData,
-  parseBoundedTextData,
 ) where
 
 import Web.HttpApiData.Internal
