@@ -1,3 +1,7 @@
+0.2.3
+---
+* Add more parser helpers for `Bounded` `Enum` types.
+
 0.2.2
 ---
 
