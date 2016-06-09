@@ -486,8 +486,8 @@ instance FromHttpApiData Void where
   parseUrlPiece _ = Left "Void cannot be parsed!"
 #endif
 
-instance FromHttpApiData Bool     where parseUrlPiece = parseBoundedTextData
-instance FromHttpApiData Ordering where parseUrlPiece = parseBoundedTextData
+instance FromHttpApiData Bool     where parseUrlPiece = parseBoundedUrlPiece
+instance FromHttpApiData Ordering where parseUrlPiece = parseBoundedUrlPiece
 instance FromHttpApiData Double   where parseUrlPiece = runReader rational
 instance FromHttpApiData Float    where parseUrlPiece = runReader rational
 instance FromHttpApiData Int      where parseUrlPiece = parseBounded (signed decimal)
