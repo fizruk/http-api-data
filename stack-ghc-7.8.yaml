@@ -18,4 +18,5 @@ extra-deps:
 - transformers-compat-0.4.0.4
 - base-orphans-0.5.4
 - generic-deriving-1.9.0
+- doctest-0.11.0
 extra-package-dbs: []
