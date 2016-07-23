@@ -1,7 +1,9 @@
 # http-api-data
 
-[![Hackage package](http://img.shields.io/hackage/v/http-api-data.svg)](http://hackage.haskell.org/package/http-api-data)
 [![Build Status](https://secure.travis-ci.org/fizruk/http-api-data.png?branch=master)](http://travis-ci.org/fizruk/http-api-data)
+[![Hackage package](http://img.shields.io/hackage/v/http-api-data.svg)](http://hackage.haskell.org/package/http-api-data)
+[![Stackage LTS](http://stackage.org/package/http-api-data/badge/lts)](http://stackage.org/lts/package/http-api-data)
+[![Stackage Nightly](http://stackage.org/package/http-api-data/badge/nightly)](http://stackage.org/nightly/package/http-api-data)
 
 This package defines typeclasses used for converting Haskell data types to and from HTTP API data.
 
