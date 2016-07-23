@@ -13,9 +13,8 @@ module Web.HttpApiData.Internal where
 import Control.Applicative
 import Data.Traversable (Traversable(traverse))
 #endif
-import Control.Arrow ((&&&))
+import Control.Arrow ((&&&), left)
 import Control.Monad ((<=<))
-import Data.Either.Combinators (mapLeft)
 
 import Data.Monoid
 import Data.ByteString (ByteString)
@@ -75,7 +74,7 @@ class FromHttpApiData a where
 
   -- | Parse HTTP header value.
   parseHeader :: ByteString -> Either Text a
-  parseHeader = parseUrlPiece <=< (mapLeft (T.pack . show) . decodeUtf8')
+  parseHeader = parseUrlPiece <=< (left (T.pack . show) . decodeUtf8')
 
   -- | Parse query param value.
   parseQueryParam :: Text -> Either Text a
