@@ -10,6 +10,7 @@ import Data.Word
 import Data.Time
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
+import qualified Data.ByteString as BS
 import Data.Version
 
 import Test.Hspec
@@ -125,4 +126,7 @@ spec = do
   it "bounds checking works" $ do
     parseUrlPieceMaybe (T.pack "256") `shouldBe` (Nothing :: Maybe Int8)
     parseUrlPieceMaybe (T.pack "-10") `shouldBe` (Nothing :: Maybe Word)
+
+  it "invalid utf8 is handled" $ do
+    parseHeaderMaybe (BS.pack [128]) `shouldBe` (Nothing :: Maybe T.Text)
 

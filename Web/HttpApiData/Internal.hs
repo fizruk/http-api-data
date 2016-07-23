@@ -14,6 +14,8 @@ import Control.Applicative
 import Data.Traversable (Traversable(traverse))
 #endif
 import Control.Arrow ((&&&))
+import Control.Monad ((<=<))
+import Data.Either.Combinators (mapLeft)
 
 import Data.Monoid
 import Data.ByteString (ByteString)
@@ -23,7 +25,7 @@ import Data.Int
 import Data.Word
 
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8, decodeUtf8)
+import Data.Text.Encoding (encodeUtf8, decodeUtf8')
 import Data.Text.Read (signed, decimal, rational, Reader)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
@@ -73,7 +75,7 @@ class FromHttpApiData a where
 
   -- | Parse HTTP header value.
   parseHeader :: ByteString -> Either Text a
-  parseHeader = parseUrlPiece . decodeUtf8
+  parseHeader = parseUrlPiece <=< (mapLeft (T.pack . show) . decodeUtf8')
 
   -- | Parse query param value.
   parseQueryParam :: Text -> Either Text a
@@ -331,7 +333,7 @@ parseBoundedQueryParam = parseBoundedEnumOfI toQueryParam
 -- Uses @'toHeader'@ to get possible values.
 parseBoundedHeader :: (ToHttpApiData a, Bounded a, Enum a) => ByteString -> Either Text a
 parseBoundedHeader bs = case lookupBoundedEnumOf toHeader bs of
-  Nothing -> defaultParseError (decodeUtf8 bs)
+  Nothing -> defaultParseError $ T.pack $ show bs
   Just x  -> return x
 
 -- | Parse URL piece using @'Read'@ instance.
