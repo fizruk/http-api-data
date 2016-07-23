@@ -1,0 +1,11 @@
+resolver: nightly-2016-07-19
+
+packages:
+- '.'
+
+flags:
+  http-api-data:
+    use-text-show: false
+
+extra-deps: []
+extra-package-dbs: []

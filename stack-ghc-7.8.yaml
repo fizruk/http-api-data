@@ -1,0 +1,21 @@
+resolver: lts-2.22
+
+packages:
+- '.'
+
+flags:
+  http-api-data:
+    use-text-show: false
+
+extra-deps:
+- time-locale-compat-0.1.1.3
+# below are dependencies necessary for use-text-show=true
+- text-show-2.1.2
+- base-compat-0.9.1
+- bifunctors-5.2
+- semigroups-0.16.2.2
+- th-lift-0.7.6
+- transformers-compat-0.4.0.4
+- base-orphans-0.5.4
+- generic-deriving-1.9.0
+extra-package-dbs: []
