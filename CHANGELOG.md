@@ -1,3 +1,7 @@
+0.2.4
+---
+* Make `parseHeader` total (instead of throwing exceptions on invalid Unicode, see [#30](https://github.com/fizruk/http-api-data/pull/30)).
+
 0.2.3
 ---
 * Add more parser helpers for `Bounded` `Enum` types.
