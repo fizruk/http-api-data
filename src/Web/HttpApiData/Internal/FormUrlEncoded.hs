@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleContexts           #-}
@@ -10,6 +11,10 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 module Web.HttpApiData.Internal.FormUrlEncoded where
+
+#if __GLASGOW_HASKELL__ < 710
+import Control.Applicative
+#endif
 
 import           Control.Arrow           (first, left, second)
 import           Control.Monad.State
@@ -31,8 +36,8 @@ newtype Form = Form { unForm :: M.Map T.Text T.Text }
 
 instance IsList Form where
   type Item Form = (T.Text, T.Text)
-  fromList = Form . fromList
-  toList = toList . unForm
+  fromList = Form . M.fromList
+  toList = M.toList . unForm
 
 -- | A type that can be converted to @application/x-www-form-urlencoded@
 class ToForm a where

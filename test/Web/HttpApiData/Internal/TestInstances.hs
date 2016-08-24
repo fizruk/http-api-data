@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -113,4 +112,4 @@ newtype NoEmptyKeyForm =
     deriving Show
 
 instance Arbitrary NoEmptyKeyForm where
-  arbitrary = NoEmptyKeyForm . Form . M.delete "" <$> arbitrary
+  arbitrary = NoEmptyKeyForm . Form . M.delete "" . M.fromList <$> arbitrary
