@@ -66,5 +66,5 @@ genericSpec = describe "Default (generic) instances" $ do
 urlEncoding :: Spec
 urlEncoding = describe "urlEncoding" $ do
 
-  it "decodeForm (encodeForm x) == Right x" $ property $ \x -> do
+  it "decodeForm (encodeForm x) == Right x" $ property $ \(NoEmptyKeyForm x) -> do
     decodeForm (encodeForm x) `shouldBe` Right x

@@ -1,16 +1,19 @@
 {-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Web.HttpApiData.Internal.TestInstances
    ( RandomCase(..)
    , SimpleRec(..)
    , SimpleSumRec(..)
+   , NoEmptyKeyForm(..)
    ) where
 
 import           Control.Applicative
 import qualified Data.ByteString.Lazy.Char8 as BSL
 import           Data.Char
+import qualified Data.Map                as M
 import qualified Data.Text            as T
 import qualified Data.Text.Lazy       as L
 import           Data.Time
@@ -104,3 +107,10 @@ instance Arbitrary SimpleSumRec where
     [ SSRLeft <$> arbitrary <*> arbitrary
     , SSRRight <$> arbitrary <*> arbitrary
     ]
+
+newtype NoEmptyKeyForm =
+    NoEmptyKeyForm { unNoEmptyKeyForm :: Form }
+    deriving Show
+
+instance Arbitrary NoEmptyKeyForm where
+  arbitrary = NoEmptyKeyForm . Form . M.delete "" <$> arbitrary
