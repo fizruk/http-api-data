@@ -30,7 +30,7 @@ library
                    , time
                    , time-locale-compat >=0.1.1.0 && <0.2
                    , network-uri        >= 2.6    && < 2.7
-                   , string-conversions
+                   , utf8-string        >= 1
     if flag(use-text-show)
       cpp-options: -DUSE_TEXT_SHOW
       build-depends: text-show        >= 2

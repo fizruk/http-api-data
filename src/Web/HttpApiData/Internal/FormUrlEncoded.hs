@@ -16,17 +16,19 @@ module Web.HttpApiData.Internal.FormUrlEncoded where
 import Control.Applicative
 #endif
 
-import           Control.Arrow           (first, left, second)
+import           Control.Arrow             (first, left, second)
 import           Control.Monad.State
-import qualified Data.ByteString.Lazy    as BSL
-import qualified Data.Map                as M
+import qualified Data.ByteString.Lazy      as BSL
+import qualified Data.ByteString.Lazy.UTF8 as BSLUTF8
+import qualified Data.Map                  as M
 import           Data.Monoid
-import           Data.String.Conversions (cs)
-import qualified Data.Text               as T
-import           GHC.Exts                (IsList (..))
+import qualified Data.Text                 as T
+import           Data.Text.Encoding        (decodeUtf8With)
+import           Data.Text.Encoding.Error  (lenientDecode)
+import           GHC.Exts                  (IsList (..))
 import           GHC.Generics
-import           Network.URI             (escapeURIString, isUnreserved,
-                                          unEscapeString)
+import           Network.URI               (escapeURIString, isUnreserved,
+                                            unEscapeString)
 
 import Web.HttpApiData.Internal.HttpApiData
 
@@ -137,7 +139,7 @@ instance (GFromForm f) => GFromForm (M1 C x f) where
 encodeForm :: Form -> BSL.ByteString
 encodeForm xs =
     let escape :: T.Text -> BSL.ByteString
-        escape = cs . escapeURIString isUnreserved . cs
+        escape = BSLUTF8.fromString . escapeURIString isUnreserved . T.unpack
         encodePair :: (T.Text, T.Text) -> BSL.ByteString
         encodePair (k, "") = escape k
         encodePair (k, v) = escape k <> "=" <> escape v
@@ -147,7 +149,7 @@ decodeForm :: BSL.ByteString -> Either String Form
 decodeForm "" = return mempty
 decodeForm q = do
     let xs :: [T.Text]
-        xs = T.splitOn "&" . cs $ q
+        xs = T.splitOn "&" . decodeUtf8With lenientDecode . mconcat . BSL.toChunks $ q
         parsePair :: T.Text -> Either String (T.Text, T.Text)
         parsePair p =
             case T.splitOn "=" p of
@@ -155,9 +157,9 @@ decodeForm q = do
                                 , unescape v
                                 )
                 [k] -> return ( unescape k, "" )
-                _ -> Left $ "not a valid pair: " <> cs p
+                _ -> Left $ "not a valid pair: " <> T.unpack p
         unescape :: T.Text -> T.Text
-        unescape = cs . unEscapeString . cs . T.intercalate "%20" . T.splitOn "+"
+        unescape = T.pack . unEscapeString . T.unpack . T.intercalate "%20" . T.splitOn "+"
     toForm <$> mapM parsePair xs
 
 data Proxy3 a b c = Proxy3
