@@ -88,7 +88,7 @@ instance {-# OVERLAPPABLE #-} (Selector sel, GToForm f)
 instance (ToHttpApiData f) => GToForm (K1 i f) where
   gToForm (K1 a) = do
     s <- get
-    return . Form $ M.insert (name s) (toUrlPiece a) $ mempty
+    return . Form $ M.insert (name s) (toQueryParam a) $ mempty
     where name (Nothing, i) = T.pack $ show i
           name (Just x,  _) = x
 
@@ -127,7 +127,7 @@ instance (Selector sel, FromHttpApiData f)
     => GFromForm (M1 S sel (K1 i f)) where
   gFromForm f = case M.lookup sel (unForm f) of
     Nothing -> Left . T.unpack $ "Could not find key " <> sel
-    Just v  -> left T.unpack $ M1 . K1 <$> parseUrlPiece v
+    Just v  -> left T.unpack $ M1 . K1 <$> parseQueryParam v
     where sel = T.pack $ selName (Proxy3 :: Proxy3 sel g p)
 
 instance (GFromForm f) => GFromForm (M1 D x f) where
