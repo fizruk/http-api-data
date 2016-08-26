@@ -7,8 +7,9 @@ module Web.HttpApiData.Internal.FormUrlEncodedSpec (spec) where
 import Control.Applicative
 #endif
 
-import Test.Hspec
 import qualified Data.Map as M
+import Data.Text (Text, unpack)
+import Test.Hspec
 import Test.QuickCheck
 
 import Web.HttpApiData.Internal.FormUrlEncoded
@@ -57,16 +58,16 @@ genericSpec = describe "Default (generic) instances" $ do
 
     it "is the right inverse of ToForm" $ property $ \x (y :: Int) -> do
       let f1 = Form $ M.fromList [("rec1", x), ("rec2", toUrlPiece y)]
-          Right r1 = fromForm f1 :: Either String SimpleRec
+          Right r1 = fromForm f1 :: Either Text SimpleRec
       toForm r1 `shouldBe` f1
       let f2 = Form $ M.fromList [("right1", x), ("right2", toUrlPiece y)]
-          Right r2 = fromForm f2 :: Either String SimpleSumRec
+          Right r2 = fromForm f2 :: Either Text SimpleSumRec
       toForm r2 `shouldBe` f2
 
     it "returns the underlying error" $ do
       let f = Form $ M.fromList [("rec1", "anything"), ("rec2", "bad")]
-          Left e = fromForm f :: Either String SimpleRec
-      e `shouldContain` "input does not start with a digit"
+          Left e = fromForm f :: Either Text SimpleRec
+      unpack e `shouldContain` "input does not start with a digit"
 
 urlEncoding :: Spec
 urlEncoding = describe "urlEncoding" $ do

@@ -16,7 +16,7 @@ module Web.HttpApiData.Internal.FormUrlEncoded where
 import Control.Applicative
 #endif
 
-import           Control.Arrow             (first, left, second)
+import           Control.Arrow             (first, second)
 import           Control.Monad.State
 import qualified Data.ByteString.Lazy      as BSL
 import qualified Data.ByteString.Lazy.UTF8 as BSLUTF8
@@ -95,9 +95,9 @@ instance (ToHttpApiData f) => GToForm (K1 i f) where
 -- | A type that can be converted from @application/x-www-form-urlencoded@,
 -- with the possibility of failure.
 class FromForm a where
-  fromForm :: Form -> Either String a
+  fromForm :: Form -> Either T.Text a
   default fromForm :: (Generic a, GFromForm (Rep a))
-     => Form -> Either String a
+     => Form -> Either T.Text a
   fromForm = genericFromForm
 
 instance FromForm Form where fromForm = return
@@ -105,11 +105,11 @@ instance FromForm [(T.Text, T.Text)] where fromForm = return . M.toList . unForm
 instance FromForm (M.Map T.Text T.Text) where fromForm = return . unForm
 
 genericFromForm :: (Generic a, GFromForm (Rep a))
-    => Form -> Either String a
+    => Form -> Either T.Text a
 genericFromForm f = to <$> gFromForm f
 
 class GFromForm (f :: * -> *) where
-  gFromForm :: Form -> Either String (f x)
+  gFromForm :: Form -> Either T.Text (f x)
 
 instance (GFromForm f, GFromForm g)
     => GFromForm (f :*: g) where
@@ -126,8 +126,8 @@ instance (GFromForm f, GFromForm g)
 instance (Selector sel, FromHttpApiData f)
     => GFromForm (M1 S sel (K1 i f)) where
   gFromForm f = case M.lookup sel (unForm f) of
-    Nothing -> Left . T.unpack $ "Could not find key " <> sel
-    Just v  -> left T.unpack $ M1 . K1 <$> parseQueryParam v
+    Nothing -> Left $ "Could not find key " <> sel
+    Just v  -> M1 . K1 <$> parseQueryParam v
     where sel = T.pack $ selName (Proxy3 :: Proxy3 sel g p)
 
 instance (GFromForm f) => GFromForm (M1 D x f) where
@@ -145,19 +145,19 @@ encodeForm xs =
         encodePair (k, v) = escape k <> "=" <> escape v
     in BSL.intercalate "&" $ map encodePair $ toList xs
 
-decodeForm :: BSL.ByteString -> Either String Form
+decodeForm :: BSL.ByteString -> Either T.Text Form
 decodeForm "" = return mempty
 decodeForm q = do
     let xs :: [T.Text]
         xs = T.splitOn "&" . decodeUtf8With lenientDecode . mconcat . BSL.toChunks $ q
-        parsePair :: T.Text -> Either String (T.Text, T.Text)
+        parsePair :: T.Text -> Either T.Text (T.Text, T.Text)
         parsePair p =
             case T.splitOn "=" p of
                 [k,v] -> return ( unescape k
                                 , unescape v
                                 )
                 [k] -> return ( unescape k, "" )
-                _ -> Left $ "not a valid pair: " <> T.unpack p
+                _ -> Left $ "not a valid pair: " <> p
         unescape :: T.Text -> T.Text
         unescape = T.pack . unEscapeString . T.unpack . T.intercalate "%20" . T.splitOn "+"
     toForm <$> mapM parsePair xs
