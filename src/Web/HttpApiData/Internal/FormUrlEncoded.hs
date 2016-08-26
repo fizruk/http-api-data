@@ -291,3 +291,19 @@ decodeForm q = do
     toForm <$> mapM parsePair xs
 
 data Proxy3 a b c = Proxy3
+
+-- | This is a convenience function for decoding a
+-- @application/x-www-form-urlencoded@ 'BSL.ByteString' directly to a datatype
+-- that has an instance for 'FromForm'.
+--
+-- This is effectively @'fromForm' '<=<' 'decodeForm'@.
+decodeWithFromForm :: (FromForm a) => BSL.ByteString -> Either T.Text a
+decodeWithFromForm = fromForm <=< decodeForm
+
+-- | This is a convenience function for encoding a datatype that has instance
+-- for 'ToForm' directly to a @application/x-www-form-urlencoded@
+-- 'BSL.ByteString'.
+--
+-- This is effectively @'encodeForm' . 'toForm'@.
+encodeWithToForm :: (ToForm a) => a -> BSL.ByteString
+encodeWithToForm = encodeForm . toForm
