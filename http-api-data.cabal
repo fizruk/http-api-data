@@ -9,7 +9,7 @@ description:     Please see README.md
 homepage:        http://github.com/fizruk/http-api-data
 category:        Web
 stability:       unstable
-cabal-version:   >= 1.8
+cabal-version:   >= 1.10
 build-type:      Custom
 extra-source-files:
   test/*.hs
@@ -25,25 +25,38 @@ library
     build-depends:   base               >= 4.6    && < 4.10
                    , text               >= 0.5
                    , bytestring
+                   , containers
+                   , mtl
                    , time
                    , time-locale-compat >=0.1.1.0 && <0.2
+                   , network-uri        >= 2.6    && < 2.7
+                   , utf8-string        >= 1
     if flag(use-text-show)
       cpp-options: -DUSE_TEXT_SHOW
       build-depends: text-show        >= 2
     exposed-modules:
       Web.HttpApiData
-      Web.HttpApiData.Internal
+      Web.HttpApiData.Internal.FormUrlEncoded
+      Web.HttpApiData.Internal.HttpApiData
     ghc-options:     -Wall
+    default-language: Haskell2010
 
 test-suite spec
     type:          exitcode-stdio-1.0
     main-is:       Spec.hs
-    hs-source-dirs: test/
+    other-modules:
+      Web.HttpApiData.Internal.FormUrlEncodedSpec
+      Web.HttpApiData.Internal.HttpApiDataSpec
+      Web.HttpApiData.Internal.TestInstances
+    hs-source-dirs: test
     ghc-options:   -Wall
+    default-language: Haskell2010
     build-depends:   HUnit
                    , hspec >= 1.3
                    , base >= 4 && < 5
+                   , bytestring
                    , QuickCheck
+                   , containers
                    , http-api-data
                    , text
                    , time
