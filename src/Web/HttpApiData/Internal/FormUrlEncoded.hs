@@ -32,16 +32,56 @@ import           Network.URI               (escapeURIString, isUnreserved,
 
 import Web.HttpApiData.Internal.HttpApiData
 
+-- $setup
+-- >>> :set -XDeriveGeneric
+-- >>> :set -XScopedTypeVariables
+-- >>> :set -XTypeFamilies
+-- >>> import Data.Either (isLeft)
+-- >>> import Data.List (sort)
+
 -- | The contents of a form, not yet url-encoded.
+--
+-- Forms can be URL-encoded with 'encodeForm'.  Url-encoded bytestrings can be
+-- converted to a 'Form' with 'decodeForm'.
 newtype Form = Form { unForm :: M.Map T.Text T.Text }
   deriving (Eq, Show, Read, Generic, Monoid)
 
+-- | Convert a list of @('T.Text', 'T.Text')@ to a 'Form'.
+--
+-- >>> let (form :: Form) = fromList [("baz", "qux"), ("foo", "bar")]
+-- >>> toList form
+-- [("baz","qux"),("foo","bar")]
 instance IsList Form where
   type Item Form = (T.Text, T.Text)
   fromList = Form . M.fromList
   toList = M.toList . unForm
 
--- | A type that can be converted to @application/x-www-form-urlencoded@
+-- | A type that can be converted to a 'Form'.
+--
+-- >>> let form = toForm [("foo" :: T.Text, "bar" :: T.Text)]
+-- >>> encodeForm form
+-- "foo=bar"
+--
+-- Your own datatypes can be converted to a 'Form' like the following:
+--
+-- >>> data MyFoo = MyFoo { myFooBar :: T.Text }
+-- >>> instance ToForm MyFoo where toForm (MyFoo bar') = fromList [("bar", bar')]
+-- >>> let form = toForm $ MyFoo { myFooBar = "hello" }
+-- >>> encodeForm form
+-- "bar=hello"
+--
+-- There is a default method for 'toForm' for any Haskell record type that
+-- derives 'Generic'.  The record's fields will be turned into the keys of the
+-- 'Form'.  This only works for fields with types that implement
+-- 'ToHttpApiData'.
+--
+-- This can be used like the following:
+--
+-- >>> data MyGenericBar = MyGenericBar { myGenericBar :: Int } deriving Generic
+-- >>> instance ToForm MyGenericBar
+-- >>> let form = toForm $ MyGenericBar { myGenericBar = 3 }
+-- >>> encodeForm form
+-- "myGenericBar=3"
 class ToForm a where
   toForm :: a -> Form
   default toForm :: (Generic a, GToForm (Rep a)) => a -> Form
@@ -92,8 +132,36 @@ instance (ToHttpApiData f) => GToForm (K1 i f) where
     where name (Nothing, i) = T.pack $ show i
           name (Just x,  _) = x
 
--- | A type that can be converted from @application/x-www-form-urlencoded@,
--- with the possibility of failure.
+-- | A type that can be converted from a 'Form', with the possibility of
+-- failure.
+--
+-- >>> let form = fromList [("foo" :: T.Text, "bar" :: T.Text)]
+-- >>> fromForm form :: Either T.Text [(T.Text, T.Text)]
+-- Right [("foo","bar")]
+--
+-- Your own datatypes can be converted from a 'Form' like the following:
+--
+-- >>> data MyFoo = MyFoo { myFooBar :: T.Text } deriving Show
+-- >>> instance FromForm MyFoo where fromForm (Form map') = maybe (Left "key \"bar\" not found") (Right . MyFoo) $ M.lookup "bar" map'
+-- >>> let form = fromList [("bar" :: T.Text, "hello" :: T.Text)]
+-- >>> fromForm form :: Either T.Text MyFoo
+-- Right (MyFoo {myFooBar = "hello"})
+--
+-- There is a default method for 'fromForm' for any Haskell record type that
+-- derives 'Generic'.  The record's fields will be taken from the keys of the
+-- 'Form'.  This only works for fields with types that implement
+-- 'FromHttpApiData'.
+--
+-- This can be used like the following:
+--
+-- >>> data MyGenericBar = MyGenericBar { myGenericBar :: Int } deriving (Generic, Show)
+-- >>> instance FromForm MyGenericBar
+-- >>> let form = fromList [("myGenericBar" :: T.Text, "1" :: T.Text)]
+-- >>> fromForm form :: Either T.Text MyGenericBar
+-- Right (MyGenericBar {myGenericBar = 1})
+-- >>> let form = fromList [("some other key" :: T.Text, "2" :: T.Text)]
+-- >>> isLeft (fromForm form :: Either T.Text MyGenericBar)
+-- True
 class FromForm a where
   fromForm :: Form -> Either T.Text a
   default fromForm :: (Generic a, GFromForm (Rep a))
@@ -136,6 +204,33 @@ instance (GFromForm f) => GFromForm (M1 D x f) where
 instance (GFromForm f) => GFromForm (M1 C x f) where
   gFromForm f = M1 <$> gFromForm f
 
+-- | Encode a 'Form' to a @application/x-www-form-urlencoded@ 'BSL.ByteString'.
+--
+-- Key-value pairs get encoded to @key=value@.
+--
+-- >>> encodeForm $ toForm [("foo" :: T.Text, "bar" :: T.Text)]
+-- "foo=bar"
+--
+-- Keys with no values get encoded to just @key@.
+--
+-- >>> encodeForm $ toForm [("foo" :: T.Text, "" :: T.Text)]
+-- "foo"
+--
+-- Empty keys don't show up.
+--
+-- >>> encodeForm $ toForm [("" :: T.Text, "bar" :: T.Text)]
+-- "=bar"
+--
+-- When both they key and value is empty, it gets encoded as nothing.  (This
+-- prevents @'decodeForm' . 'encodeForm'@ from being an isomorphism).
+--
+-- >>> encodeForm $ toForm [("" :: T.Text, "" :: T.Text)]
+-- ""
+--
+-- Other characters are escaped by @'escapeURIString' 'isUnreserved'@.
+--
+-- >>> encodeForm $ toForm [("foo" :: T.Text, "value with spaces" :: T.Text)]
+-- "foo=value%20with%20spaces"
 encodeForm :: Form -> BSL.ByteString
 encodeForm xs =
     let escape :: T.Text -> BSL.ByteString
@@ -145,6 +240,39 @@ encodeForm xs =
         encodePair (k, v) = escape k <> "=" <> escape v
     in BSL.intercalate "&" $ map encodePair $ toList xs
 
+-- | Decode a @application/x-www-form-urlencoded@ 'BSL.ByteString' to a 'Form'.
+--
+-- Key-value pairs get decoded normally.
+--
+-- >>> toList <$> decodeForm "foo=bar"
+-- Right [("foo","bar")]
+-- >>> sort . toList <$> decodeForm "foo=bar&abc=xyz"
+-- Right [("abc","xyz"),("foo","bar")]
+--
+-- Keys with no values get decoded to empty values.
+--
+-- >>> toList <$> decodeForm "foo"
+-- Right [("foo","")]
+--
+-- Empty keys get decoded as @""@.
+--
+-- >>> toList <$> decodeForm "=bar"
+-- Right [("","bar")]
+--
+-- The empty string gets decoded as no key-value pairs.
+--
+-- >>> toList <$> decodeForm ""
+-- Right []
+--
+-- Other characters are un-escaped with 'unEscapeString'.
+--
+-- >>> toList <$> decodeForm "foo=value%20with%20spaces"
+-- Right [("foo","value with spaces")]
+--
+-- Improperly formed strings return 'Left'.
+--
+-- >>> isLeft $ decodeForm "this=has=too=many=equals"
+-- True
 decodeForm :: BSL.ByteString -> Either T.Text Form
 decodeForm "" = return mempty
 decodeForm q = do
