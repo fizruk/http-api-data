@@ -49,7 +49,11 @@ import Web.HttpApiData.Internal.HttpApiData
 --
 -- 'Form' can be URL-encoded with 'encodeForm' and URL-decoded with 'decodeForm'.
 newtype Form = Form { unForm :: M.Map T.Text T.Text }
-  deriving (Eq, Show, Read, Generic, Monoid)
+  deriving (Eq, Read, Generic, Monoid)
+
+instance Show Form where
+  showsPrec d form = showParen (d > 10) $
+    showString "fromList " . shows (toList form)
 
 instance IsList Form where
   type Item Form = (T.Text, T.Text)
@@ -264,28 +268,28 @@ encodeForm xs =
 --
 -- Key-value pairs get decoded normally:
 --
--- >>> toList <$> decodeForm "name=Greg&lastname=Weber"
--- Right [("lastname","Weber"),("name","Greg")]
+-- >>> decodeForm "name=Greg&lastname=Weber"
+-- Right (fromList [("lastname","Weber"),("name","Greg")])
 --
 -- Keys with no values get decoded to pairs with empty values.
 --
--- >>> toList <$> decodeForm "is_test"
--- Right [("is_test","")]
+-- >>> decodeForm "is_test"
+-- Right (fromList [("is_test","")])
 --
 -- Empty keys are allowed:
 --
--- >>> toList <$> decodeForm "=foobar"
--- Right [("","foobar")]
+-- >>> decodeForm "=foobar"
+-- Right (fromList [("","foobar")])
 --
 -- The empty string gets decoded into an empty 'Form':
 --
--- >>> toList <$> decodeForm ""
--- Right []
+-- >>> decodeForm ""
+-- Right (fromList [])
 --
 -- Everything is un-escaped with 'unEscapeString':
 --
--- >>> toList <$> decodeForm "fullname=Andres%20L%C3%B6h"
--- Right [("fullname","Andres L\246h")]
+-- >>> decodeForm "fullname=Andres%20L%C3%B6h"
+-- Right (fromList [("fullname","Andres L\246h")])
 --
 -- Improperly formed strings result in an error:
 --
