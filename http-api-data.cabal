@@ -26,7 +26,6 @@ library
                    , text               >= 0.5
                    , bytestring
                    , containers
-                   , mtl
                    , time
                    , time-locale-compat >=0.1.1.0 && <0.2
                    , network-uri        >= 2.6    && < 2.7

@@ -16,18 +16,18 @@ module Web.Internal.FormUrlEncoded where
 import Control.Applicative
 #endif
 
-import           Control.Arrow             (first, second)
-import           Control.Monad.State
-import qualified Data.ByteString.Lazy      as BSL
-import qualified Data.Map                  as M
+import           Control.Monad              ((<=<))
+import qualified Data.ByteString.Lazy       as BSL
+import qualified Data.ByteString.Lazy.Char8 as BSL8
+import qualified Data.Map                   as M
 import           Data.Monoid
-import qualified Data.Text                 as T
-import           Data.Text.Encoding        (decodeUtf8With, encodeUtf8)
-import           Data.Text.Encoding.Error  (lenientDecode)
-import           GHC.Exts                  (IsList (..))
+import qualified Data.Text                  as T
+import           Data.Text.Encoding         (decodeUtf8With, encodeUtf8)
+import           Data.Text.Encoding.Error   (lenientDecode)
+import           GHC.Exts                   (IsList (..))
 import           GHC.Generics
-import           Network.URI               (escapeURIString, isUnreserved,
-                                            unEscapeString)
+import           Network.URI                (escapeURIString, isUnreserved,
+                                             unEscapeString)
 
 import Web.Internal.HttpApiData
 
@@ -108,23 +108,13 @@ instance ToForm Form where toForm = id
 -- | A 'Generic'-based implementation of 'toForm'.
 -- This is used as a default implementation in 'ToForm'.
 genericToForm :: (Generic a, GToForm (Rep a)) => a -> Form
-genericToForm x = evalState (unGenericToFormS . gToForm $ from x) (Nothing, 0)
-
--- | A datatype for generically generating forms. The state keeps track of the
--- record name currently being inspected (if any) and the field number.
-newtype GenericToFormS a = GenericToFormS {
-  unGenericToFormS :: State (Maybe T.Text, Int) a
-  } deriving (Functor, Applicative, Generic, Monad, MonadState (Maybe T.Text, Int))
+genericToForm = gToForm . from
 
 class GToForm (f :: * -> *) where
-  gToForm :: f x -> GenericToFormS Form
+  gToForm :: f x -> Form
 
 instance (GToForm f, GToForm g) => GToForm (f :*: g) where
-  gToForm (a :*: b) = do
-    a' <- gToForm a
-    modify $ second (+ 1)
-    b' <- gToForm b
-    return (a' <> b')
+  gToForm (a :*: b) = gToForm a <> gToForm b
 
 instance (GToForm f, GToForm g) => GToForm (f :+: g) where
   gToForm (L1 a) = gToForm a
@@ -136,17 +126,10 @@ instance (GToForm f) => GToForm (M1 D x f) where
 instance (GToForm f) => GToForm (M1 C x f) where
   gToForm (M1 a) = gToForm a
 
-instance {-# OVERLAPPABLE #-} (Selector sel, GToForm f)
-    => GToForm (M1 S sel f) where
-  gToForm (M1 a) = modify (first $ const sel) >> gToForm a
-    where sel = Just . T.pack $ selName (Proxy3 :: Proxy3 sel g p)
-
-instance (ToHttpApiData f) => GToForm (K1 i f) where
-  gToForm (K1 a) = do
-    s <- get
-    return . Form $ M.insert (name s) (toQueryParam a) $ mempty
-    where name (Nothing, i) = T.pack $ show i
-          name (Just x,  _) = x
+instance (Selector s, ToHttpApiData c) => GToForm (M1 S s (K1 i c)) where
+  gToForm (M1 (K1 c)) = fromList [(key, toQueryParam c)]
+    where
+      key = T.pack $ selName (Proxy3 :: Proxy3 s g p)
 
 -- | Parse 'Form' into a value.
 --
@@ -202,24 +185,24 @@ genericFromForm f = to <$> gFromForm f
 class GFromForm (f :: * -> *) where
   gFromForm :: Form -> Either T.Text (f x)
 
-instance (GFromForm f, GFromForm g)
-    => GFromForm (f :*: g) where
+instance (GFromForm f, GFromForm g) => GFromForm (f :*: g) where
   gFromForm f = (:*:) <$> gFromForm f <*> gFromForm f
 
-instance (GFromForm f, GFromForm g)
-    => GFromForm (f :+: g) where
-  gFromForm f = case gFromForm f of
-    Right a -> return $ L1 a
-    Left e1 -> case gFromForm f of
-      Right b -> return $ R1 b
-      Left e2 -> Left (e1 <> e2)
+instance (GFromForm f, GFromForm g) => GFromForm (f :+: g) where
+  gFromForm f
+      = fmap L1 (gFromForm f)
+    <!> fmap R1 (gFromForm f)
+    where
+      Left _  <!> y = y
+      x       <!> _ = x
 
-instance (Selector sel, FromHttpApiData f)
-    => GFromForm (M1 S sel (K1 i f)) where
-  gFromForm f = case M.lookup sel (unForm f) of
-    Nothing -> Left $ "Could not find key " <> sel
-    Just v  -> M1 . K1 <$> parseQueryParam v
-    where sel = T.pack $ selName (Proxy3 :: Proxy3 sel g p)
+instance (Selector s, FromHttpApiData f) => GFromForm (M1 S s (K1 i f)) where
+  gFromForm f =
+    case M.lookup key (unForm f) of
+      Nothing -> Left $ "Could not find key " <> T.pack (show key)
+      Just v  -> M1 . K1 <$> parseQueryParam v
+    where
+      key = T.pack $ selName (Proxy3 :: Proxy3 s g p)
 
 instance (GFromForm f) => GFromForm (M1 D x f) where
   gFromForm f = M1 <$> gFromForm f
@@ -297,7 +280,7 @@ encodeForm xs = BSL.intercalate "&" $ map (BSL.fromStrict . encodePair) $ toList
 decodeForm :: BSL.ByteString -> Either T.Text Form
 decodeForm bs = toForm <$> traverse parsePair pairs
   where
-    pairs = map (decodeUtf8With lenientDecode . BSL.toStrict) (BSL.split '&' bs)
+    pairs = map (decodeUtf8With lenientDecode . BSL.toStrict) (BSL8.split '&' bs)
 
     unescape = T.pack . unEscapeString . T.unpack . T.replace "+" "%20"
 
