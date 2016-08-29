@@ -19,11 +19,10 @@ import Control.Applicative
 import           Control.Arrow             (first, second)
 import           Control.Monad.State
 import qualified Data.ByteString.Lazy      as BSL
-import qualified Data.ByteString.Lazy.UTF8 as BSLUTF8
 import qualified Data.Map                  as M
 import           Data.Monoid
 import qualified Data.Text                 as T
-import           Data.Text.Encoding        (decodeUtf8With)
+import           Data.Text.Encoding        (decodeUtf8With, encodeUtf8)
 import           Data.Text.Encoding.Error  (lenientDecode)
 import           GHC.Exts                  (IsList (..))
 import           GHC.Generics
@@ -191,7 +190,7 @@ class FromForm a where
   fromForm = genericFromForm
 
 instance FromForm Form where fromForm = return
-instance FromForm [(T.Text, T.Text)] where fromForm = toList
+instance FromForm [(T.Text, T.Text)] where fromForm = return . toList
 instance FromForm (M.Map T.Text T.Text) where fromForm = return . unForm
 
 -- | A 'Generic'-based implementation of 'fromForm'.
@@ -256,13 +255,13 @@ instance (GFromForm f) => GFromForm (M1 C x f) where
 -- >>> encodeForm [("fullname", "Andres Löh")]
 -- "fullname=Andres%20L%C3%B6h"
 encodeForm :: Form -> BSL.ByteString
-encodeForm xs =
-    let escape :: T.Text -> BSL.ByteString
-        escape = BSLUTF8.fromString . escapeURIString isUnreserved . T.unpack
-        encodePair :: (T.Text, T.Text) -> BSL.ByteString
-        encodePair (k, "") = escape k
-        encodePair (k, v) = escape k <> "=" <> escape v
-    in BSL.intercalate "&" $ map encodePair $ toList xs
+encodeForm xs = BSL.intercalate "&" $ map (BSL.fromStrict . encodePair) $ toList xs
+  where
+    escape = encodeUtf8 . T.pack . escapeURIString isUnreserved . T.unpack
+
+    encodePair (k, "") = escape k
+    encodePair (k, v) = escape k <> "=" <> escape v
+
 
 -- | Decode an @application/x-www-form-urlencoded@ 'BSL.ByteString' to a 'Form'.
 --
