@@ -19,11 +19,15 @@ import Control.Applicative
 import           Control.Monad              ((<=<))
 import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSL8
-import qualified Data.Map                   as M
+import           Data.Map                   (Map)
+import qualified Data.Map                   as Map
 import           Data.Monoid
-import qualified Data.Text                  as T
-import           Data.Text.Encoding         (decodeUtf8With, encodeUtf8)
+
+import           Data.Text                  (Text)
+import qualified Data.Text                  as Text
+import           Data.Text.Encoding         as Text
 import           Data.Text.Encoding.Error   (lenientDecode)
+
 import           GHC.Exts                   (IsList (..))
 import           GHC.Generics
 import           Network.URI                (escapeURIString, isUnreserved,
@@ -47,7 +51,7 @@ import Web.Internal.HttpApiData
 -- | The contents of a form, not yet URL-encoded.
 --
 -- 'Form' can be URL-encoded with 'encodeForm' and URL-decoded with 'decodeForm'.
-newtype Form = Form { unForm :: M.Map T.Text T.Text }
+newtype Form = Form { unForm :: Map Text Text }
   deriving (Eq, Read, Generic, Monoid)
 
 instance Show Form where
@@ -55,9 +59,9 @@ instance Show Form where
     showString "fromList " . shows (toList form)
 
 instance IsList Form where
-  type Item Form = (T.Text, T.Text)
-  fromList = Form . M.fromList
-  toList = M.toList . unForm
+  type Item Form = (Text, Text)
+  fromList = Form . Map.fromList
+  toList = Map.toList . unForm
 
 -- | Convert a value into 'Form'.
 --
@@ -101,8 +105,8 @@ class ToForm a where
   default toForm :: (Generic a, GToForm (Rep a)) => a -> Form
   toForm = genericToForm
 
-instance ToForm [(T.Text, T.Text)] where toForm = fromList
-instance ToForm (M.Map T.Text T.Text) where toForm = Form
+instance ToForm [(Text, Text)] where toForm = fromList
+instance ToForm (Map Text Text) where toForm = Form
 instance ToForm Form where toForm = id
 
 -- | A 'Generic'-based implementation of 'toForm'.
@@ -129,7 +133,7 @@ instance (GToForm f) => GToForm (M1 C x f) where
 instance (Selector s, ToHttpApiData c) => GToForm (M1 S s (K1 i c)) where
   gToForm (M1 (K1 c)) = fromList [(key, toQueryParam c)]
     where
-      key = T.pack $ selName (Proxy3 :: Proxy3 s g p)
+      key = Text.pack $ selName (Proxy3 :: Proxy3 s g p)
 
 -- | Parse 'Form' into a value.
 --
@@ -167,23 +171,23 @@ instance (Selector s, ToHttpApiData c) => GToForm (M1 S s (K1 i c)) where
 -- The default implementation will use 'parseQueryParam' for each field's value.
 class FromForm a where
   -- | Parse 'Form' into a value.
-  fromForm :: Form -> Either T.Text a
+  fromForm :: Form -> Either Text a
   default fromForm :: (Generic a, GFromForm (Rep a))
-     => Form -> Either T.Text a
+     => Form -> Either Text a
   fromForm = genericFromForm
 
 instance FromForm Form where fromForm = return
-instance FromForm [(T.Text, T.Text)] where fromForm = return . toList
-instance FromForm (M.Map T.Text T.Text) where fromForm = return . unForm
+instance FromForm [(Text, Text)] where fromForm = return . toList
+instance FromForm (Map Text Text) where fromForm = return . unForm
 
 -- | A 'Generic'-based implementation of 'fromForm'.
 -- This is used as a default implementation in 'FromForm'.
 genericFromForm :: (Generic a, GFromForm (Rep a))
-    => Form -> Either T.Text a
+    => Form -> Either Text a
 genericFromForm f = to <$> gFromForm f
 
 class GFromForm (f :: * -> *) where
-  gFromForm :: Form -> Either T.Text (f x)
+  gFromForm :: Form -> Either Text (f x)
 
 instance (GFromForm f, GFromForm g) => GFromForm (f :*: g) where
   gFromForm f = (:*:) <$> gFromForm f <*> gFromForm f
@@ -198,11 +202,11 @@ instance (GFromForm f, GFromForm g) => GFromForm (f :+: g) where
 
 instance (Selector s, FromHttpApiData f) => GFromForm (M1 S s (K1 i f)) where
   gFromForm f =
-    case M.lookup key (unForm f) of
-      Nothing -> Left $ "Could not find key " <> T.pack (show key)
+    case Map.lookup key (unForm f) of
+      Nothing -> Left $ "Could not find key " <> Text.pack (show key)
       Just v  -> M1 . K1 <$> parseQueryParam v
     where
-      key = T.pack $ selName (Proxy3 :: Proxy3 s g p)
+      key = Text.pack $ selName (Proxy3 :: Proxy3 s g p)
 
 instance (GFromForm f) => GFromForm (M1 D x f) where
   gFromForm f = M1 <$> gFromForm f
@@ -240,7 +244,7 @@ instance (GFromForm f) => GFromForm (M1 C x f) where
 encodeForm :: Form -> BSL.ByteString
 encodeForm xs = BSL.intercalate "&" $ map (BSL.fromStrict . encodePair) $ toList xs
   where
-    escape = encodeUtf8 . T.pack . escapeURIString isUnreserved . T.unpack
+    escape = Text.encodeUtf8 . Text.pack . escapeURIString isUnreserved . Text.unpack
 
     encodePair (k, "") = escape k
     encodePair (k, v) = escape k <> "=" <> escape v
@@ -277,16 +281,16 @@ encodeForm xs = BSL.intercalate "&" $ map (BSL.fromStrict . encodePair) $ toList
 --
 -- >>> decodeForm "this=has=too=many=equals"
 -- Left "not a valid pair: this=has=too=many=equals"
-decodeForm :: BSL.ByteString -> Either T.Text Form
+decodeForm :: BSL.ByteString -> Either Text Form
 decodeForm bs = toForm <$> traverse parsePair pairs
   where
-    pairs = map (decodeUtf8With lenientDecode . BSL.toStrict) (BSL8.split '&' bs)
+    pairs = map (Text.decodeUtf8With lenientDecode . BSL.toStrict) (BSL8.split '&' bs)
 
-    unescape = T.pack . unEscapeString . T.unpack . T.replace "+" "%20"
+    unescape = Text.pack . unEscapeString . Text.unpack . Text.replace "+" "%20"
 
-    parsePair :: T.Text -> Either T.Text (T.Text, T.Text)
+    parsePair :: Text -> Either Text (Text, Text)
     parsePair p =
-      case T.splitOn "=" p of
+      case Text.splitOn "=" p of
         [k, v] -> return (unescape k, unescape v)
         [k]    -> return (unescape k, "" )
         _ -> Left $ "not a valid pair: " <> p
@@ -299,9 +303,9 @@ data Proxy3 a b c = Proxy3
 --
 -- This is effectively @'fromForm' '<=<' 'decodeForm'@.
 --
--- >>> decodeAsForm "name=Dennis&age=22" :: Either T.Text Person
+-- >>> decodeAsForm "name=Dennis&age=22" :: Either Text Person
 -- Right (Person {name = "Dennis", age = 22})
-decodeAsForm :: FromForm a => BSL.ByteString -> Either T.Text a
+decodeAsForm :: FromForm a => BSL.ByteString -> Either Text a
 decodeAsForm = fromForm <=< decodeForm
 
 -- | This is a convenience function for encoding a datatype that has instance
