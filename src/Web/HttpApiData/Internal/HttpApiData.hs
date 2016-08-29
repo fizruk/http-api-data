@@ -44,6 +44,11 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 import TextShow (TextShow, showt)
 #endif
 
+-- $setup
+-- >>> :unset -XOverloadedLists
+-- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
+-- >>> instance FromHttpApiData BasicAuthToken where parseHeader h = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h; parseQueryParam p = BasicAuthToken <$> parseQueryParam p
+
 -- | Convert value to HTTP API data.
 --
 -- __WARNING__: Do not derive this using @DeriveAnyClass@ as the generated
@@ -211,10 +216,6 @@ parseUrlPieceWithPrefix pattern input
   | otherwise                             = defaultParseError input
   where
     (prefix, rest) = T.splitAt (T.length pattern) input
-
--- $setup
--- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
--- >>> instance FromHttpApiData BasicAuthToken where parseHeader h = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h; parseQueryParam p = BasicAuthToken <$> parseQueryParam p
 
 -- | Parse given bytestring then parse the rest of the input using @'parseHeader'@.
 --

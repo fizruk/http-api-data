@@ -34,55 +34,66 @@ import Web.HttpApiData.Internal.HttpApiData
 
 -- $setup
 -- >>> :set -XDeriveGeneric
+-- >>> :set -XOverloadedLists
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XFlexibleContexts
 -- >>> :set -XScopedTypeVariables
 -- >>> :set -XTypeFamilies
 -- >>> import Data.Either (isLeft)
 -- >>> import Data.List (sort)
+-- >>> data Person = Person { name :: String, age :: Int } deriving (Show, Generic)
+-- >>> instance ToForm Person
+-- >>> instance FromForm Person
 
--- | The contents of a form, not yet url-encoded.
+-- | The contents of a form, not yet URL-encoded.
 --
--- Forms can be URL-encoded with 'encodeForm'.  Url-encoded bytestrings can be
--- converted to a 'Form' with 'decodeForm'.
+-- 'Form' can be URL-encoded with 'encodeForm' and URL-decoded with 'decodeForm'.
 newtype Form = Form { unForm :: M.Map T.Text T.Text }
   deriving (Eq, Show, Read, Generic, Monoid)
 
--- | Convert a list of @('T.Text', 'T.Text')@ to a 'Form'.
---
--- >>> let (form :: Form) = fromList [("baz", "qux"), ("foo", "bar")]
--- >>> toList form
--- [("baz","qux"),("foo","bar")]
 instance IsList Form where
   type Item Form = (T.Text, T.Text)
   fromList = Form . M.fromList
   toList = M.toList . unForm
 
--- | A type that can be converted to a 'Form'.
+-- | Convert a value into 'Form'.
 --
--- >>> let form = toForm [("foo" :: T.Text, "bar" :: T.Text)]
--- >>> encodeForm form
--- "foo=bar"
+-- An example type and instance:
 --
--- Your own datatypes can be converted to a 'Form' like the following:
+-- @
+-- {-\# LANGUAGE OverloadedLists \#-}
 --
--- >>> data MyFoo = MyFoo { myFooBar :: T.Text }
--- >>> instance ToForm MyFoo where toForm (MyFoo bar') = fromList [("bar", bar')]
--- >>> let form = toForm $ MyFoo { myFooBar = "hello" }
--- >>> encodeForm form
--- "bar=hello"
+-- data Person = Person
+--   { name :: String
+--   , age  :: Int }
 --
--- There is a default method for 'toForm' for any Haskell record type that
--- derives 'Generic'.  The record's fields will be turned into the keys of the
--- 'Form'.  This only works for fields with types that implement
--- 'ToHttpApiData'.
+-- instance 'ToForm' Person where
+--   'toForm' person =
+--     [ (\"name\", 'toQueryParam' (name person))
+--     , (\"age\", 'toQueryParam' (age person)) ]
+-- @
 --
--- This can be used like the following:
+-- Instead of manually writing @'ToForm'@ instances you can
+-- use a default generic implementation of @'toForm'@.
 --
--- >>> data MyGenericBar = MyGenericBar { myGenericBar :: Int } deriving Generic
--- >>> instance ToForm MyGenericBar
--- >>> let form = toForm $ MyGenericBar { myGenericBar = 3 }
--- >>> encodeForm form
--- "myGenericBar=3"
+-- To do that, simply add @deriving 'Generic'@ clause to your datatype
+-- and declare a 'ToForm' instance for your datatype without
+-- giving definition for 'toForm'.
+--
+-- For instance, the previous example can be simplified into this:
+--
+-- @
+-- data Person = Person
+--   { name :: String
+--   , age  :: Int
+--   } deriving ('Generic')
+--
+-- instance 'ToForm' Person
+-- @
+--
+-- The default implementation will use 'toQueryParam' for each field's value.
 class ToForm a where
+  -- | Convert a value into 'Form'.
   toForm :: a -> Form
   default toForm :: (Generic a, GToForm (Rep a)) => a -> Form
   toForm = genericToForm
@@ -91,6 +102,8 @@ instance ToForm [(T.Text, T.Text)] where toForm = Form . M.fromList
 instance ToForm (M.Map T.Text T.Text) where toForm = Form
 instance ToForm Form where toForm = id
 
+-- | A 'Generic'-based implementation of 'toForm'.
+-- This is used as a default implementation in 'ToForm'.
 genericToForm :: (Generic a, GToForm (Rep a)) => a -> Form
 genericToForm x = evalState (unGenericToFormS . gToForm $ from x) (Nothing, 0)
 
@@ -132,37 +145,42 @@ instance (ToHttpApiData f) => GToForm (K1 i f) where
     where name (Nothing, i) = T.pack $ show i
           name (Just x,  _) = x
 
--- | A type that can be converted from a 'Form', with the possibility of
--- failure.
+-- | Parse 'Form' into a value.
 --
--- >>> let form = fromList [("foo" :: T.Text, "bar" :: T.Text)]
--- >>> fromForm form :: Either T.Text [(T.Text, T.Text)]
--- Right [("foo","bar")]
+-- An example type and instance:
 --
--- Your own datatypes can be converted from a 'Form' like the following:
+-- @
+-- data Person = Person
+--   { name :: String
+--   , age  :: Int }
 --
--- >>> data MyFoo = MyFoo { myFooBar :: T.Text } deriving Show
--- >>> instance FromForm MyFoo where fromForm (Form map') = maybe (Left "key \"bar\" not found") (Right . MyFoo) $ M.lookup "bar" map'
--- >>> let form = fromList [("bar" :: T.Text, "hello" :: T.Text)]
--- >>> fromForm form :: Either T.Text MyFoo
--- Right (MyFoo {myFooBar = "hello"})
+-- instance 'FromForm' Person where
+--   'fromForm' (Form m) = Person
+--     '\<$\>' maybe (Left "key \"name\" not found") 'parseQueryParam' (lookup "name" m)
+--     '\<*\>' maybe (Left "key \"age\" not found")  'parseQueryParam' (lookup "name" m)
+-- @
 --
--- There is a default method for 'fromForm' for any Haskell record type that
--- derives 'Generic'.  The record's fields will be taken from the keys of the
--- 'Form'.  This only works for fields with types that implement
--- 'FromHttpApiData'.
+-- Instead of manually writing @'FromForm'@ instances you can
+-- use a default generic implementation of @'fromForm'@.
 --
--- This can be used like the following:
+-- To do that, simply add @deriving 'Generic'@ clause to your datatype
+-- and declare a 'FromForm' instance for your datatype without
+-- giving definition for 'fromForm'.
 --
--- >>> data MyGenericBar = MyGenericBar { myGenericBar :: Int } deriving (Generic, Show)
--- >>> instance FromForm MyGenericBar
--- >>> let form = fromList [("myGenericBar" :: T.Text, "1" :: T.Text)]
--- >>> fromForm form :: Either T.Text MyGenericBar
--- Right (MyGenericBar {myGenericBar = 1})
--- >>> let form = fromList [("some other key" :: T.Text, "2" :: T.Text)]
--- >>> isLeft (fromForm form :: Either T.Text MyGenericBar)
--- True
+-- For instance, the previous example can be simplified into this:
+--
+-- @
+-- data Person = Person
+--   { name :: String
+--   , age  :: Int
+--   } deriving ('Generic')
+--
+-- instance 'FromForm' Person
+-- @
+--
+-- The default implementation will use 'parseQueryParam' for each field's value.
 class FromForm a where
+  -- | Parse 'Form' into a value.
   fromForm :: Form -> Either T.Text a
   default fromForm :: (Generic a, GFromForm (Rep a))
      => Form -> Either T.Text a
@@ -172,6 +190,8 @@ instance FromForm Form where fromForm = return
 instance FromForm [(T.Text, T.Text)] where fromForm = return . M.toList . unForm
 instance FromForm (M.Map T.Text T.Text) where fromForm = return . unForm
 
+-- | A 'Generic'-based implementation of 'fromForm'.
+-- This is used as a default implementation in 'FromForm'.
 genericFromForm :: (Generic a, GFromForm (Rep a))
     => Form -> Either T.Text a
 genericFromForm f = to <$> gFromForm f
@@ -204,33 +224,33 @@ instance (GFromForm f) => GFromForm (M1 D x f) where
 instance (GFromForm f) => GFromForm (M1 C x f) where
   gFromForm f = M1 <$> gFromForm f
 
--- | Encode a 'Form' to a @application/x-www-form-urlencoded@ 'BSL.ByteString'.
+-- | Encode a 'Form' to an @application/x-www-form-urlencoded@ 'BSL.ByteString'.
 --
--- Key-value pairs get encoded to @key=value@.
+-- Key-value pairs get encoded to @key=value@ and separated by @&@:
 --
--- >>> encodeForm $ toForm [("foo" :: T.Text, "bar" :: T.Text)]
--- "foo=bar"
+-- >>> encodeForm [("name", "Julian"), ("lastname", "Arni")]
+-- "lastname=Arni&name=Julian"
 --
--- Keys with no values get encoded to just @key@.
+-- Keys with empty values get encoded to just @key@ (without the @=@ sign):
 --
--- >>> encodeForm $ toForm [("foo" :: T.Text, "" :: T.Text)]
--- "foo"
+-- >>> encodeForm [("is_test", "")]
+-- "is_test"
 --
--- Empty keys don't show up.
+-- Empty keys are allowed too:
 --
--- >>> encodeForm $ toForm [("" :: T.Text, "bar" :: T.Text)]
--- "=bar"
+-- >>> encodeForm [("", "foobar")]
+-- "=foobar"
 --
--- When both they key and value is empty, it gets encoded as nothing.  (This
--- prevents @'decodeForm' . 'encodeForm'@ from being an isomorphism).
+-- However, if not key and value are empty, the key-value pair is ignored.
+-- (This prevents @'decodeForm' . 'encodeForm'@ from being a true isomorphism).
 --
--- >>> encodeForm $ toForm [("" :: T.Text, "" :: T.Text)]
+-- >>> encodeForm [("", "")]
 -- ""
 --
--- Other characters are escaped by @'escapeURIString' 'isUnreserved'@.
+-- Everything is escaped with @'escapeURIString' 'isUnreserved'@:
 --
--- >>> encodeForm $ toForm [("foo" :: T.Text, "value with spaces" :: T.Text)]
--- "foo=value%20with%20spaces"
+-- >>> encodeForm [("fullname", "Andres Löh")]
+-- "fullname=Andres%20L%C3%B6h"
 encodeForm :: Form -> BSL.ByteString
 encodeForm xs =
     let escape :: T.Text -> BSL.ByteString
@@ -240,39 +260,37 @@ encodeForm xs =
         encodePair (k, v) = escape k <> "=" <> escape v
     in BSL.intercalate "&" $ map encodePair $ toList xs
 
--- | Decode a @application/x-www-form-urlencoded@ 'BSL.ByteString' to a 'Form'.
+-- | Decode an @application/x-www-form-urlencoded@ 'BSL.ByteString' to a 'Form'.
 --
--- Key-value pairs get decoded normally.
+-- Key-value pairs get decoded normally:
 --
--- >>> toList <$> decodeForm "foo=bar"
--- Right [("foo","bar")]
--- >>> sort . toList <$> decodeForm "foo=bar&abc=xyz"
--- Right [("abc","xyz"),("foo","bar")]
+-- >>> toList <$> decodeForm "name=Greg&lastname=Weber"
+-- Right [("lastname","Weber"),("name","Greg")]
 --
--- Keys with no values get decoded to empty values.
+-- Keys with no values get decoded to pairs with empty values.
 --
--- >>> toList <$> decodeForm "foo"
--- Right [("foo","")]
+-- >>> toList <$> decodeForm "is_test"
+-- Right [("is_test","")]
 --
--- Empty keys get decoded as @""@.
+-- Empty keys are allowed:
 --
--- >>> toList <$> decodeForm "=bar"
--- Right [("","bar")]
+-- >>> toList <$> decodeForm "=foobar"
+-- Right [("","foobar")]
 --
--- The empty string gets decoded as no key-value pairs.
+-- The empty string gets decoded into an empty 'Form':
 --
 -- >>> toList <$> decodeForm ""
 -- Right []
 --
--- Other characters are un-escaped with 'unEscapeString'.
+-- Everything is un-escaped with 'unEscapeString':
 --
--- >>> toList <$> decodeForm "foo=value%20with%20spaces"
--- Right [("foo","value with spaces")]
+-- >>> toList <$> decodeForm "fullname=Andres%20L%C3%B6h"
+-- Right [("fullname","Andres L\246h")]
 --
--- Improperly formed strings return 'Left'.
+-- Improperly formed strings result in an error:
 --
--- >>> isLeft $ decodeForm "this=has=too=many=equals"
--- True
+-- >>> decodeForm "this=has=too=many=equals"
+-- Left "not a valid pair: this=has=too=many=equals"
 decodeForm :: BSL.ByteString -> Either T.Text Form
 decodeForm "" = return mempty
 decodeForm q = do
@@ -297,7 +315,10 @@ data Proxy3 a b c = Proxy3
 -- that has an instance for 'FromForm'.
 --
 -- This is effectively @'fromForm' '<=<' 'decodeForm'@.
-decodeWithFromForm :: (FromForm a) => BSL.ByteString -> Either T.Text a
+--
+-- >>> decodeWithFromForm "name=Dennis&age=22" :: Either T.Text Person
+-- Right (Person {name = "Dennis", age = 22})
+decodeWithFromForm :: FromForm a => BSL.ByteString -> Either T.Text a
 decodeWithFromForm = fromForm <=< decodeForm
 
 -- | This is a convenience function for encoding a datatype that has instance
@@ -305,5 +326,8 @@ decodeWithFromForm = fromForm <=< decodeForm
 -- 'BSL.ByteString'.
 --
 -- This is effectively @'encodeForm' . 'toForm'@.
-encodeWithToForm :: (ToForm a) => a -> BSL.ByteString
+--
+-- >>> encodeWithToForm Person {name = "Dennis", age = 22}
+-- "age=22&name=Dennis"
+encodeWithToForm :: ToForm a => a -> BSL.ByteString
 encodeWithToForm = encodeForm . toForm
