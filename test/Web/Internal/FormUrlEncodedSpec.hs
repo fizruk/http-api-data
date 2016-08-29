@@ -81,4 +81,7 @@ urlEncoding = describe "urlEncoding" $ do
     (decodeAsForm x :: Either Text Form) `shouldBe` (fromForm <=< decodeForm) x
 
   it "encodeAsForm == encodeForm . toForm" $ property $ \(x :: Form) -> do
-     encodeAsForm x `shouldBe` (encodeForm . toForm) x
+    encodeAsForm x `shouldBe` (encodeForm . toForm) x
+
+  it "decodeForm \"\" == Right mempty" $ do
+    decodeForm "" `shouldBe` Right mempty
