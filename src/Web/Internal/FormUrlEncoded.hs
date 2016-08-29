@@ -295,21 +295,18 @@ encodeForm xs = BSL.intercalate "&" $ map (BSL.fromStrict . encodePair) $ toList
 -- >>> decodeForm "this=has=too=many=equals"
 -- Left "not a valid pair: this=has=too=many=equals"
 decodeForm :: BSL.ByteString -> Either T.Text Form
-decodeForm "" = return mempty
-decodeForm q = do
-    let xs :: [T.Text]
-        xs = T.splitOn "&" . decodeUtf8With lenientDecode . mconcat . BSL.toChunks $ q
-        parsePair :: T.Text -> Either T.Text (T.Text, T.Text)
-        parsePair p =
-            case T.splitOn "=" p of
-                [k,v] -> return ( unescape k
-                                , unescape v
-                                )
-                [k] -> return ( unescape k, "" )
-                _ -> Left $ "not a valid pair: " <> p
-        unescape :: T.Text -> T.Text
-        unescape = T.pack . unEscapeString . T.unpack . T.intercalate "%20" . T.splitOn "+"
-    toForm <$> mapM parsePair xs
+decodeForm bs = toForm <$> traverse parsePair pairs
+  where
+    pairs = map (decodeUtf8With lenientDecode . BSL.toStrict) (BSL.split '&' bs)
+
+    unescape = T.pack . unEscapeString . T.unpack . T.replace "+" "%20"
+
+    parsePair :: T.Text -> Either T.Text (T.Text, T.Text)
+    parsePair p =
+      case T.splitOn "=" p of
+        [k, v] -> return (unescape k, unescape v)
+        [k]    -> return (unescape k, "" )
+        _ -> Left $ "not a valid pair: " <> p
 
 data Proxy3 a b c = Proxy3
 
