@@ -51,7 +51,7 @@ import Web.Internal.HttpApiData
 -- | The contents of a form, not yet URL-encoded.
 --
 -- 'Form' can be URL-encoded with 'encodeForm' and URL-decoded with 'decodeForm'.
-newtype Form = Form { unForm :: Map Text Text }
+newtype Form = Form { unForm :: Map Text [Text] }
   deriving (Eq, Read, Generic, Monoid)
 
 instance Show Form where
@@ -60,8 +60,8 @@ instance Show Form where
 
 instance IsList Form where
   type Item Form = (Text, Text)
-  fromList = Form . Map.fromList
-  toList = Map.toList . unForm
+  fromList = Form . Map.fromListWith (flip (<>)) . fmap (\(k, v) -> (k, [v]))
+  toList = concatMap (\(k, vs) -> map ((,) k) vs) . Map.toList . unForm
 
 -- | Convert a value into 'Form'.
 --
@@ -106,7 +106,7 @@ class ToForm a where
   toForm = genericToForm
 
 instance ToForm [(Text, Text)] where toForm = fromList
-instance ToForm (Map Text Text) where toForm = Form
+instance ToForm (Map Text [Text]) where toForm = Form . Map.filter (not . null)
 instance ToForm Form where toForm = id
 
 -- | A 'Generic'-based implementation of 'toForm'.
@@ -177,8 +177,8 @@ class FromForm a where
   fromForm = genericFromForm
 
 instance FromForm Form where fromForm = return
+instance FromForm (Map Text [Text]) where fromForm = return . unForm
 instance FromForm [(Text, Text)] where fromForm = return . toList
-instance FromForm (Map Text Text) where fromForm = return . unForm
 
 -- | A 'Generic'-based implementation of 'fromForm'.
 -- This is used as a default implementation in 'FromForm'.
@@ -202,9 +202,10 @@ instance (GFromForm f, GFromForm g) => GFromForm (f :+: g) where
 
 instance (Selector s, FromHttpApiData f) => GFromForm (M1 S s (K1 i f)) where
   gFromForm f =
-    case Map.lookup key (unForm f) of
-      Nothing -> Left $ "Could not find key " <> Text.pack (show key)
-      Just v  -> M1 . K1 <$> parseQueryParam v
+    case concat (Map.lookup key (unForm f)) of
+      [v] -> M1 . K1 <$> parseQueryParam v
+      []  -> Left $ "Could not find key " <> Text.pack (show key)
+      _   -> Left $ "Duplicate key " <> Text.pack (show key)
     where
       key = Text.pack $ selName (Proxy3 :: Proxy3 s g p)
 

@@ -112,4 +112,6 @@ newtype NoEmptyKeyForm =
     deriving Show
 
 instance Arbitrary NoEmptyKeyForm where
-  arbitrary = NoEmptyKeyForm . Form . M.delete "" . M.fromList <$> arbitrary
+  arbitrary = NoEmptyKeyForm . removeEmptyKeys <$> arbitrary
+    where
+      removeEmptyKeys (Form m) = Form (M.delete "" m)
