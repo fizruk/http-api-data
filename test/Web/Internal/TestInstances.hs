@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Web.HttpApiData.Internal.TestInstances
+module Web.Internal.TestInstances
    ( RandomCase(..)
    , SimpleRec(..)
    , SimpleSumRec(..)
@@ -22,8 +22,8 @@ import           GHC.Generics
 
 import Test.QuickCheck
 
-import Web.HttpApiData.Internal.FormUrlEncoded
-import Web.HttpApiData.Internal.HttpApiData
+import Web.Internal.FormUrlEncoded
+import Web.Internal.HttpApiData
 
 instance Arbitrary T.Text where
   arbitrary = T.pack <$> arbitrary

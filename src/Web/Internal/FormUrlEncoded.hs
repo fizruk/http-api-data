@@ -10,7 +10,7 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
-module Web.HttpApiData.Internal.FormUrlEncoded where
+module Web.Internal.FormUrlEncoded where
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
@@ -30,7 +30,7 @@ import           GHC.Generics
 import           Network.URI               (escapeURIString, isUnreserved,
                                             unEscapeString)
 
-import Web.HttpApiData.Internal.HttpApiData
+import Web.Internal.HttpApiData
 
 -- $setup
 -- >>> :set -XDeriveGeneric

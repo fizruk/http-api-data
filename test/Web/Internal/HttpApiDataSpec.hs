@@ -1,5 +1,5 @@
 {-# Language ScopedTypeVariables #-}
-module Web.HttpApiData.Internal.HttpApiDataSpec (spec) where
+module Web.Internal.HttpApiDataSpec (spec) where
 
 import Data.Int
 import Data.Word
@@ -14,9 +14,9 @@ import Test.Hspec
 import Test.Hspec.QuickCheck(prop)
 import Test.QuickCheck
 
-import Web.HttpApiData.Internal.HttpApiData
+import Web.Internal.HttpApiData
 
-import Web.HttpApiData.Internal.TestInstances
+import Web.Internal.TestInstances
 
 
 (<=>) :: Eq a => (a -> b) -> (b -> Either T.Text a) -> a -> Bool

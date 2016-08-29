@@ -7,7 +7,7 @@
 -- |
 -- Convert Haskell values to and from HTTP API data
 -- such as URL pieces, headers and query parameters.
-module Web.HttpApiData.Internal.HttpApiData where
+module Web.Internal.HttpApiData where
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative

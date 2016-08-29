@@ -36,8 +36,9 @@ library
       build-depends: text-show        >= 2
     exposed-modules:
       Web.HttpApiData
-      Web.HttpApiData.Internal.FormUrlEncoded
-      Web.HttpApiData.Internal.HttpApiData
+      Web.FormUrlEncoded
+      Web.Internal.FormUrlEncoded
+      Web.Internal.HttpApiData
     ghc-options:     -Wall
     default-language: Haskell2010
 
@@ -45,9 +46,9 @@ test-suite spec
     type:          exitcode-stdio-1.0
     main-is:       Spec.hs
     other-modules:
-      Web.HttpApiData.Internal.FormUrlEncodedSpec
-      Web.HttpApiData.Internal.HttpApiDataSpec
-      Web.HttpApiData.Internal.TestInstances
+      Web.Internal.FormUrlEncodedSpec
+      Web.Internal.HttpApiDataSpec
+      Web.Internal.TestInstances
     hs-source-dirs: test
     ghc-options:   -Wall
     default-language: Haskell2010

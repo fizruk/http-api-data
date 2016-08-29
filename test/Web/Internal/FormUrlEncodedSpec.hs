@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Web.HttpApiData.Internal.FormUrlEncodedSpec (spec) where
+module Web.Internal.FormUrlEncodedSpec (spec) where
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
@@ -14,9 +14,9 @@ import Data.Text (Text, unpack)
 import Test.Hspec
 import Test.QuickCheck
 
-import Web.HttpApiData.Internal.FormUrlEncoded
-import Web.HttpApiData.Internal.HttpApiData
-import Web.HttpApiData.Internal.TestInstances
+import Web.Internal.FormUrlEncoded
+import Web.Internal.HttpApiData
+import Web.Internal.TestInstances
 
 spec :: Spec
 spec = do
