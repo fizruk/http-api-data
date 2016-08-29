@@ -102,7 +102,7 @@ class ToForm a where
   default toForm :: (Generic a, GToForm (Rep a)) => a -> Form
   toForm = genericToForm
 
-instance ToForm [(T.Text, T.Text)] where toForm = Form . M.fromList
+instance ToForm [(T.Text, T.Text)] where toForm = fromList
 instance ToForm (M.Map T.Text T.Text) where toForm = Form
 instance ToForm Form where toForm = id
 
@@ -191,7 +191,7 @@ class FromForm a where
   fromForm = genericFromForm
 
 instance FromForm Form where fromForm = return
-instance FromForm [(T.Text, T.Text)] where fromForm = return . M.toList . unForm
+instance FromForm [(T.Text, T.Text)] where fromForm = toList
 instance FromForm (M.Map T.Text T.Text) where fromForm = return . unForm
 
 -- | A 'Generic'-based implementation of 'fromForm'.
