@@ -77,8 +77,8 @@ urlEncoding = describe "urlEncoding" $ do
   it "decodeForm (encodeForm x) == Right x" $ property $ \(NoEmptyKeyForm x) -> do
     decodeForm (encodeForm x) `shouldBe` Right x
 
-  it "decodeWithFromForm == (fromForm <=< decodeForm)" $ property $ \(x :: BSL.ByteString) -> do
-    (decodeWithFromForm x :: Either Text Form) `shouldBe` (fromForm <=< decodeForm) x
+  it "decodeAsForm == (fromForm <=< decodeForm)" $ property $ \(x :: BSL.ByteString) -> do
+    (decodeAsForm x :: Either Text Form) `shouldBe` (fromForm <=< decodeForm) x
 
-  it "encodeWithToForm == encodeForm . toForm" $ property $ \(x :: Form) -> do
-     encodeWithToForm x `shouldBe` (encodeForm . toForm) x
+  it "encodeAsForm == encodeForm . toForm" $ property $ \(x :: Form) -> do
+     encodeAsForm x `shouldBe` (encodeForm . toForm) x

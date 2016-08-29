@@ -316,22 +316,22 @@ data Proxy3 a b c = Proxy3
 
 -- | This is a convenience function for decoding a
 -- @application/x-www-form-urlencoded@ 'BSL.ByteString' directly to a datatype
--- that has an instance for 'FromForm'.
+-- that has an instance of 'FromForm'.
 --
 -- This is effectively @'fromForm' '<=<' 'decodeForm'@.
 --
--- >>> decodeWithFromForm "name=Dennis&age=22" :: Either T.Text Person
+-- >>> decodeAsForm "name=Dennis&age=22" :: Either T.Text Person
 -- Right (Person {name = "Dennis", age = 22})
-decodeWithFromForm :: FromForm a => BSL.ByteString -> Either T.Text a
-decodeWithFromForm = fromForm <=< decodeForm
+decodeAsForm :: FromForm a => BSL.ByteString -> Either T.Text a
+decodeAsForm = fromForm <=< decodeForm
 
 -- | This is a convenience function for encoding a datatype that has instance
--- for 'ToForm' directly to a @application/x-www-form-urlencoded@
+-- of 'ToForm' directly to a @application/x-www-form-urlencoded@
 -- 'BSL.ByteString'.
 --
 -- This is effectively @'encodeForm' . 'toForm'@.
 --
--- >>> encodeWithToForm Person {name = "Dennis", age = 22}
+-- >>> encodeAsForm Person {name = "Dennis", age = 22}
 -- "age=22&name=Dennis"
-encodeWithToForm :: ToForm a => a -> BSL.ByteString
-encodeWithToForm = encodeForm . toForm
+encodeAsForm :: ToForm a => a -> BSL.ByteString
+encodeAsForm = encodeForm . toForm

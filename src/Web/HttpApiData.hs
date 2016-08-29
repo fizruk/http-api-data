@@ -37,7 +37,10 @@ module Web.HttpApiData (
   parseBoundedEnumOfI,
   parseBoundedTextData,
 
-  -- * Encoding and decoding forms,
+  -- * Encoding and decoding @'Form'@s
+  encodeAsForm,
+  decodeAsForm,
+
   encodeForm,
   decodeForm,
 
