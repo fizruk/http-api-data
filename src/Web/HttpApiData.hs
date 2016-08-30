@@ -44,6 +44,7 @@ import Web.Internal.HttpApiData
 
 -- $setup
 --
+-- >>> :unset -XOverloadedLists
 -- >>> :set -XOverloadedStrings
 -- >>> import Control.Applicative
 -- >>> import Data.Time

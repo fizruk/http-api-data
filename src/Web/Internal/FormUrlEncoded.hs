@@ -14,12 +14,14 @@ module Web.Internal.FormUrlEncoded where
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
+import Data.Traversable
 #endif
 
 import           Control.Arrow              ((***))
 import           Control.Monad              ((<=<))
 import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSL8
+import qualified Data.Foldable              as F
 import           Data.Hashable              (Hashable)
 import           Data.HashMap.Strict        (HashMap)
 import qualified Data.HashMap.Strict        as HashMap
@@ -450,7 +452,7 @@ encodeAsForm = encodeForm . toForm
 -- >>> lookupKey "name" [("name", "Oleg"), ("name", "David")]
 -- ["Oleg","David"]
 lookupKey :: Text -> Form -> [Text]
-lookupKey key = concat . HashMap.lookup key . unForm
+lookupKey key = F.concat . HashMap.lookup key . unForm
 
 -- | Lookup a unique value for a key.
 -- Fail if there is zero or more than one value.
