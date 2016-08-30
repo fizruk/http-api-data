@@ -45,7 +45,6 @@ import TextShow (TextShow, showt)
 #endif
 
 -- $setup
--- >>> :unset -XOverloadedLists
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
 -- >>> instance FromHttpApiData BasicAuthToken where parseHeader h = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h; parseQueryParam p = BasicAuthToken <$> parseQueryParam p
 
@@ -87,7 +86,7 @@ class FromHttpApiData a where
 
 -- | Convert multiple values to a list of URL pieces.
 --
--- >>> toUrlPieces [1, 2, 3]
+-- >>> toUrlPieces [1, 2, 3] :: [Text]
 -- ["1","2","3"]
 toUrlPieces :: (Functor t, ToHttpApiData a) => t a -> t Text
 toUrlPieces = fmap toUrlPiece
@@ -103,7 +102,7 @@ parseUrlPieces = traverse parseUrlPiece
 
 -- | Convert multiple values to a list of query parameter values.
 --
--- >>> toQueryParams [fromGregorian 2015 10 03, fromGregorian 2015 12 01]
+-- >>> toQueryParams [fromGregorian 2015 10 03, fromGregorian 2015 12 01] :: [Text]
 -- ["2015-10-03","2015-12-01"]
 toQueryParams :: (Functor t, ToHttpApiData a) => t a -> t Text
 toQueryParams = fmap toQueryParam

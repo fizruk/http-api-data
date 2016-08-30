@@ -44,7 +44,6 @@ import Web.Internal.HttpApiData
 
 -- $setup
 --
--- >>> :unset -XOverloadedLists
 -- >>> :set -XOverloadedStrings
 -- >>> import Control.Applicative
 -- >>> import Data.Time
@@ -70,7 +69,7 @@ import Web.Internal.HttpApiData
 -- "45.2"
 -- >>> parseQueryParam "452" :: Either Text Int
 -- Right 452
--- >>> toQueryParams [1..5]
+-- >>> toQueryParams [1..5] :: [Text]
 -- ["1","2","3","4","5"]
 -- >>> parseQueryParams ["127", "255"] :: Either Text [Int8]
 -- Left "out of bounds: `255' (should be between -128 and 127)"
