@@ -19,6 +19,11 @@ module Web.FormUrlEncoded (
   -- * Helpers
   toEntriesByKey,
   fromEntriesByKey,
+
+  lookupKey,
+  lookupUnique,
+  parseUnique,
+  parseAll,
 ) where
 
 import Web.Internal.FormUrlEncoded

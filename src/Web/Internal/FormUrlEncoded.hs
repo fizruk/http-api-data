@@ -255,8 +255,8 @@ instance (Selector s, ToHttpApiData c) => GToForm (M1 S s (K1 i c)) where
 --
 -- instance 'FromForm' Person where
 --   'fromForm' (Form m) = Person
---     '<$>' maybe (Left "key \"name\" not found") 'parseQueryParam' (lookup "name" m)
---     '<*>' maybe (Left "key \"age\" not found")  'parseQueryParam' (lookup "name" m)
+--     '<$>' 'parseUnique' "name" m
+--     '<*>' 'parseUnique' "age"  m
 -- @
 --
 -- Instead of manually writing @'FromForm'@ instances you can
@@ -326,11 +326,7 @@ instance (GFromForm f, GFromForm g) => GFromForm (f :+: g) where
       x       <!> _ = x
 
 instance (Selector s, FromHttpApiData f) => GFromForm (M1 S s (K1 i f)) where
-  gFromForm f =
-    case concat (Map.lookup key (unForm f)) of
-      [v] -> M1 . K1 <$> parseQueryParam v
-      []  -> Left $ "Could not find key " <> Text.pack (show key)
-      _   -> Left $ "Duplicate key " <> Text.pack (show key)
+  gFromForm form = M1 . K1 <$> parseUnique key form
     where
       key = Text.pack $ selName (Proxy3 :: Proxy3 s g p)
 
@@ -444,3 +440,59 @@ decodeAsForm = fromForm <=< decodeForm
 -- "age=22&name=Dennis"
 encodeAsForm :: ToForm a => a -> BSL.ByteString
 encodeAsForm = encodeForm . toForm
+
+-- | Find all values corresponding to a given key in a 'Form'.
+--
+-- >>> lookupKey "name" []
+-- []
+-- >>> lookupKey "name" [("name", "Oleg")]
+-- ["Oleg"]
+-- >>> lookupKey "name" [("name", "Oleg"), ("name", "David")]
+-- ["Oleg","David"]
+lookupKey :: Text -> Form -> [Text]
+lookupKey key = concat . Map.lookup key . unForm
+
+-- | Lookup a unique value for a key.
+-- Fail if there is zero or more than one value.
+--
+-- >>> lookupUnique "name" []
+-- Left "Could not find key \"name\""
+-- >>> lookupUnique "name" [("name", "Oleg")]
+-- Right "Oleg"
+-- >>> lookupUnique "name" [("name", "Oleg"), ("name", "David")]
+-- Left "Duplicate key \"name\""
+lookupUnique :: Text -> Form -> Either Text Text
+lookupUnique key form =
+  case lookupKey key form of
+    [v] -> pure v
+    []  -> Left $ "Could not find key " <> Text.pack (show key)
+    _   -> Left $ "Duplicate key " <> Text.pack (show key)
+
+-- | Lookup a unique value for a given key and parse it with 'parseQueryParam'.
+--
+-- >>> parseUnique "age" [] :: Either Text Word8
+-- Left "Could not find key \"age\""
+-- >>> parseUnique "age" [("age", "12"), ("age", "25")] :: Either Text Word8
+-- Left "Duplicate key \"age\""
+-- >>> parseUnique "age" [("age", "seven")] :: Either Text Word8
+-- Left "could not parse: `seven' (input does not start with a digit)"
+-- >>> parseUnique "age" [("age", "777")] :: Either Text Word8
+-- Left "out of bounds: `777' (should be between 0 and 255)"
+-- >>> parseUnique "age" [("age", "7")] :: Either Text Word8
+-- Right 7
+parseUnique :: FromHttpApiData v => Text -> Form -> Either Text v
+parseUnique key form = lookupUnique key form >>= parseQueryParam
+
+-- | Lookup all values for a given key in a 'Form' and parse them with 'parseQueryParams'.
+--
+-- >>> parseAll "age" [] :: Either Text [Word8]
+-- Right []
+-- >>> parseAll "age" [("age", "8"), ("age", "seven")] :: Either Text [Word8]
+-- Left "could not parse: `seven' (input does not start with a digit)"
+-- >>> parseAll "age" [("age", "8"), ("age", "777")] :: Either Text [Word8]
+-- Left "out of bounds: `777' (should be between 0 and 255)"
+-- >>> parseAll "age" [("age", "12"), ("age", "25")] :: Either Text [Word8]
+-- Right [12,25]
+parseAll :: FromHttpApiData v => Text -> Form -> Either Text [v]
+parseAll key = parseQueryParams . lookupKey key
+
