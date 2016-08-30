@@ -1,4 +1,5 @@
-{-# Language ScopedTypeVariables #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Web.Internal.HttpApiDataSpec (spec) where
 
 import Data.Int
@@ -10,6 +11,11 @@ import qualified Data.ByteString as BS
 import Data.Version
 
 import Data.Proxy
+
+#if MIN_VERSION_base(4,8,0)
+import Numeric.Natural
+#endif
+
 import Test.Hspec
 import Test.Hspec.QuickCheck(prop)
 import Test.QuickCheck
@@ -17,7 +23,6 @@ import Test.QuickCheck
 import Web.Internal.HttpApiData
 
 import Web.Internal.TestInstances
-
 
 (<=>) :: Eq a => (a -> b) -> (b -> Either T.Text a) -> a -> Bool
 (f <=> g) x = g (f x) == Right x
@@ -61,6 +66,10 @@ spec = do
     checkUrlPieceI (Proxy :: Proxy (Maybe Integer))           "Maybe Integer"
     checkUrlPiece  (Proxy :: Proxy (Either Integer T.Text))   "Either Integer Text"
     checkUrlPieceI (Proxy :: Proxy (Either Version Day))      "Either Version Day"
+
+#if MIN_VERSION_base(4,8,0)
+    checkUrlPiece  (Proxy :: Proxy Natural)   "Natural"
+#endif
 
   it "bad integers are rejected" $ do
     parseUrlPieceMaybe (T.pack "123hello") `shouldBe` (Nothing :: Maybe Int)

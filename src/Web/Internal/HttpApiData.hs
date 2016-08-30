@@ -13,6 +13,7 @@ module Web.Internal.HttpApiData where
 import Control.Applicative
 import Data.Traversable (Traversable(traverse))
 #endif
+
 import Control.Arrow ((&&&), left)
 import Control.Monad ((<=<))
 
@@ -35,6 +36,7 @@ import Data.Version
 
 #if MIN_VERSION_base(4,8,0)
 import Data.Void
+import Numeric.Natural
 #endif
 
 import Text.Read (readMaybe)
@@ -390,8 +392,8 @@ instance ToHttpApiData Version where
   toUrlPiece = T.pack . showVersion
 
 #if MIN_VERSION_base(4,8,0)
-instance ToHttpApiData Void where
-  toUrlPiece = absurd
+instance ToHttpApiData Void    where toUrlPiece = absurd
+instance ToHttpApiData Natural where toUrlPiece = showt
 #endif
 
 instance ToHttpApiData Bool     where toUrlPiece = showTextData
@@ -491,6 +493,13 @@ instance FromHttpApiData Version where
 -- | Parsing a @'Void'@ value is always an error, considering @'Void'@ as a data type with no constructors.
 instance FromHttpApiData Void where
   parseUrlPiece _ = Left "Void cannot be parsed!"
+
+instance FromHttpApiData Natural where
+  parseUrlPiece s = do
+    n <- runReader (signed decimal) s
+    if n < 0
+      then Left ("undeflow: " <> s <> " (should be a non-negative integer)")
+      else Right (fromInteger n)
 #endif
 
 instance FromHttpApiData Bool     where parseUrlPiece = parseBoundedUrlPiece

@@ -43,6 +43,11 @@ import           Data.Text.Encoding.Error   (lenientDecode)
 import           Data.Time
 import           Data.Word
 
+#if MIN_VERSION_base(4,8,0)
+import Data.Void
+import Numeric.Natural
+#endif
+
 import           GHC.Exts                   (IsList (..))
 import           GHC.Generics
 import           URI.ByteString             (urlEncodeQuery, urlDecodeQuery)
@@ -104,6 +109,11 @@ instance ToFormKey a => ToFormKey (Dual a)    where toFormKey = toFormKey . getD
 instance ToFormKey a => ToFormKey (Sum a)     where toFormKey = toFormKey . getSum
 instance ToFormKey a => ToFormKey (Product a) where toFormKey = toFormKey . getProduct
 
+#if MIN_VERSION_base(4,8,0)
+instance ToFormKey Void     where toFormKey = toQueryParam
+instance ToFormKey Natural  where toFormKey = toQueryParam
+#endif
+
 -- | Typeclass for types that can be parsed from keys of a 'Form'. This is the reverse of 'ToFormKey'.
 class FromFormKey k where
   -- | Parse a key of a 'Form'.
@@ -145,6 +155,11 @@ instance FromFormKey Any where parseFormKey = parseQueryParam
 instance FromFormKey a => FromFormKey (Dual a)    where parseFormKey = fmap Dual . parseFormKey
 instance FromFormKey a => FromFormKey (Sum a)     where parseFormKey = fmap Sum . parseFormKey
 instance FromFormKey a => FromFormKey (Product a) where parseFormKey = fmap Product . parseFormKey
+
+#if MIN_VERSION_base(4,8,0)
+instance FromFormKey Void     where parseFormKey = parseQueryParam
+instance FromFormKey Natural  where parseFormKey = parseQueryParam
+#endif
 
 -- | The contents of a form, not yet URL-encoded.
 --
