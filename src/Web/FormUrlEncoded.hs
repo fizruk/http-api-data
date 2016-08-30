@@ -5,6 +5,10 @@ module Web.FormUrlEncoded (
   ToForm (..),
   FromForm (..),
 
+  -- ** Keys for 'Form' entries
+  ToFormKey(..),
+  FromFormKey(..),
+
   -- * Encoding and decoding @'Form'@s
   encodeAsForm,
   decodeAsForm,

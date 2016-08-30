@@ -19,14 +19,19 @@ import Control.Applicative
 import           Control.Monad              ((<=<))
 import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSL8
+import           Data.Int
 import           Data.Map                   (Map)
 import qualified Data.Map                   as Map
 import           Data.Monoid
 
 import           Data.Text                  (Text)
 import qualified Data.Text                  as Text
+import qualified Data.Text.Lazy             as Lazy
 import           Data.Text.Encoding         as Text
 import           Data.Text.Encoding.Error   (lenientDecode)
+
+import           Data.Time
+import           Data.Word
 
 import           GHC.Exts                   (IsList (..))
 import           GHC.Generics
@@ -47,6 +52,90 @@ import Web.Internal.HttpApiData
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Show, Generic)
 -- >>> instance ToForm Person
 -- >>> instance FromForm Person
+
+-- | Typeclass for types that can be used as keys in a 'Form'-like container (like 'Map').
+class ToFormKey k where
+  -- | Render a key for a 'Form'.
+  toFormKey :: k -> Text
+
+instance ToFormKey ()       where toFormKey = toQueryParam
+instance ToFormKey Char     where toFormKey = toQueryParam
+
+instance ToFormKey Bool     where toFormKey = toQueryParam
+instance ToFormKey Ordering where toFormKey = toQueryParam
+
+instance ToFormKey Double   where toFormKey = toQueryParam
+instance ToFormKey Float    where toFormKey = toQueryParam
+instance ToFormKey Int      where toFormKey = toQueryParam
+instance ToFormKey Int8     where toFormKey = toQueryParam
+instance ToFormKey Int16    where toFormKey = toQueryParam
+instance ToFormKey Int32    where toFormKey = toQueryParam
+instance ToFormKey Int64    where toFormKey = toQueryParam
+instance ToFormKey Integer  where toFormKey = toQueryParam
+instance ToFormKey Word     where toFormKey = toQueryParam
+instance ToFormKey Word8    where toFormKey = toQueryParam
+instance ToFormKey Word16   where toFormKey = toQueryParam
+instance ToFormKey Word32   where toFormKey = toQueryParam
+instance ToFormKey Word64   where toFormKey = toQueryParam
+
+instance ToFormKey Day              where toFormKey = toQueryParam
+instance ToFormKey LocalTime        where toFormKey = toQueryParam
+instance ToFormKey ZonedTime        where toFormKey = toQueryParam
+instance ToFormKey UTCTime          where toFormKey = toQueryParam
+instance ToFormKey NominalDiffTime  where toFormKey = toQueryParam
+
+instance ToFormKey String     where toFormKey = toQueryParam
+instance ToFormKey Text       where toFormKey = toQueryParam
+instance ToFormKey Lazy.Text  where toFormKey = toQueryParam
+
+instance ToFormKey All where toFormKey = toQueryParam
+instance ToFormKey Any where toFormKey = toQueryParam
+
+instance ToFormKey a => ToFormKey (Dual a)    where toFormKey = toFormKey . getDual
+instance ToFormKey a => ToFormKey (Sum a)     where toFormKey = toFormKey . getSum
+instance ToFormKey a => ToFormKey (Product a) where toFormKey = toFormKey . getProduct
+
+-- | Typeclass for types that can be parsed from keys of a 'Form'. This is the reverse of 'ToFormKey'.
+class FromFormKey k where
+  -- | Parse a key of a 'Form'.
+  parseFormKey :: Text -> Either Text k
+
+instance FromFormKey ()       where parseFormKey = parseQueryParam
+instance FromFormKey Char     where parseFormKey = parseQueryParam
+
+instance FromFormKey Bool     where parseFormKey = parseQueryParam
+instance FromFormKey Ordering where parseFormKey = parseQueryParam
+
+instance FromFormKey Double   where parseFormKey = parseQueryParam
+instance FromFormKey Float    where parseFormKey = parseQueryParam
+instance FromFormKey Int      where parseFormKey = parseQueryParam
+instance FromFormKey Int8     where parseFormKey = parseQueryParam
+instance FromFormKey Int16    where parseFormKey = parseQueryParam
+instance FromFormKey Int32    where parseFormKey = parseQueryParam
+instance FromFormKey Int64    where parseFormKey = parseQueryParam
+instance FromFormKey Integer  where parseFormKey = parseQueryParam
+instance FromFormKey Word     where parseFormKey = parseQueryParam
+instance FromFormKey Word8    where parseFormKey = parseQueryParam
+instance FromFormKey Word16   where parseFormKey = parseQueryParam
+instance FromFormKey Word32   where parseFormKey = parseQueryParam
+instance FromFormKey Word64   where parseFormKey = parseQueryParam
+
+instance FromFormKey Day              where parseFormKey = parseQueryParam
+instance FromFormKey LocalTime        where parseFormKey = parseQueryParam
+instance FromFormKey ZonedTime        where parseFormKey = parseQueryParam
+instance FromFormKey UTCTime          where parseFormKey = parseQueryParam
+instance FromFormKey NominalDiffTime  where parseFormKey = parseQueryParam
+
+instance FromFormKey String     where parseFormKey = parseQueryParam
+instance FromFormKey Text       where parseFormKey = parseQueryParam
+instance FromFormKey Lazy.Text  where parseFormKey = parseQueryParam
+
+instance FromFormKey All where parseFormKey = parseQueryParam
+instance FromFormKey Any where parseFormKey = parseQueryParam
+
+instance FromFormKey a => FromFormKey (Dual a)    where parseFormKey = fmap Dual . parseFormKey
+instance FromFormKey a => FromFormKey (Sum a)     where parseFormKey = fmap Sum . parseFormKey
+instance FromFormKey a => FromFormKey (Product a) where parseFormKey = fmap Product . parseFormKey
 
 -- | The contents of a form, not yet URL-encoded.
 --
