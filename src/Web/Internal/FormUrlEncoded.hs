@@ -147,7 +147,7 @@ instance FromFormKey a => FromFormKey (Product a) where parseFormKey = fmap Prod
 
 -- | The contents of a form, not yet URL-encoded.
 --
--- 'Form' can be URL-encoded with 'encodeForm' and URL-decoded with 'decodeForm'.
+-- 'Form' can be URL-encoded with 'urlEncodeForm' and URL-decoded with 'urlDecodeForm'.
 newtype Form = Form { unForm :: HashMap Text [Text] }
   deriving (Eq, Read, Generic, Monoid)
 
@@ -342,31 +342,31 @@ instance (GFromForm f) => GFromForm (M1 C x f) where
 --
 -- Key-value pairs get encoded to @key=value@ and separated by @&@:
 --
--- >>> encodeForm [("name", "Julian"), ("lastname", "Arni")]
+-- >>> urlEncodeForm [("name", "Julian"), ("lastname", "Arni")]
 -- "lastname=Arni&name=Julian"
 --
 -- Keys with empty values get encoded to just @key@ (without the @=@ sign):
 --
--- >>> encodeForm [("is_test", "")]
+-- >>> urlEncodeForm [("is_test", "")]
 -- "is_test"
 --
 -- Empty keys are allowed too:
 --
--- >>> encodeForm [("", "foobar")]
+-- >>> urlEncodeForm [("", "foobar")]
 -- "=foobar"
 --
 -- However, if not key and value are empty, the key-value pair is ignored.
--- (This prevents @'decodeForm' . 'encodeForm'@ from being a true isomorphism).
+-- (This prevents @'urlDecodeForm' . 'urlEncodeForm'@ from being a true isomorphism).
 --
--- >>> encodeForm [("", "")]
+-- >>> urlEncodeForm [("", "")]
 -- ""
 --
 -- Everything is escaped with @'escapeURIString' 'isUnreserved'@:
 --
--- >>> encodeForm [("fullname", "Andres Löh")]
+-- >>> urlEncodeForm [("fullname", "Andres Löh")]
 -- "fullname=Andres%20L%C3%B6h"
-encodeForm :: Form -> BSL.ByteString
-encodeForm xs = BSL.intercalate "&" $ map (BSL.fromStrict . encodePair) $ toList xs
+urlEncodeForm :: Form -> BSL.ByteString
+urlEncodeForm xs = BSL.intercalate "&" $ map (BSL.fromStrict . encodePair) $ toList xs
   where
     escape = Text.encodeUtf8 . Text.pack . escapeURIString isUnreserved . Text.unpack
 
@@ -378,35 +378,35 @@ encodeForm xs = BSL.intercalate "&" $ map (BSL.fromStrict . encodePair) $ toList
 --
 -- Key-value pairs get decoded normally:
 --
--- >>> decodeForm "name=Greg&lastname=Weber"
+-- >>> urlDecodeForm "name=Greg&lastname=Weber"
 -- Right (fromList [("lastname","Weber"),("name","Greg")])
 --
 -- Keys with no values get decoded to pairs with empty values.
 --
--- >>> decodeForm "is_test"
+-- >>> urlDecodeForm "is_test"
 -- Right (fromList [("is_test","")])
 --
 -- Empty keys are allowed:
 --
--- >>> decodeForm "=foobar"
+-- >>> urlDecodeForm "=foobar"
 -- Right (fromList [("","foobar")])
 --
 -- The empty string gets decoded into an empty 'Form':
 --
--- >>> decodeForm ""
+-- >>> urlDecodeForm ""
 -- Right (fromList [])
 --
 -- Everything is un-escaped with 'unEscapeString':
 --
--- >>> decodeForm "fullname=Andres%20L%C3%B6h"
+-- >>> urlDecodeForm "fullname=Andres%20L%C3%B6h"
 -- Right (fromList [("fullname","Andres L\246h")])
 --
 -- Improperly formed strings result in an error:
 --
--- >>> decodeForm "this=has=too=many=equals"
+-- >>> urlDecodeForm "this=has=too=many=equals"
 -- Left "not a valid pair: this=has=too=many=equals"
-decodeForm :: BSL.ByteString -> Either Text Form
-decodeForm bs = toForm <$> traverse parsePair pairs
+urlDecodeForm :: BSL.ByteString -> Either Text Form
+urlDecodeForm bs = toForm <$> traverse parsePair pairs
   where
     pairs = map (Text.decodeUtf8With lenientDecode . BSL.toStrict) (BSL8.split '&' bs)
 
@@ -425,23 +425,23 @@ data Proxy3 a b c = Proxy3
 -- @application/x-www-form-urlencoded@ 'BSL.ByteString' directly to a datatype
 -- that has an instance of 'FromForm'.
 --
--- This is effectively @'fromForm' '<=<' 'decodeForm'@.
+-- This is effectively @'fromForm' '<=<' 'urlDecodeForm'@.
 --
--- >>> decodeAsForm "name=Dennis&age=22" :: Either Text Person
+-- >>> urlDecodeAsForm "name=Dennis&age=22" :: Either Text Person
 -- Right (Person {name = "Dennis", age = 22})
-decodeAsForm :: FromForm a => BSL.ByteString -> Either Text a
-decodeAsForm = fromForm <=< decodeForm
+urlDecodeAsForm :: FromForm a => BSL.ByteString -> Either Text a
+urlDecodeAsForm = fromForm <=< urlDecodeForm
 
 -- | This is a convenience function for encoding a datatype that has instance
 -- of 'ToForm' directly to a @application/x-www-form-urlencoded@
 -- 'BSL.ByteString'.
 --
--- This is effectively @'encodeForm' . 'toForm'@.
+-- This is effectively @'urlEncodeForm' . 'toForm'@.
 --
--- >>> encodeAsForm Person {name = "Dennis", age = 22}
+-- >>> urlEncodeAsForm Person {name = "Dennis", age = 22}
 -- "age=22&name=Dennis"
-encodeAsForm :: ToForm a => a -> BSL.ByteString
-encodeAsForm = encodeForm . toForm
+urlEncodeAsForm :: ToForm a => a -> BSL.ByteString
+urlEncodeAsForm = urlEncodeForm . toForm
 
 -- | Find all values corresponding to a given key in a 'Form'.
 --

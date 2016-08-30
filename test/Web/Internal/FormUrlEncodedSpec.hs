@@ -77,14 +77,14 @@ genericSpec = describe "Default (generic) instances" $ do
 urlEncoding :: Spec
 urlEncoding = describe "urlEncoding" $ do
 
-  it "decodeForm (encodeForm x) == Right x" $ property $ \(NoEmptyKeyForm x) -> do
-    decodeForm (encodeForm x) `shouldBe` Right x
+  it "urlDecodeForm (urlEncodeForm x) == Right x" $ property $ \(NoEmptyKeyForm x) -> do
+    urlDecodeForm (urlEncodeForm x) `shouldBe` Right x
 
-  it "decodeAsForm == (fromForm <=< decodeForm)" $ property $ \(x :: BSL.ByteString) -> do
-    (decodeAsForm x :: Either Text Form) `shouldBe` (fromForm <=< decodeForm) x
+  it "urlDecodeAsForm == (fromForm <=< urlDecodeForm)" $ property $ \(x :: BSL.ByteString) -> do
+    (urlDecodeAsForm x :: Either Text Form) `shouldBe` (fromForm <=< urlDecodeForm) x
 
-  it "encodeAsForm == encodeForm . toForm" $ property $ \(x :: Form) -> do
-    encodeAsForm x `shouldBe` (encodeForm . toForm) x
+  it "urlEncodeAsForm == urlEncodeForm . toForm" $ property $ \(x :: Form) -> do
+    urlEncodeAsForm x `shouldBe` (urlEncodeForm . toForm) x
 
-  it "decodeForm \"\" == Right mempty" $ do
-    decodeForm "" `shouldBe` Right mempty
+  it "urlDecodeForm \"\" == Right mempty" $ do
+    urlDecodeForm "" `shouldBe` Right mempty

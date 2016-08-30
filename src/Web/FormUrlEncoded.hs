@@ -10,11 +10,11 @@ module Web.FormUrlEncoded (
   FromFormKey(..),
 
   -- * Encoding and decoding @'Form'@s
-  encodeAsForm,
-  decodeAsForm,
+  urlEncodeAsForm,
+  urlDecodeAsForm,
 
-  encodeForm,
-  decodeForm,
+  urlEncodeForm,
+  urlDecodeForm,
 
   -- * 'Generic's
   genericToForm,
