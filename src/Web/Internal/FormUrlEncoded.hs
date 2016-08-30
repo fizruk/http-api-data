@@ -228,7 +228,7 @@ class ToForm a where
   -- | Convert a value into 'Form'.
   toForm :: a -> Form
   default toForm :: (Generic a, GToForm a (Rep a)) => a -> Form
-  toForm = genericToForm
+  toForm = genericToForm defaultFormOptions
 
 instance ToForm Form where toForm = id
 
@@ -274,25 +274,25 @@ type family NotSupported (cls :: k1) (a :: k2) (reason :: Symbol) :: Constraint 
 --   , age  :: Int
 --   } deriving ('Generic')
 -- @
-genericToForm :: forall a. (Generic a, GToForm a (Rep a)) => a -> Form
-genericToForm = gToForm (Proxy :: Proxy a) . from
+genericToForm :: forall a. (Generic a, GToForm a (Rep a)) => FormOptions -> a -> Form
+genericToForm opts = gToForm (Proxy :: Proxy a) opts . from
 
 class GToForm t (f :: * -> *) where
-  gToForm :: Proxy t -> f x -> Form
+  gToForm :: Proxy t -> FormOptions -> f x -> Form
 
 instance (GToForm t f, GToForm t g) => GToForm t (f :*: g) where
-  gToForm p (a :*: b) = gToForm p a <> gToForm p b
+  gToForm p opts (a :*: b) = gToForm p opts a <> gToForm p opts b
 
 instance (GToForm t f) => GToForm t (M1 D x f) where
-  gToForm p (M1 a) = gToForm p a
+  gToForm p opts (M1 a) = gToForm p opts a
 
 instance (GToForm t f) => GToForm t (M1 C x f) where
-  gToForm p (M1 a) = gToForm p a
+  gToForm p opts (M1 a) = gToForm p opts a
 
 instance (Selector s, ToHttpApiData c) => GToForm t (M1 S s (K1 i c)) where
-  gToForm _ (M1 (K1 c)) = fromList [(key, toQueryParam c)]
+  gToForm _ opts (M1 (K1 c)) = fromList [(key, toQueryParam c)]
     where
-      key = Text.pack $ selName (Proxy3 :: Proxy3 s g p)
+      key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
 
 instance NotSupported ToForm t "is a sum type" => GToForm t (f :+: g) where gToForm = error "impossible"
 
@@ -335,7 +335,7 @@ class FromForm a where
   -- | Parse 'Form' into a value.
   fromForm :: Form -> Either Text a
   default fromForm :: (Generic a, GFromForm a (Rep a)) => Form -> Either Text a
-  fromForm = genericFromForm
+  fromForm = genericFromForm defaultFormOptions
 
 instance FromForm Form where fromForm = pure
 
@@ -371,25 +371,25 @@ toEntriesByKey = traverse parseGroup . HashMap.toList . unForm
 --   , age  :: Int
 --   } deriving ('Generic')
 -- @
-genericFromForm :: forall a. (Generic a, GFromForm a (Rep a)) => Form -> Either Text a
-genericFromForm f = to <$> gFromForm (Proxy :: Proxy a) f
+genericFromForm :: forall a. (Generic a, GFromForm a (Rep a)) => FormOptions -> Form -> Either Text a
+genericFromForm opts f = to <$> gFromForm (Proxy :: Proxy a) opts f
 
 class GFromForm t (f :: * -> *) where
-  gFromForm :: Proxy t -> Form -> Either Text (f x)
+  gFromForm :: Proxy t -> FormOptions -> Form -> Either Text (f x)
 
 instance (GFromForm t f, GFromForm t g) => GFromForm t (f :*: g) where
-  gFromForm p f = (:*:) <$> gFromForm p f <*> gFromForm p f
+  gFromForm p opts f = (:*:) <$> gFromForm p opts f <*> gFromForm p opts f
 
 instance (Selector s, FromHttpApiData f) => GFromForm t (M1 S s (K1 i f)) where
-  gFromForm _ form = M1 . K1 <$> parseUnique key form
+  gFromForm _ opts form = M1 . K1 <$> parseUnique key form
     where
-      key = Text.pack $ selName (Proxy3 :: Proxy3 s g p)
+      key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
 
 instance GFromForm t f => GFromForm t (M1 D x f) where
-  gFromForm p f = M1 <$> gFromForm p f
+  gFromForm p opts f = M1 <$> gFromForm p opts f
 
 instance GFromForm t f => GFromForm t (M1 C x f) where
-  gFromForm p f = M1 <$> gFromForm p f
+  gFromForm p opts f = M1 <$> gFromForm p opts f
 
 instance NotSupported FromForm t "is a sum type" => GFromForm t (f :+: g) where gFromForm = error "impossible"
 
@@ -551,3 +551,20 @@ parseAll key = parseQueryParams . lookupAll key
 parseUnique :: FromHttpApiData v => Text -> Form -> Either Text v
 parseUnique key form = lookupUnique key form >>= parseQueryParam
 
+-- | 'Generic'-based deriving options for 'ToForm' and 'FromForm'.
+data FormOptions = FormOptions
+  { -- | Function applied to field labels. Handy for removing common record prefixes for example.
+    fieldLabelModifier :: String -> String
+  }
+
+-- | Default encoding 'FormOptions'.
+--
+-- @
+-- 'FormOptions'
+-- { 'fieldLabelModifier' = id
+-- }
+-- @
+defaultFormOptions :: FormOptions
+defaultFormOptions = FormOptions
+  { fieldLabelModifier = id
+  }
