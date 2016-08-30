@@ -23,12 +23,14 @@ flag use-text-show
 library
     hs-source-dirs: src/
     build-depends:   base               >= 4.6    && < 4.10
-                   , text               >= 0.5
                    , bytestring
                    , containers
+                   , hashable
+                   , network-uri        >= 2.6    && < 2.7
+                   , text               >= 0.5
                    , time
                    , time-locale-compat >=0.1.1.0 && <0.2
-                   , network-uri        >= 2.6    && < 2.7
+                   , unordered-containers
     if flag(use-text-show)
       cpp-options: -DUSE_TEXT_SHOW
       build-depends: text-show        >= 2

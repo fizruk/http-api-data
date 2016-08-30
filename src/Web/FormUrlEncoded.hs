@@ -15,6 +15,10 @@ module Web.FormUrlEncoded (
 
   encodeForm,
   decodeForm,
+
+  -- * Helpers
+  toEntriesByKey,
+  fromEntriesByKey,
 ) where
 
 import Web.Internal.FormUrlEncoded

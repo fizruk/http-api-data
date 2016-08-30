@@ -20,7 +20,12 @@ import           Control.Arrow              ((***))
 import           Control.Monad              ((<=<))
 import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSL8
+import           Data.Hashable              (Hashable)
+import           Data.HashMap.Strict        (HashMap)
+import qualified Data.HashMap.Strict        as HashMap
 import           Data.Int
+import           Data.IntMap                (IntMap)
+import qualified Data.IntMap                as IntMap
 import           Data.Map                   (Map)
 import qualified Data.Map                   as Map
 import           Data.Monoid
@@ -201,7 +206,17 @@ instance (ToFormKey k, ToHttpApiData v) => ToForm [(k, v)] where
   toForm = fromList . map (toFormKey *** toQueryParam)
 
 instance (ToFormKey k, ToHttpApiData v) => ToForm (Map k [v]) where
-  toForm = Form . Map.fromListWith (<>) . map (toFormKey *** map toQueryParam) . Map.toList
+  toForm = fromEntriesByKey . Map.toList
+
+instance (ToFormKey k, ToHttpApiData v) => ToForm (HashMap k [v]) where
+  toForm = fromEntriesByKey . HashMap.toList
+
+instance ToHttpApiData v => ToForm (IntMap [v]) where
+  toForm = fromEntriesByKey . IntMap.toList
+
+-- | Convert a list of entries groupped by key into a 'Form'.
+fromEntriesByKey :: (ToFormKey k, ToHttpApiData v) => [(k, [v])] -> Form
+fromEntriesByKey = Form . Map.fromListWith (<>) . map (toFormKey *** map toQueryParam)
 
 -- | A 'Generic'-based implementation of 'toForm'.
 -- This is used as a default implementation in 'ToForm'.
@@ -273,14 +288,20 @@ class FromForm a where
 instance FromForm Form where fromForm = pure
 
 instance (FromFormKey k, FromHttpApiData v) => FromForm [(k, v)] where
-  fromForm = fmap (concatMap (\(k, vs) -> map ((,) k) vs)) . entriesByKey
+  fromForm = fmap (concatMap (\(k, vs) -> map ((,) k) vs)) . toEntriesByKey
 
 instance (Ord k, FromFormKey k, FromHttpApiData v) => FromForm (Map k [v]) where
-  fromForm = fmap (Map.fromListWith (<>)) . entriesByKey
+  fromForm = fmap (Map.fromListWith (<>)) . toEntriesByKey
+
+instance (Eq k, Hashable k, FromFormKey k, FromHttpApiData v) => FromForm (HashMap k [v]) where
+  fromForm = fmap (HashMap.fromListWith (<>)) . toEntriesByKey
+
+instance FromHttpApiData v => FromForm (IntMap [v]) where
+  fromForm = fmap (IntMap.fromListWith (<>)) . toEntriesByKey
 
 -- | Parse a 'Form' into a list of entries groupped by key.
-entriesByKey :: (FromFormKey k, FromHttpApiData v) => Form -> Either Text [(k, [v])]
-entriesByKey = traverse parseGroup . Map.toList . unForm
+toEntriesByKey :: (FromFormKey k, FromHttpApiData v) => Form -> Either Text [(k, [v])]
+toEntriesByKey = traverse parseGroup . Map.toList . unForm
   where
     parseGroup (k, vs) = (,) <$> parseFormKey k <*> traverse parseQueryParam vs
 
