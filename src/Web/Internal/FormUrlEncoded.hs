@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DefaultSignatures          #-}
@@ -257,9 +256,9 @@ type family NotSupported (cls :: k1) (a :: k2) (reason :: Symbol) :: Constraint 
 #if __GLASGOW_HASKELL__ < 800
 #else
   NotSupported cls a reason = TypeError
-    ( 'Text "Cannot derive a Generic-based " :<>: 'ShowType cls :<>: 'Text " instance for " :<>: 'ShowType a :<>: 'Text "." :$$:
-      'ShowType a :<>: 'Text " " :<>: 'Text reason :<>: 'Text "," :$$:
-      'Text "but Generic-based " :<>: 'ShowType cls :<>: 'Text " instances can be derived only for records" :$$:
+    ( 'Text "Cannot derive a Generic-based " ':<>: 'ShowType cls ':<>: 'Text " instance for " ':<>: 'ShowType a ':<>: 'Text "." ':$$:
+      'ShowType a ':<>: 'Text " " ':<>: 'Text reason ':<>: 'Text "," ':$$:
+      'Text "but Generic-based " ':<>: 'ShowType cls ':<>: 'Text " instances can be derived only for records" ':$$:
       'Text "(i.e. product types with named fields)." )
 #endif
 
