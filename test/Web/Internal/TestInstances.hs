@@ -5,7 +5,6 @@
 module Web.Internal.TestInstances
    ( RandomCase(..)
    , SimpleRec(..)
-   , SimpleSumRec(..)
    , NoEmptyKeyForm(..)
    ) where
 
@@ -92,20 +91,6 @@ instance FromForm SimpleRec
 
 instance Arbitrary SimpleRec where
   arbitrary = SimpleRec <$> arbitrary <*> arbitrary
-
-data SimpleSumRec
-  = SSRLeft { left1 :: Int, left2 :: Bool }
-  | SSRRight { right1 :: T.Text, right2 :: Int}
-  deriving (Eq, Show, Read, Generic)
-
-instance ToForm SimpleSumRec
-instance FromForm SimpleSumRec
-
-instance Arbitrary SimpleSumRec where
-  arbitrary = oneof
-    [ SSRLeft <$> arbitrary <*> arbitrary
-    , SSRRight <$> arbitrary <*> arbitrary
-    ]
 
 newtype NoEmptyKeyForm =
     NoEmptyKeyForm { unNoEmptyKeyForm :: Form }

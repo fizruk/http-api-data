@@ -41,33 +41,12 @@ genericSpec = describe "Default (generic) instances" $ do
       HashMap.lookup "rec1" f `shouldBe` Just [rec1 x]
       (parseQueryParams <$> HashMap.lookup "rec2" f) `shouldBe` Just (Right [rec2 x])
 
-    context "for sum types" $ do
-
-      it "contains the correct records" $ property $ \x  -> do
-        let f = unForm $ toForm x
-        case x of
-          SSRLeft _ _ -> do
-            parseQueryParams <$> HashMap.lookup "left1" f `shouldBe` Just (Right [left1 x])
-            parseQueryParams <$> HashMap.lookup "left2" f `shouldBe` Just (Right [left2 x])
-          SSRRight _ _ -> do
-            parseQueryParams <$> HashMap.lookup "right1" f `shouldBe` Just (Right [right1 x])
-            parseQueryParams <$> HashMap.lookup "right2" f `shouldBe` Just (Right [right2 x])
-
-
   context "FromForm" $ do
-
-    it "is the left inverse of ToForm" $ property $
-      \(x :: SimpleRec, y :: SimpleSumRec) -> do
-        fromForm (toForm x) `shouldBe` Right x
-        fromForm (toForm y) `shouldBe` Right y
 
     it "is the right inverse of ToForm" $ property $ \x (y :: Int) -> do
       let f1 = fromList [("rec1", x), ("rec2", toQueryParam y)]
           Right r1 = fromForm f1 :: Either Text SimpleRec
       toForm r1 `shouldBe` f1
-      let f2 = fromList [("right1", x), ("right2", toQueryParam y)]
-          Right r2 = fromForm f2 :: Either Text SimpleSumRec
-      toForm r2 `shouldBe` f2
 
     it "returns the underlying error" $ do
       let f = fromList [("rec1", "anything"), ("rec2", "bad")]

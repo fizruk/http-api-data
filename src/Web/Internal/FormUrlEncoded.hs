@@ -232,10 +232,6 @@ class GToForm (f :: * -> *) where
 instance (GToForm f, GToForm g) => GToForm (f :*: g) where
   gToForm (a :*: b) = gToForm a <> gToForm b
 
-instance (GToForm f, GToForm g) => GToForm (f :+: g) where
-  gToForm (L1 a) = gToForm a
-  gToForm (R1 a) = gToForm a
-
 instance (GToForm f) => GToForm (M1 D x f) where
   gToForm (M1 a) = gToForm a
 
@@ -319,14 +315,6 @@ class GFromForm (f :: * -> *) where
 
 instance (GFromForm f, GFromForm g) => GFromForm (f :*: g) where
   gFromForm f = (:*:) <$> gFromForm f <*> gFromForm f
-
-instance (GFromForm f, GFromForm g) => GFromForm (f :+: g) where
-  gFromForm f
-      = fmap L1 (gFromForm f)
-    <!> fmap R1 (gFromForm f)
-    where
-      Left _  <!> y = y
-      x       <!> _ = x
 
 instance (Selector s, FromHttpApiData f) => GFromForm (M1 S s (K1 i f)) where
   gFromForm form = M1 . K1 <$> parseUnique key form
