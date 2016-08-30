@@ -233,8 +233,13 @@ instance ToHttpApiData v => ToForm (IntMap [v]) where
   toForm = fromEntriesByKey . IntMap.toList
 
 -- | Convert a list of entries groupped by key into a 'Form'.
+--
+-- >>> fromEntriesByKey [("name",["Nick"]),("color",["red","blue"])]
+-- fromList [("color","red"),("color","blue"),("name","Nick")]
 fromEntriesByKey :: (ToFormKey k, ToHttpApiData v) => [(k, [v])] -> Form
 fromEntriesByKey = Form . HashMap.fromListWith (<>) . map (toFormKey *** map toQueryParam)
+
+data Proxy3 a b c = Proxy3
 
 -- | A 'Generic'-based implementation of 'toForm'.
 -- This is used as a default implementation in 'ToForm'.
@@ -314,6 +319,9 @@ instance FromHttpApiData v => FromForm (IntMap [v]) where
   fromForm = fmap (IntMap.fromListWith (<>)) . toEntriesByKey
 
 -- | Parse a 'Form' into a list of entries groupped by key.
+--
+-- >>> toEntriesByKey [("name", "Nick"), ("color", "red"), ("color", "white")] :: Either Text [(Text, [Text])]
+-- Right [("color",["red","white"]),("name",["Nick"])]
 toEntriesByKey :: (FromFormKey k, FromHttpApiData v) => Form -> Either Text [(k, [v])]
 toEntriesByKey = traverse parseGroup . HashMap.toList . unForm
   where
@@ -422,8 +430,6 @@ urlDecodeForm bs = toForm <$> traverse parsePair pairs
         [k]    -> return (k, "")
         xs     -> Left $ "not a valid pair: " <> Text.intercalate "=" xs
 
-data Proxy3 a b c = Proxy3
-
 -- | This is a convenience function for decoding a
 -- @application/x-www-form-urlencoded@ 'BSL.ByteString' directly to a datatype
 -- that has an instance of 'FromForm'.
@@ -448,14 +454,14 @@ urlEncodeAsForm = urlEncodeForm . toForm
 
 -- | Find all values corresponding to a given key in a 'Form'.
 --
--- >>> lookupKey "name" []
+-- >>> lookupAll "name" []
 -- []
--- >>> lookupKey "name" [("name", "Oleg")]
+-- >>> lookupAll "name" [("name", "Oleg")]
 -- ["Oleg"]
--- >>> lookupKey "name" [("name", "Oleg"), ("name", "David")]
+-- >>> lookupAll "name" [("name", "Oleg"), ("name", "David")]
 -- ["Oleg","David"]
-lookupKey :: Text -> Form -> [Text]
-lookupKey key = F.concat . HashMap.lookup key . unForm
+lookupAll :: Text -> Form -> [Text]
+lookupAll key = F.concat . HashMap.lookup key . unForm
 
 -- | Lookup a unique value for a key.
 -- Fail if there is zero or more than one value.
@@ -468,12 +474,26 @@ lookupKey key = F.concat . HashMap.lookup key . unForm
 -- Left "Duplicate key \"name\""
 lookupUnique :: Text -> Form -> Either Text Text
 lookupUnique key form =
-  case lookupKey key form of
+  case lookupAll key form of
     [v] -> pure v
     []  -> Left $ "Could not find key " <> Text.pack (show key)
     _   -> Left $ "Duplicate key " <> Text.pack (show key)
 
+-- | Lookup all values for a given key in a 'Form' and parse them with 'parseQueryParams'.
+--
+-- >>> parseAll "age" [] :: Either Text [Word8]
+-- Right []
+-- >>> parseAll "age" [("age", "8"), ("age", "seven")] :: Either Text [Word8]
+-- Left "could not parse: `seven' (input does not start with a digit)"
+-- >>> parseAll "age" [("age", "8"), ("age", "777")] :: Either Text [Word8]
+-- Left "out of bounds: `777' (should be between 0 and 255)"
+-- >>> parseAll "age" [("age", "12"), ("age", "25")] :: Either Text [Word8]
+-- Right [12,25]
+parseAll :: FromHttpApiData v => Text -> Form -> Either Text [v]
+parseAll key = parseQueryParams . lookupAll key
+
 -- | Lookup a unique value for a given key and parse it with 'parseQueryParam'.
+-- Fail if there is zero or more than one value for the key.
 --
 -- >>> parseUnique "age" [] :: Either Text Word8
 -- Left "Could not find key \"age\""
@@ -487,17 +507,4 @@ lookupUnique key form =
 -- Right 7
 parseUnique :: FromHttpApiData v => Text -> Form -> Either Text v
 parseUnique key form = lookupUnique key form >>= parseQueryParam
-
--- | Lookup all values for a given key in a 'Form' and parse them with 'parseQueryParams'.
---
--- >>> parseAll "age" [] :: Either Text [Word8]
--- Right []
--- >>> parseAll "age" [("age", "8"), ("age", "seven")] :: Either Text [Word8]
--- Left "could not parse: `seven' (input does not start with a digit)"
--- >>> parseAll "age" [("age", "8"), ("age", "777")] :: Either Text [Word8]
--- Left "out of bounds: `777' (should be between 0 and 255)"
--- >>> parseAll "age" [("age", "12"), ("age", "25")] :: Either Text [Word8]
--- Right [12,25]
-parseAll :: FromHttpApiData v => Text -> Form -> Either Text [v]
-parseAll key = parseQueryParams . lookupKey key
 

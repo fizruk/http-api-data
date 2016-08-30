@@ -24,10 +24,11 @@ module Web.FormUrlEncoded (
   toEntriesByKey,
   fromEntriesByKey,
 
-  lookupKey,
+  lookupAll,
   lookupUnique,
-  parseUnique,
+
   parseAll,
+  parseUnique,
 ) where
 
 import Web.Internal.FormUrlEncoded
