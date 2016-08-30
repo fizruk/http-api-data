@@ -16,6 +16,7 @@ module Web.Internal.FormUrlEncoded where
 import Control.Applicative
 #endif
 
+import           Control.Arrow              ((***))
 import           Control.Monad              ((<=<))
 import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSL8
@@ -194,9 +195,13 @@ class ToForm a where
   default toForm :: (Generic a, GToForm (Rep a)) => a -> Form
   toForm = genericToForm
 
-instance ToForm [(Text, Text)] where toForm = fromList
-instance ToForm (Map Text [Text]) where toForm = Form . Map.filter (not . null)
 instance ToForm Form where toForm = id
+
+instance (ToFormKey k, ToHttpApiData v) => ToForm [(k, v)] where
+  toForm = fromList . map (toFormKey *** toQueryParam)
+
+instance (ToFormKey k, ToHttpApiData v) => ToForm (Map k [v]) where
+  toForm = Form . Map.fromListWith (<>) . map (toFormKey *** map toQueryParam) . Map.toList
 
 -- | A 'Generic'-based implementation of 'toForm'.
 -- This is used as a default implementation in 'ToForm'.
@@ -235,8 +240,8 @@ instance (Selector s, ToHttpApiData c) => GToForm (M1 S s (K1 i c)) where
 --
 -- instance 'FromForm' Person where
 --   'fromForm' (Form m) = Person
---     '\<$\>' maybe (Left "key \"name\" not found") 'parseQueryParam' (lookup "name" m)
---     '\<*\>' maybe (Left "key \"age\" not found")  'parseQueryParam' (lookup "name" m)
+--     '<$>' maybe (Left "key \"name\" not found") 'parseQueryParam' (lookup "name" m)
+--     '<*>' maybe (Left "key \"age\" not found")  'parseQueryParam' (lookup "name" m)
 -- @
 --
 -- Instead of manually writing @'FromForm'@ instances you can
@@ -265,9 +270,19 @@ class FromForm a where
      => Form -> Either Text a
   fromForm = genericFromForm
 
-instance FromForm Form where fromForm = return
-instance FromForm (Map Text [Text]) where fromForm = return . unForm
-instance FromForm [(Text, Text)] where fromForm = return . toList
+instance FromForm Form where fromForm = pure
+
+instance (FromFormKey k, FromHttpApiData v) => FromForm [(k, v)] where
+  fromForm = fmap (concatMap (\(k, vs) -> map ((,) k) vs)) . entriesByKey
+
+instance (Ord k, FromFormKey k, FromHttpApiData v) => FromForm (Map k [v]) where
+  fromForm = fmap (Map.fromListWith (<>)) . entriesByKey
+
+-- | Parse a 'Form' into a list of entries groupped by key.
+entriesByKey :: (FromFormKey k, FromHttpApiData v) => Form -> Either Text [(k, [v])]
+entriesByKey = traverse parseGroup . Map.toList . unForm
+  where
+    parseGroup (k, vs) = (,) <$> parseFormKey k <*> traverse parseQueryParam vs
 
 -- | A 'Generic'-based implementation of 'fromForm'.
 -- This is used as a default implementation in 'FromForm'.
