@@ -211,7 +211,8 @@ instance IsList Form where
 -- instance 'ToForm' Person
 -- @
 --
--- The default implementation will use 'toQueryParam' for each field's value.
+-- The default implementation of 'toForm' is 'genericToForm'.
+-- It only works for records and it will use 'toQueryParam' for each field's value.
 class ToForm a where
   -- | Convert a value into 'Form'.
   toForm :: a -> Form
@@ -243,6 +244,15 @@ data Proxy3 a b c = Proxy3
 
 -- | A 'Generic'-based implementation of 'toForm'.
 -- This is used as a default implementation in 'ToForm'.
+--
+-- Note that this only works for records (i.e. product data types with named fields):
+--
+-- @
+-- data Person = Person
+--   { name :: String
+--   , age  :: Int
+--   } deriving ('Generic')
+-- @
 genericToForm :: (Generic a, GToForm (Rep a)) => a -> Form
 genericToForm = gToForm . from
 
@@ -296,7 +306,8 @@ instance (Selector s, ToHttpApiData c) => GToForm (M1 S s (K1 i c)) where
 -- instance 'FromForm' Person
 -- @
 --
--- The default implementation will use 'parseQueryParam' for each field's value.
+-- The default implementation of 'fromForm' is 'genericFromForm'.
+-- It only works for records and it will use 'parseQueryParam' for each field's value.
 class FromForm a where
   -- | Parse 'Form' into a value.
   fromForm :: Form -> Either Text a
@@ -329,6 +340,15 @@ toEntriesByKey = traverse parseGroup . HashMap.toList . unForm
 
 -- | A 'Generic'-based implementation of 'fromForm'.
 -- This is used as a default implementation in 'FromForm'.
+--
+-- Note that this only works for records (i.e. product data types with named fields):
+--
+-- @
+-- data Person = Person
+--   { name :: String
+--   , age  :: Int
+--   } deriving ('Generic')
+-- @
 genericFromForm :: (Generic a, GFromForm (Rep a))
     => Form -> Either Text a
 genericFromForm f = to <$> gFromForm f
