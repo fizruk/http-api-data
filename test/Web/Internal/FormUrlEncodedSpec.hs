@@ -9,7 +9,7 @@ import Control.Applicative
 
 import Control.Monad ((<=<))
 import qualified Data.ByteString.Lazy.Char8 as BSL
-import qualified Data.Map as M
+import qualified Data.HashMap.Strict as HashMap
 import Data.Text (Text, unpack)
 import Test.Hspec
 import Test.QuickCheck
@@ -32,13 +32,13 @@ genericSpec = describe "Default (generic) instances" $ do
 
     it "contains the record names" $ property $ \(x :: SimpleRec) -> do
       let f = unForm $ toForm x
-      M.member "rec1" f `shouldBe` True
-      M.member "rec2" f `shouldBe` True
+      HashMap.member "rec1" f `shouldBe` True
+      HashMap.member "rec2" f `shouldBe` True
 
     it "contains the correct record values" $ property $ \(x :: SimpleRec) -> do
       let f = unForm $ toForm x
-      M.lookup "rec1" f `shouldBe` Just [rec1 x]
-      (parseQueryParams <$> M.lookup "rec2" f) `shouldBe` Just (Right [rec2 x])
+      HashMap.lookup "rec1" f `shouldBe` Just [rec1 x]
+      (parseQueryParams <$> HashMap.lookup "rec2" f) `shouldBe` Just (Right [rec2 x])
 
     context "for sum types" $ do
 
@@ -46,11 +46,11 @@ genericSpec = describe "Default (generic) instances" $ do
         let f = unForm $ toForm x
         case x of
           SSRLeft _ _ -> do
-            parseQueryParams <$> M.lookup "left1" f `shouldBe` Just (Right [left1 x])
-            parseQueryParams <$> M.lookup "left2" f `shouldBe` Just (Right [left2 x])
+            parseQueryParams <$> HashMap.lookup "left1" f `shouldBe` Just (Right [left1 x])
+            parseQueryParams <$> HashMap.lookup "left2" f `shouldBe` Just (Right [left2 x])
           SSRRight _ _ -> do
-            parseQueryParams <$> M.lookup "right1" f `shouldBe` Just (Right [right1 x])
-            parseQueryParams <$> M.lookup "right2" f `shouldBe` Just (Right [right2 x])
+            parseQueryParams <$> HashMap.lookup "right1" f `shouldBe` Just (Right [right1 x])
+            parseQueryParams <$> HashMap.lookup "right2" f `shouldBe` Just (Right [right2 x])
 
 
   context "FromForm" $ do

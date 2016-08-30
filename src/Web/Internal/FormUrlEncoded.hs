@@ -146,7 +146,7 @@ instance FromFormKey a => FromFormKey (Product a) where parseFormKey = fmap Prod
 -- | The contents of a form, not yet URL-encoded.
 --
 -- 'Form' can be URL-encoded with 'encodeForm' and URL-decoded with 'decodeForm'.
-newtype Form = Form { unForm :: Map Text [Text] }
+newtype Form = Form { unForm :: HashMap Text [Text] }
   deriving (Eq, Read, Generic, Monoid)
 
 instance Show Form where
@@ -155,8 +155,8 @@ instance Show Form where
 
 instance IsList Form where
   type Item Form = (Text, Text)
-  fromList = Form . Map.fromListWith (flip (<>)) . fmap (\(k, v) -> (k, [v]))
-  toList = concatMap (\(k, vs) -> map ((,) k) vs) . Map.toList . unForm
+  fromList = Form . HashMap.fromListWith (flip (<>)) . fmap (\(k, v) -> (k, [v]))
+  toList = concatMap (\(k, vs) -> map ((,) k) vs) . HashMap.toList . unForm
 
 -- | Convert a value into 'Form'.
 --
@@ -216,7 +216,7 @@ instance ToHttpApiData v => ToForm (IntMap [v]) where
 
 -- | Convert a list of entries groupped by key into a 'Form'.
 fromEntriesByKey :: (ToFormKey k, ToHttpApiData v) => [(k, [v])] -> Form
-fromEntriesByKey = Form . Map.fromListWith (<>) . map (toFormKey *** map toQueryParam)
+fromEntriesByKey = Form . HashMap.fromListWith (<>) . map (toFormKey *** map toQueryParam)
 
 -- | A 'Generic'-based implementation of 'toForm'.
 -- This is used as a default implementation in 'ToForm'.
@@ -301,7 +301,7 @@ instance FromHttpApiData v => FromForm (IntMap [v]) where
 
 -- | Parse a 'Form' into a list of entries groupped by key.
 toEntriesByKey :: (FromFormKey k, FromHttpApiData v) => Form -> Either Text [(k, [v])]
-toEntriesByKey = traverse parseGroup . Map.toList . unForm
+toEntriesByKey = traverse parseGroup . HashMap.toList . unForm
   where
     parseGroup (k, vs) = (,) <$> parseFormKey k <*> traverse parseQueryParam vs
 
@@ -450,7 +450,7 @@ encodeAsForm = encodeForm . toForm
 -- >>> lookupKey "name" [("name", "Oleg"), ("name", "David")]
 -- ["Oleg","David"]
 lookupKey :: Text -> Form -> [Text]
-lookupKey key = concat . Map.lookup key . unForm
+lookupKey key = concat . HashMap.lookup key . unForm
 
 -- | Lookup a unique value for a key.
 -- Fail if there is zero or more than one value.

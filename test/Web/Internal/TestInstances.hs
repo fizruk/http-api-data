@@ -12,7 +12,7 @@ module Web.Internal.TestInstances
 import           Control.Applicative
 import qualified Data.ByteString.Lazy.Char8 as BSL
 import           Data.Char
-import qualified Data.Map                as M
+import qualified Data.HashMap.Strict  as HashMap
 import qualified Data.Text            as T
 import qualified Data.Text.Lazy       as L
 import           Data.Time
@@ -114,4 +114,4 @@ newtype NoEmptyKeyForm =
 instance Arbitrary NoEmptyKeyForm where
   arbitrary = NoEmptyKeyForm . removeEmptyKeys <$> arbitrary
     where
-      removeEmptyKeys (Form m) = Form (M.delete "" m)
+      removeEmptyKeys (Form m) = Form (HashMap.delete "" m)
