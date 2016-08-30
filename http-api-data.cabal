@@ -26,11 +26,11 @@ library
                    , bytestring
                    , containers
                    , hashable
-                   , network-uri        >= 2.6    && < 2.7
                    , text               >= 0.5
                    , time
                    , time-locale-compat >=0.1.1.0 && <0.2
                    , unordered-containers
+                   , uri-bytestring
     if flag(use-text-show)
       cpp-options: -DUSE_TEXT_SHOW
       build-depends: text-show        >= 2

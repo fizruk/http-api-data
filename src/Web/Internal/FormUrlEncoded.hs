@@ -19,6 +19,7 @@ import Data.Traversable
 
 import           Control.Arrow              ((***))
 import           Control.Monad              ((<=<))
+import           Data.ByteString.Builder    (toLazyByteString, shortByteString)
 import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSL8
 import qualified Data.Foldable              as F
@@ -28,6 +29,7 @@ import qualified Data.HashMap.Strict        as HashMap
 import           Data.Int
 import           Data.IntMap                (IntMap)
 import qualified Data.IntMap                as IntMap
+import           Data.List                  (intersperse)
 import           Data.Map                   (Map)
 import qualified Data.Map                   as Map
 import           Data.Monoid
@@ -43,8 +45,7 @@ import           Data.Word
 
 import           GHC.Exts                   (IsList (..))
 import           GHC.Generics
-import           Network.URI                (escapeURIString, isUnreserved,
-                                             unEscapeString)
+import           URI.ByteString             (urlEncodeQuery, urlDecodeQuery)
 
 import Web.Internal.HttpApiData
 
@@ -366,12 +367,12 @@ instance (GFromForm f) => GFromForm (M1 C x f) where
 -- >>> urlEncodeForm [("fullname", "Andres Löh")]
 -- "fullname=Andres%20L%C3%B6h"
 urlEncodeForm :: Form -> BSL.ByteString
-urlEncodeForm xs = BSL.intercalate "&" $ map (BSL.fromStrict . encodePair) $ toList xs
+urlEncodeForm = toLazyByteString . mconcat . intersperse (shortByteString "&") . map encodePair . toList
   where
-    escape = Text.encodeUtf8 . Text.pack . escapeURIString isUnreserved . Text.unpack
+    escape = urlEncodeQuery . Text.encodeUtf8
 
     encodePair (k, "") = escape k
-    encodePair (k, v) = escape k <> "=" <> escape v
+    encodePair (k, v) = escape k <> shortByteString "=" <> escape v
 
 
 -- | Decode an @application/x-www-form-urlencoded@ 'BSL.ByteString' to a 'Form'.
@@ -408,16 +409,15 @@ urlEncodeForm xs = BSL.intercalate "&" $ map (BSL.fromStrict . encodePair) $ toL
 urlDecodeForm :: BSL.ByteString -> Either Text Form
 urlDecodeForm bs = toForm <$> traverse parsePair pairs
   where
-    pairs = map (Text.decodeUtf8With lenientDecode . BSL.toStrict) (BSL8.split '&' bs)
+    pairs = map (BSL8.split '=') (BSL8.split '&' bs)
 
-    unescape = Text.pack . unEscapeString . Text.unpack . Text.replace "+" "%20"
+    unescape = Text.decodeUtf8With lenientDecode . urlDecodeQuery . BSL.toStrict
 
-    parsePair :: Text -> Either Text (Text, Text)
     parsePair p =
-      case Text.splitOn "=" p of
-        [k, v] -> return (unescape k, unescape v)
-        [k]    -> return (unescape k, "" )
-        _ -> Left $ "not a valid pair: " <> p
+      case map unescape p of
+        [k, v] -> return (k, v)
+        [k]    -> return (k, "")
+        xs     -> Left $ "not a valid pair: " <> Text.intercalate "=" xs
 
 data Proxy3 a b c = Proxy3
 
