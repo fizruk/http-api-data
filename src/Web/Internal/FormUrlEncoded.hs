@@ -1,20 +1,31 @@
+{-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
 {-# LANGUAGE CPP                        #-}
+{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
 module Web.Internal.FormUrlEncoded where
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
 import Data.Traversable
+#endif
+
+#if __GLASGOW_HASKELL__ < 800
+import GHC.Exts (IsList (..))
+#else
+import GHC.Exts (IsList (..), Constraint)
+import GHC.TypeLits
 #endif
 
 import           Control.Arrow              ((***))
@@ -41,6 +52,7 @@ import           Data.Text.Encoding         as Text
 import           Data.Text.Encoding.Error   (lenientDecode)
 
 import           Data.Time
+import           Data.Proxy
 import           Data.Word
 
 #if MIN_VERSION_base(4,8,0)
@@ -48,7 +60,6 @@ import Data.Void
 import Numeric.Natural
 #endif
 
-import           GHC.Exts                   (IsList (..))
 import           GHC.Generics
 import           URI.ByteString             (urlEncodeQuery, urlDecodeQuery)
 
@@ -216,7 +227,7 @@ instance IsList Form where
 class ToForm a where
   -- | Convert a value into 'Form'.
   toForm :: a -> Form
-  default toForm :: (Generic a, GToForm (Rep a)) => a -> Form
+  default toForm :: (Generic a, GToForm a (Rep a)) => a -> Form
   toForm = genericToForm
 
 instance ToForm Form where toForm = id
@@ -242,6 +253,16 @@ fromEntriesByKey = Form . HashMap.fromListWith (<>) . map (toFormKey *** map toQ
 
 data Proxy3 a b c = Proxy3
 
+type family NotSupported (cls :: k1) (a :: k2) (reason :: Symbol) :: Constraint where
+#if __GLASGOW_HASKELL__ < 800
+#else
+  NotSupported cls a reason = TypeError
+    ( 'Text "Cannot derive a Generic-based " :<>: 'ShowType cls :<>: 'Text " instance for " :<>: 'ShowType a :<>: 'Text "." :$$:
+      'ShowType a :<>: 'Text " " :<>: 'Text reason :<>: 'Text "," :$$:
+      'Text "but Generic-based " :<>: 'ShowType cls :<>: 'Text " instances can be derived only for records" :$$:
+      'Text "(i.e. product types with named fields)." )
+#endif
+
 -- | A 'Generic'-based implementation of 'toForm'.
 -- This is used as a default implementation in 'ToForm'.
 --
@@ -253,25 +274,27 @@ data Proxy3 a b c = Proxy3
 --   , age  :: Int
 --   } deriving ('Generic')
 -- @
-genericToForm :: (Generic a, GToForm (Rep a)) => a -> Form
-genericToForm = gToForm . from
+genericToForm :: forall a. (Generic a, GToForm a (Rep a)) => a -> Form
+genericToForm = gToForm (Proxy :: Proxy a) . from
 
-class GToForm (f :: * -> *) where
-  gToForm :: f x -> Form
+class GToForm t (f :: * -> *) where
+  gToForm :: Proxy t -> f x -> Form
 
-instance (GToForm f, GToForm g) => GToForm (f :*: g) where
-  gToForm (a :*: b) = gToForm a <> gToForm b
+instance (GToForm t f, GToForm t g) => GToForm t (f :*: g) where
+  gToForm p (a :*: b) = gToForm p a <> gToForm p b
 
-instance (GToForm f) => GToForm (M1 D x f) where
-  gToForm (M1 a) = gToForm a
+instance (GToForm t f) => GToForm t (M1 D x f) where
+  gToForm p (M1 a) = gToForm p a
 
-instance (GToForm f) => GToForm (M1 C x f) where
-  gToForm (M1 a) = gToForm a
+instance (GToForm t f) => GToForm t (M1 C x f) where
+  gToForm p (M1 a) = gToForm p a
 
-instance (Selector s, ToHttpApiData c) => GToForm (M1 S s (K1 i c)) where
-  gToForm (M1 (K1 c)) = fromList [(key, toQueryParam c)]
+instance (Selector s, ToHttpApiData c) => GToForm t (M1 S s (K1 i c)) where
+  gToForm _ (M1 (K1 c)) = fromList [(key, toQueryParam c)]
     where
       key = Text.pack $ selName (Proxy3 :: Proxy3 s g p)
+
+instance NotSupported ToForm t "is a sum type" => GToForm t (f :+: g) where gToForm = error "impossible"
 
 -- | Parse 'Form' into a value.
 --
@@ -311,8 +334,7 @@ instance (Selector s, ToHttpApiData c) => GToForm (M1 S s (K1 i c)) where
 class FromForm a where
   -- | Parse 'Form' into a value.
   fromForm :: Form -> Either Text a
-  default fromForm :: (Generic a, GFromForm (Rep a))
-     => Form -> Either Text a
+  default fromForm :: (Generic a, GFromForm a (Rep a)) => Form -> Either Text a
   fromForm = genericFromForm
 
 instance FromForm Form where fromForm = pure
@@ -349,26 +371,27 @@ toEntriesByKey = traverse parseGroup . HashMap.toList . unForm
 --   , age  :: Int
 --   } deriving ('Generic')
 -- @
-genericFromForm :: (Generic a, GFromForm (Rep a))
-    => Form -> Either Text a
-genericFromForm f = to <$> gFromForm f
+genericFromForm :: forall a. (Generic a, GFromForm a (Rep a)) => Form -> Either Text a
+genericFromForm f = to <$> gFromForm (Proxy :: Proxy a) f
 
-class GFromForm (f :: * -> *) where
-  gFromForm :: Form -> Either Text (f x)
+class GFromForm t (f :: * -> *) where
+  gFromForm :: Proxy t -> Form -> Either Text (f x)
 
-instance (GFromForm f, GFromForm g) => GFromForm (f :*: g) where
-  gFromForm f = (:*:) <$> gFromForm f <*> gFromForm f
+instance (GFromForm t f, GFromForm t g) => GFromForm t (f :*: g) where
+  gFromForm p f = (:*:) <$> gFromForm p f <*> gFromForm p f
 
-instance (Selector s, FromHttpApiData f) => GFromForm (M1 S s (K1 i f)) where
-  gFromForm form = M1 . K1 <$> parseUnique key form
+instance (Selector s, FromHttpApiData f) => GFromForm t (M1 S s (K1 i f)) where
+  gFromForm _ form = M1 . K1 <$> parseUnique key form
     where
       key = Text.pack $ selName (Proxy3 :: Proxy3 s g p)
 
-instance (GFromForm f) => GFromForm (M1 D x f) where
-  gFromForm f = M1 <$> gFromForm f
+instance GFromForm t f => GFromForm t (M1 D x f) where
+  gFromForm p f = M1 <$> gFromForm p f
 
-instance (GFromForm f) => GFromForm (M1 C x f) where
-  gFromForm f = M1 <$> gFromForm f
+instance GFromForm t f => GFromForm t (M1 C x f) where
+  gFromForm p f = M1 <$> gFromForm p f
+
+instance NotSupported FromForm t "is a sum type" => GFromForm t (f :+: g) where gFromForm = error "impossible"
 
 -- | Encode a 'Form' to an @application/x-www-form-urlencoded@ 'BSL.ByteString'.
 --
