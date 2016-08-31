@@ -7,12 +7,13 @@
 -- |
 -- Convert Haskell values to and from HTTP API data
 -- such as URL pieces, headers and query parameters.
-module Web.HttpApiData.Internal where
+module Web.Internal.HttpApiData where
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
 import Data.Traversable (Traversable(traverse))
 #endif
+
 import Control.Arrow ((&&&), left)
 import Control.Monad ((<=<))
 
@@ -35,6 +36,7 @@ import Data.Version
 
 #if MIN_VERSION_base(4,8,0)
 import Data.Void
+import Numeric.Natural
 #endif
 
 import Text.Read (readMaybe)
@@ -43,6 +45,10 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 #if USE_TEXT_SHOW
 import TextShow (TextShow, showt)
 #endif
+
+-- $setup
+-- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
+-- >>> instance FromHttpApiData BasicAuthToken where parseHeader h = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h; parseQueryParam p = BasicAuthToken <$> parseQueryParam p
 
 -- | Convert value to HTTP API data.
 --
@@ -82,7 +88,7 @@ class FromHttpApiData a where
 
 -- | Convert multiple values to a list of URL pieces.
 --
--- >>> toUrlPieces [1, 2, 3]
+-- >>> toUrlPieces [1, 2, 3] :: [Text]
 -- ["1","2","3"]
 toUrlPieces :: (Functor t, ToHttpApiData a) => t a -> t Text
 toUrlPieces = fmap toUrlPiece
@@ -98,7 +104,7 @@ parseUrlPieces = traverse parseUrlPiece
 
 -- | Convert multiple values to a list of query parameter values.
 --
--- >>> toQueryParams [fromGregorian 2015 10 03, fromGregorian 2015 12 01]
+-- >>> toQueryParams [fromGregorian 2015 10 03, fromGregorian 2015 12 01] :: [Text]
 -- ["2015-10-03","2015-12-01"]
 toQueryParams :: (Functor t, ToHttpApiData a) => t a -> t Text
 toQueryParams = fmap toQueryParam
@@ -157,7 +163,7 @@ parseMaybeTextData parse input =
 --
 -- @
 -- data MyData = Foo | Bar | Baz deriving (Generic)
--- 
+--
 -- instance TextShow MyData where
 --   showt = genericShowt
 --
@@ -211,10 +217,6 @@ parseUrlPieceWithPrefix pattern input
   | otherwise                             = defaultParseError input
   where
     (prefix, rest) = T.splitAt (T.length pattern) input
-
--- $setup
--- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
--- >>> instance FromHttpApiData BasicAuthToken where parseHeader h = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h; parseQueryParam p = BasicAuthToken <$> parseQueryParam p
 
 -- | Parse given bytestring then parse the rest of the input using @'parseHeader'@.
 --
@@ -390,8 +392,8 @@ instance ToHttpApiData Version where
   toUrlPiece = T.pack . showVersion
 
 #if MIN_VERSION_base(4,8,0)
-instance ToHttpApiData Void where
-  toUrlPiece = absurd
+instance ToHttpApiData Void    where toUrlPiece = absurd
+instance ToHttpApiData Natural where toUrlPiece = showt
 #endif
 
 instance ToHttpApiData Bool     where toUrlPiece = showTextData
@@ -491,6 +493,13 @@ instance FromHttpApiData Version where
 -- | Parsing a @'Void'@ value is always an error, considering @'Void'@ as a data type with no constructors.
 instance FromHttpApiData Void where
   parseUrlPiece _ = Left "Void cannot be parsed!"
+
+instance FromHttpApiData Natural where
+  parseUrlPiece s = do
+    n <- runReader (signed decimal) s
+    if n < 0
+      then Left ("undeflow: " <> s <> " (should be a non-negative integer)")
+      else Right (fromInteger n)
 #endif
 
 instance FromHttpApiData Bool     where parseUrlPiece = parseBoundedUrlPiece

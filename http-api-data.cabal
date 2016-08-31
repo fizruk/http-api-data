@@ -9,9 +9,10 @@ description:     Please see README.md
 homepage:        http://github.com/fizruk/http-api-data
 category:        Web
 stability:       unstable
-cabal-version:   >= 1.8
+cabal-version:   >= 1.10
 build-type:      Custom
 extra-source-files:
+  include/overlapping-compat.h
   test/*.hs
   CHANGELOG.md
   README.md
@@ -22,28 +23,43 @@ flag use-text-show
 
 library
     hs-source-dirs: src/
+    include-dirs:   include/
     build-depends:   base               >= 4.6    && < 4.10
-                   , text               >= 0.5
                    , bytestring
+                   , containers
+                   , hashable
+                   , text               >= 0.5
                    , time
                    , time-locale-compat >=0.1.1.0 && <0.2
+                   , unordered-containers
+                   , uri-bytestring
     if flag(use-text-show)
       cpp-options: -DUSE_TEXT_SHOW
       build-depends: text-show        >= 2
     exposed-modules:
       Web.HttpApiData
-      Web.HttpApiData.Internal
+      Web.FormUrlEncoded
+      Web.Internal.FormUrlEncoded
+      Web.Internal.HttpApiData
     ghc-options:     -Wall
+    default-language: Haskell2010
 
 test-suite spec
     type:          exitcode-stdio-1.0
     main-is:       Spec.hs
-    hs-source-dirs: test/
+    other-modules:
+      Web.Internal.FormUrlEncodedSpec
+      Web.Internal.HttpApiDataSpec
+      Web.Internal.TestInstances
+    hs-source-dirs: test
     ghc-options:   -Wall
+    default-language: Haskell2010
     build-depends:   HUnit
                    , hspec >= 1.3
                    , base >= 4 && < 5
+                   , bytestring
                    , QuickCheck
+                   , unordered-containers
                    , http-api-data
                    , text
                    , time

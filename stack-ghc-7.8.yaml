@@ -9,6 +9,7 @@ flags:
 
 extra-deps:
 - time-locale-compat-0.1.1.3
+- uri-bytestring-0.2.2.0
 # below are dependencies necessary for use-text-show=true
 - text-show-2.1.2
 - base-compat-0.9.1
