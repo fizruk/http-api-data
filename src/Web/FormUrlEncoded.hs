@@ -20,6 +20,10 @@ module Web.FormUrlEncoded (
   genericToForm,
   genericFromForm,
 
+  -- ** Encoding options
+  FormOptions(..),
+  defaultFormOptions,
+
   -- * Helpers
   toEntriesByKey,
   fromEntriesByKey,
