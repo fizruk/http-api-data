@@ -75,6 +75,10 @@ import Web.Internal.HttpApiData
 -- >>> instance ToForm Person
 -- >>> instance FromForm Person
 --
+-- >>> data Post = Post { title :: String, subtitle :: Maybe String, comments :: [String]} deriving (Generic, Show)
+-- >>> instance ToForm Post
+-- >>> instance FromForm Post
+--
 -- >>> data Project = Project { projectName :: String, projectSize :: Int } deriving (Generic, Show)
 -- >>> let myOptions = FormOptions { fieldLabelModifier = map toLower . drop (length ("project" :: String)) }
 -- >>> instance ToForm Project where toForm = genericToForm myOptions
@@ -225,7 +229,6 @@ instance IsList Form where
 -- @
 --
 -- The default implementation of 'toForm' is 'genericToForm'.
--- It only works for records and it will use 'toQueryParam' for each field's value.
 class ToForm a where
   -- | Convert a value into 'Form'.
   toForm :: a -> Form
@@ -278,6 +281,30 @@ type family NotSupported (cls :: k1) (a :: k2) (reason :: Symbol) :: Constraint 
 --   , age  :: Int
 --   } deriving ('Generic')
 -- @
+--
+-- In this implementation each field's value gets encoded using `toQueryParam`.
+-- Two field types are exceptions:
+--
+--    - for values of type @'Maybe' a@ an entry is added to the 'Form' only when it is @'Just' x@
+--      and the encoded value is @'toQueryParam' x@; 'Nothing' values are omitted from the 'Form';
+--
+--    - for values of type @[a]@ (except @['Char']@) an entry is added for every item in the list;
+--      if the list is empty no entries are added to the 'Form';
+--
+-- Here's an example:
+--
+-- @
+-- data Post = Post
+--   { title    :: String
+--   , subtitle :: Maybe String
+--   , comments :: [String]
+--   } deriving ('Generic', 'Show')
+--
+-- instance 'ToForm' Post
+-- @
+--
+-- >>> urlEncodeAsForm Post { title = "Test", subtitle = Nothing, comments = ["Nice post!", "+1"] }
+-- "comments=Nice%20post%21&comments=%2B1&title=Test"
 genericToForm :: forall a. (Generic a, GToForm a (Rep a)) => FormOptions -> a -> Form
 genericToForm opts = gToForm (Proxy :: Proxy a) opts . from
 
@@ -393,6 +420,29 @@ toEntriesByKey = traverse parseGroup . HashMap.toList . unForm
 --   , age  :: Int
 --   } deriving ('Generic')
 -- @
+--
+-- In this implementation each field's value gets decoded using `parseQueryParam`.
+-- Two field types are exceptions:
+--
+--    - for values of type @'Maybe' a@ an entry is parsed if present in the 'Form'
+--      and the is decoded with 'parseQueryParam'; if no entry is present result is 'Nothing';
+--
+--    - for values of type @[a]@ (except @['Char']@) all entries are parsed to produce a list of parsed values;
+--
+-- Here's an example:
+--
+-- @
+-- data Post = Post
+--   { title    :: String
+--   , subtitle :: Maybe String
+--   , comments :: [String]
+--   } deriving ('Generic', 'Show')
+--
+-- instance 'FromForm' Post
+-- @
+--
+-- >>> urlDecodeAsForm "comments=Nice%20post%21&comments=%2B1&title=Test" :: Either Text Post
+-- Right (Post {title = "Test", subtitle = Nothing, comments = ["Nice post!","+1"]})
 genericFromForm :: forall a. (Generic a, GFromForm a (Rep a)) => FormOptions -> Form -> Either Text a
 genericFromForm opts f = to <$> gFromForm (Proxy :: Proxy a) opts f
 
