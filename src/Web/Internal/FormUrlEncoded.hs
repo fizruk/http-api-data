@@ -21,12 +21,6 @@ import Control.Applicative
 import Data.Traversable
 #endif
 
-#if __GLASGOW_HASKELL__ < 800
-import GHC.Exts (IsList (..))
-#else
-import GHC.Exts (IsList (..), Constraint)
-import GHC.TypeLits
-#endif
 
 import           Control.Arrow              ((***))
 import           Control.Monad              ((<=<))
@@ -60,7 +54,9 @@ import Data.Void
 import Numeric.Natural
 #endif
 
+import           GHC.Exts                   (IsList (..), Constraint)
 import           GHC.Generics
+import           GHC.TypeLits
 import           URI.ByteString             (urlEncodeQuery, urlDecodeQuery)
 
 import Web.Internal.HttpApiData
@@ -255,6 +251,8 @@ data Proxy3 a b c = Proxy3
 
 type family NotSupported (cls :: k1) (a :: k2) (reason :: Symbol) :: Constraint where
 #if __GLASGOW_HASKELL__ < 800
+  -- this is just a placeholder case for older GHCs to not freak out on an empty closed type family
+  NotSupported cls a "this type family is actually empty" = ()
 #else
   NotSupported cls a reason = TypeError
     ( 'Text "Cannot derive a Generic-based " ':<>: 'ShowType cls ':<>: 'Text " instance for " ':<>: 'ShowType a ':<>: 'Text "." ':$$:
