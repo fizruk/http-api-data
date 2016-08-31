@@ -68,11 +68,16 @@ import Web.Internal.HttpApiData
 -- >>> :set -XFlexibleContexts
 -- >>> :set -XScopedTypeVariables
 -- >>> :set -XTypeFamilies
--- >>> import Data.Either (isLeft)
--- >>> import Data.List (sort)
+-- >>> import Data.Char (toLower)
+--
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Show, Generic)
 -- >>> instance ToForm Person
 -- >>> instance FromForm Person
+--
+-- >>> data Project = Project { projectName :: String, projectSize :: Int } deriving (Generic, Show)
+-- >>> myOptions = FormOptions { fieldLabelModifier = map toLower . drop (length ("project" :: String)) }
+-- >>> instance ToForm Project where toForm = genericToForm myOptions
+-- >>> instance FromForm Project where fromForm = genericFromForm myOptions
 
 -- | Typeclass for types that can be used as keys in a 'Form'-like container (like 'Map').
 class ToFormKey k where
@@ -615,6 +620,31 @@ parseUnique :: FromHttpApiData v => Text -> Form -> Either Text v
 parseUnique key form = lookupUnique key form >>= parseQueryParam
 
 -- | 'Generic'-based deriving options for 'ToForm' and 'FromForm'.
+--
+-- A common use case for non-default 'FormOptions'
+-- is to strip a prefix off of field labels:
+--
+-- @
+-- data Project = Project
+--   { projectName :: String
+--   , projectSize :: Int
+--   } deriving ('Generic', 'Show')
+--
+-- myOptions :: 'FormOptions'
+-- myOptions = 'FormOptions'
+--  { 'fieldLabelModifier' = 'map' 'toLower' . 'drop' ('length' \"project\") }
+--
+-- instance 'ToForm' Project where
+--   'toForm' = 'genericToForm' myOptions
+--
+-- instance 'FromForm' Project where
+--   'fromForm' = 'genericFromForm' myOptions
+-- @
+--
+-- >>> urlEncodeAsForm Project { projectName = "http-api-data", projectSize = 172 }
+-- "size=172&name=http-api-data"
+-- >>> urlDecodeAsForm "name=http-api-data&size=172" :: Either Text Project
+-- Right (Project {projectName = "http-api-data", projectSize = 172})
 data FormOptions = FormOptions
   { -- | Function applied to field labels. Handy for removing common record prefixes for example.
     fieldLabelModifier :: String -> String
