@@ -1,0 +1,1 @@
+:set -itest -isrc -optP-include -optP .stack-work/dist/x86_64-osx/Cabal-1.24.0.0/build/autogen/cabal_macros.h -optP-I -optPinclude

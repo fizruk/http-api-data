@@ -25,9 +25,11 @@ module Web.FormUrlEncoded (
   fromEntriesByKey,
 
   lookupAll,
+  lookupMaybe,
   lookupUnique,
 
   parseAll,
+  parseMaybe,
   parseUnique,
 ) where
 

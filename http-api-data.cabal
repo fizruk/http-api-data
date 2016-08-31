@@ -12,6 +12,7 @@ stability:       unstable
 cabal-version:   >= 1.10
 build-type:      Custom
 extra-source-files:
+  include/overlapping-compat.h
   test/*.hs
   CHANGELOG.md
   README.md
@@ -22,6 +23,7 @@ flag use-text-show
 
 library
     hs-source-dirs: src/
+    include-dirs:   include/
     build-depends:   base               >= 4.6    && < 4.10
                    , bytestring
                    , containers

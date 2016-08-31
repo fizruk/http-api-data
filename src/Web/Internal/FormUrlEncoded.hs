@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
+#include "overlapping-compat.h"
 module Web.Internal.FormUrlEncoded where
 
 #if __GLASGOW_HASKELL__ < 710
@@ -288,7 +289,25 @@ instance (GToForm t f) => GToForm t (M1 D x f) where
 instance (GToForm t f) => GToForm t (M1 C x f) where
   gToForm p opts (M1 a) = gToForm p opts a
 
-instance (Selector s, ToHttpApiData c) => GToForm t (M1 S s (K1 i c)) where
+instance OVERLAPPABLE_ (Selector s, ToHttpApiData c) => GToForm t (M1 S s (K1 i c)) where
+  gToForm _ opts (M1 (K1 c)) = fromList [(key, toQueryParam c)]
+    where
+      key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
+
+instance (Selector s, ToHttpApiData c) => GToForm t (M1 S s (K1 i (Maybe c))) where
+  gToForm _ opts (M1 (K1 c)) =
+    case c of
+      Nothing -> mempty
+      Just x  -> fromList [(key, toQueryParam x)]
+    where
+      key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
+
+instance (Selector s, ToHttpApiData c) => GToForm t (M1 S s (K1 i [c])) where
+  gToForm _ opts (M1 (K1 cs)) = fromList (map (\c -> (key, toQueryParam c)) cs)
+    where
+      key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
+
+instance OVERLAPPING_ (Selector s) => GToForm t (M1 S s (K1 i String)) where
   gToForm _ opts (M1 (K1 c)) = fromList [(key, toQueryParam c)]
     where
       key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
@@ -379,16 +398,31 @@ class GFromForm t (f :: * -> *) where
 instance (GFromForm t f, GFromForm t g) => GFromForm t (f :*: g) where
   gFromForm p opts f = (:*:) <$> gFromForm p opts f <*> gFromForm p opts f
 
-instance (Selector s, FromHttpApiData f) => GFromForm t (M1 S s (K1 i f)) where
-  gFromForm _ opts form = M1 . K1 <$> parseUnique key form
-    where
-      key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
-
 instance GFromForm t f => GFromForm t (M1 D x f) where
   gFromForm p opts f = M1 <$> gFromForm p opts f
 
 instance GFromForm t f => GFromForm t (M1 C x f) where
   gFromForm p opts f = M1 <$> gFromForm p opts f
+
+instance OVERLAPPABLE_ (Selector s, FromHttpApiData c) => GFromForm t (M1 S s (K1 i c)) where
+  gFromForm _ opts form = M1 . K1 <$> parseUnique key form
+    where
+      key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
+
+instance (Selector s, FromHttpApiData c) => GFromForm t (M1 S s (K1 i (Maybe c))) where
+  gFromForm _ opts form = M1 . K1 <$> parseMaybe key form
+    where
+      key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
+
+instance (Selector s, FromHttpApiData c) => GFromForm t (M1 S s (K1 i [c])) where
+  gFromForm _ opts form = M1 . K1 <$> parseAll key form
+    where
+      key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
+
+instance OVERLAPPING_ (Selector s) => GFromForm t (M1 S s (K1 i String)) where
+  gFromForm _ opts form = M1 . K1 <$> parseUnique key form
+    where
+      key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
 
 instance NotSupported FromForm t "is a sum type" => GFromForm t (f :+: g) where gFromForm = error "impossible"
 
@@ -505,6 +539,22 @@ urlEncodeAsForm = urlEncodeForm . toForm
 lookupAll :: Text -> Form -> [Text]
 lookupAll key = F.concat . HashMap.lookup key . unForm
 
+-- | Lookup an optional value for a key.
+-- Fail if there is more than one value.
+--
+-- >>> lookupMaybe "name" []
+-- Right Nothing
+-- >>> lookupMaybe "name" [("name", "Oleg")]
+-- Right (Just "Oleg")
+-- >>> lookupMaybe "name" [("name", "Oleg"), ("name", "David")]
+-- Left "Duplicate key \"name\""
+lookupMaybe :: Text -> Form -> Either Text (Maybe Text)
+lookupMaybe key form =
+  case lookupAll key form of
+    []  -> pure Nothing
+    [v] -> pure (Just v)
+    _   -> Left $ "Duplicate key " <> Text.pack (show key)
+
 -- | Lookup a unique value for a key.
 -- Fail if there is zero or more than one value.
 --
@@ -515,11 +565,11 @@ lookupAll key = F.concat . HashMap.lookup key . unForm
 -- >>> lookupUnique "name" [("name", "Oleg"), ("name", "David")]
 -- Left "Duplicate key \"name\""
 lookupUnique :: Text -> Form -> Either Text Text
-lookupUnique key form =
-  case lookupAll key form of
-    [v] -> pure v
-    []  -> Left $ "Could not find key " <> Text.pack (show key)
-    _   -> Left $ "Duplicate key " <> Text.pack (show key)
+lookupUnique key form = do
+  mv <- lookupMaybe key form
+  case mv of
+    Just v  -> pure v
+    Nothing -> Left $ "Could not find key " <> Text.pack (show key)
 
 -- | Lookup all values for a given key in a 'Form' and parse them with 'parseQueryParams'.
 --
@@ -533,6 +583,22 @@ lookupUnique key form =
 -- Right [12,25]
 parseAll :: FromHttpApiData v => Text -> Form -> Either Text [v]
 parseAll key = parseQueryParams . lookupAll key
+
+-- | Lookup an optional value for a given key and parse it with 'parseQueryParam'.
+-- Fail if there is more than one value for the key.
+--
+-- >>> parseMaybe "age" [] :: Either Text (Maybe Word8)
+-- Right Nothing
+-- >>> parseMaybe "age" [("age", "12"), ("age", "25")] :: Either Text (Maybe Word8)
+-- Left "Duplicate key \"age\""
+-- >>> parseMaybe "age" [("age", "seven")] :: Either Text (Maybe Word8)
+-- Left "could not parse: `seven' (input does not start with a digit)"
+-- >>> parseMaybe "age" [("age", "777")] :: Either Text (Maybe Word8)
+-- Left "out of bounds: `777' (should be between 0 and 255)"
+-- >>> parseMaybe "age" [("age", "7")] :: Either Text (Maybe Word8)
+-- Right (Just 7)
+parseMaybe :: FromHttpApiData v => Text -> Form -> Either Text (Maybe v)
+parseMaybe key = parseQueryParams <=< lookupMaybe key
 
 -- | Lookup a unique value for a given key and parse it with 'parseQueryParam'.
 -- Fail if there is zero or more than one value for the key.
