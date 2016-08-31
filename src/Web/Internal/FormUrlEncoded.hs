@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DefaultSignatures          #-}
@@ -75,7 +76,7 @@ import Web.Internal.HttpApiData
 -- >>> instance FromForm Person
 --
 -- >>> data Project = Project { projectName :: String, projectSize :: Int } deriving (Generic, Show)
--- >>> myOptions = FormOptions { fieldLabelModifier = map toLower . drop (length ("project" :: String)) }
+-- >>> let myOptions = FormOptions { fieldLabelModifier = map toLower . drop (length ("project" :: String)) }
 -- >>> instance ToForm Project where toForm = genericToForm myOptions
 -- >>> instance FromForm Project where fromForm = genericFromForm myOptions
 
