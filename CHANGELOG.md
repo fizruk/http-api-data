@@ -1,3 +1,11 @@
+0.3
+---
+* Major changes:
+    * Add `Web.FormUrlEncoded` to work with form data (see [#32](https://github.com/fizruk/http-api-data/pull/32)).
+
+* Minor changes:
+    * Add instances for `Numeric.Natural` (see [`d944721`](https://github.com/fizruk/http-api-data/commit/d944721ac94929a7ed9e66f25e23221799c08d83)).
+
 0.2.4
 ---
 * Make `parseHeader` total (instead of throwing exceptions on invalid Unicode, see [#30](https://github.com/fizruk/http-api-data/pull/30)).
