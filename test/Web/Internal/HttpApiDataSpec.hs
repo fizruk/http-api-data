@@ -2,6 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Web.Internal.HttpApiDataSpec (spec) where
 
+import Control.Applicative
 import Data.Int
 import Data.Word
 import Data.Time
@@ -9,6 +10,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.ByteString as BS
 import Data.Version
+import qualified Data.UUID as UUID
 
 import Data.Proxy
 
@@ -29,6 +31,10 @@ import Web.Internal.TestInstances
 
 checkUrlPiece :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Show a, Arbitrary a) => Proxy a -> String -> Spec
 checkUrlPiece _ name = prop name (toUrlPiece <=> parseUrlPiece :: a -> Bool)
+
+-- | Check with given generator
+checkUrlPiece' :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Show a) => Gen a -> String -> Spec
+checkUrlPiece' gen name = prop name $ forAll gen (toUrlPiece <=> parseUrlPiece)
 
 -- | Check case insensitivity for @parseUrlPiece@.
 checkUrlPieceI :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Arbitrary a) => Proxy a -> String -> Spec
@@ -61,6 +67,7 @@ spec = do
     checkUrlPiece  (Proxy :: Proxy UTCTime)   "UTCTime"
     checkUrlPiece  (Proxy :: Proxy NominalDiffTime) "NominalDiffTime"
     checkUrlPiece  (Proxy :: Proxy Version)   "Version"
+    checkUrlPiece' uuidGen                    "UUID"
 
     checkUrlPiece  (Proxy :: Proxy (Maybe String))            "Maybe String"
     checkUrlPieceI (Proxy :: Proxy (Maybe Integer))           "Maybe Integer"
@@ -80,3 +87,6 @@ spec = do
 
   it "invalid utf8 is handled" $ do
     parseHeaderMaybe (BS.pack [128]) `shouldBe` (Nothing :: Maybe T.Text)
+
+uuidGen :: Gen UUID.UUID
+uuidGen = UUID.fromWords <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
