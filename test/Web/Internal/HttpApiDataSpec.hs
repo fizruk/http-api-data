@@ -62,10 +62,10 @@ spec = do
     checkUrlPiece  (Proxy :: Proxy T.Text)    "Text.Strict"
     checkUrlPiece  (Proxy :: Proxy L.Text)    "Text.Lazy"
     checkUrlPiece  (Proxy :: Proxy Day)       "Day"
-    checkUrlPiece  (Proxy :: Proxy LocalTime) "LocalTime"
-    checkUrlPiece  (Proxy :: Proxy ZonedTime) "ZonedTime"
-    checkUrlPiece  (Proxy :: Proxy UTCTime)   "UTCTime"
-    checkUrlPiece  (Proxy :: Proxy NominalDiffTime) "NominalDiffTime"
+    checkUrlPiece' localTimeGen               "LocalTime"
+    checkUrlPiece' zonedTimeGen               "ZonedTime"
+    checkUrlPiece' utcTimeGen                 "UTCTime"
+    checkUrlPiece' nominalDiffTimeGen         "NominalDiffTime"
     checkUrlPiece  (Proxy :: Proxy Version)   "Version"
     checkUrlPiece' uuidGen                    "UUID"
 
@@ -90,3 +90,20 @@ spec = do
 
 uuidGen :: Gen UUID.UUID
 uuidGen = UUID.fromWords <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+
+-- TODO: this generators don't generate full range items
+localTimeGen :: Gen LocalTime
+localTimeGen = LocalTime
+    <$> arbitrary
+    <*> liftA3 TimeOfDay (choose (0, 23)) (choose (0, 59)) (fromInteger <$> choose (0, 60))
+
+zonedTimeGen :: Gen ZonedTime
+zonedTimeGen = ZonedTime
+    <$> localTimeGen -- Note: not arbitrary!
+    <*> liftA3 TimeZone arbitrary arbitrary (vectorOf 3 (elements ['A'..'Z']))
+
+utcTimeGen :: Gen UTCTime
+utcTimeGen = UTCTime <$> arbitrary <*> fmap fromInteger (choose (0, 86400))
+
+nominalDiffTimeGen :: Gen NominalDiffTime
+nominalDiffTimeGen = fromInteger <$> arbitrary

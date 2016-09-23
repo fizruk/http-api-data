@@ -20,4 +20,7 @@ extra-deps:
 - base-orphans-0.5.4
 - generic-deriving-1.9.0
 - doctest-0.11.0
+- QuickCheck-2.9.2
+- quickcheck-instances-0.3.12
+- quickcheck-io-0.1.3
 extra-package-dbs: []
