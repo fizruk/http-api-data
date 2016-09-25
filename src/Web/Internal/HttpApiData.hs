@@ -46,7 +46,7 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 import TextShow (TextShow, showt)
 #endif
 
-import qualified Data.UUID as UUID
+import qualified Data.UUID.Types as UUID
 
 -- $setup
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
