@@ -9,57 +9,21 @@ module Web.Internal.TestInstances
    ) where
 
 import           Control.Applicative
-import qualified Data.ByteString.Lazy.Char8 as BSL
 import           Data.Char
 import qualified Data.HashMap.Strict  as HashMap
 import qualified Data.Text            as T
-import qualified Data.Text.Lazy       as L
 import           Data.Time
-import           Data.Version
 import           GHC.Exts             (fromList)
 import           GHC.Generics
 
 import Test.QuickCheck
+import Test.QuickCheck.Instances ()
 
 import Web.Internal.FormUrlEncoded
 import Web.Internal.HttpApiData
 
-instance Arbitrary T.Text where
-  arbitrary = T.pack <$> arbitrary
-
-instance Arbitrary L.Text where
-  arbitrary = L.pack <$> arbitrary
-
-instance Arbitrary BSL.ByteString where
-  arbitrary = BSL.pack <$> arbitrary
-
-instance Arbitrary Day where
-  arbitrary = liftA3 fromGregorian (fmap abs arbitrary) arbitrary arbitrary
-
-instance Arbitrary LocalTime where
-  arbitrary = LocalTime
-    <$> arbitrary
-    <*> liftA3 TimeOfDay (choose (0, 23)) (choose (0, 59)) (fromInteger <$> choose (0, 60))
-
 instance Eq ZonedTime where
   ZonedTime t (TimeZone x _ _) == ZonedTime t' (TimeZone y _ _) = t == t' && x == y
-
-instance Arbitrary ZonedTime where
-  arbitrary = ZonedTime
-    <$> arbitrary
-    <*> liftA3 TimeZone arbitrary arbitrary (vectorOf 3 (elements ['A'..'Z']))
-
-instance Arbitrary UTCTime where
-  arbitrary = UTCTime <$> arbitrary <*> fmap fromInteger (choose (0, 86400))
-
-instance Arbitrary NominalDiffTime where
-  arbitrary = fromInteger <$> arbitrary
-
-instance Arbitrary Version where
-  arbitrary = (version . map abs) <$> nonempty
-    where
-      version branch = Version branch []
-      nonempty = liftA2 (:) arbitrary arbitrary
 
 instance Arbitrary Form where
   arbitrary = fromList <$> arbitrary

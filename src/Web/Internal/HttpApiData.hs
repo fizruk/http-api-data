@@ -46,6 +46,8 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 import TextShow (TextShow, showt)
 #endif
 
+import qualified Data.UUID.Types as UUID
+
 -- $setup
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
 -- >>> instance FromHttpApiData BasicAuthToken where parseHeader h = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h; parseQueryParam p = BasicAuthToken <$> parseQueryParam p
@@ -577,3 +579,10 @@ instance (FromHttpApiData a, FromHttpApiData b) => FromHttpApiData (Either a b) 
       Left _ <!> y = y
       x      <!> _ = x
 
+instance ToHttpApiData UUID.UUID where
+    toUrlPiece = UUID.toText
+    toHeader   = UUID.toASCIIBytes
+
+instance FromHttpApiData UUID.UUID where
+    parseUrlPiece = maybe (Left "invalid UUID") Right . UUID.fromText
+    parseHeader   = maybe (Left "invalid UUID") Right . UUID.fromASCIIBytes

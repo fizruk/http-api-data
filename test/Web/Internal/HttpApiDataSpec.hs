@@ -2,6 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Web.Internal.HttpApiDataSpec (spec) where
 
+import Control.Applicative
 import Data.Int
 import Data.Word
 import Data.Time
@@ -9,6 +10,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.ByteString as BS
 import Data.Version
+import qualified Data.UUID as UUID
 
 import Data.Proxy
 
@@ -29,6 +31,10 @@ import Web.Internal.TestInstances
 
 checkUrlPiece :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Show a, Arbitrary a) => Proxy a -> String -> Spec
 checkUrlPiece _ name = prop name (toUrlPiece <=> parseUrlPiece :: a -> Bool)
+
+-- | Check with given generator
+checkUrlPiece' :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Show a) => Gen a -> String -> Spec
+checkUrlPiece' gen name = prop name $ forAll gen (toUrlPiece <=> parseUrlPiece)
 
 -- | Check case insensitivity for @parseUrlPiece@.
 checkUrlPieceI :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Arbitrary a) => Proxy a -> String -> Spec
@@ -56,11 +62,12 @@ spec = do
     checkUrlPiece  (Proxy :: Proxy T.Text)    "Text.Strict"
     checkUrlPiece  (Proxy :: Proxy L.Text)    "Text.Lazy"
     checkUrlPiece  (Proxy :: Proxy Day)       "Day"
-    checkUrlPiece  (Proxy :: Proxy LocalTime) "LocalTime"
-    checkUrlPiece  (Proxy :: Proxy ZonedTime) "ZonedTime"
-    checkUrlPiece  (Proxy :: Proxy UTCTime)   "UTCTime"
-    checkUrlPiece  (Proxy :: Proxy NominalDiffTime) "NominalDiffTime"
+    checkUrlPiece' localTimeGen               "LocalTime"
+    checkUrlPiece' zonedTimeGen               "ZonedTime"
+    checkUrlPiece' utcTimeGen                 "UTCTime"
+    checkUrlPiece' nominalDiffTimeGen         "NominalDiffTime"
     checkUrlPiece  (Proxy :: Proxy Version)   "Version"
+    checkUrlPiece' uuidGen                    "UUID"
 
     checkUrlPiece  (Proxy :: Proxy (Maybe String))            "Maybe String"
     checkUrlPieceI (Proxy :: Proxy (Maybe Integer))           "Maybe Integer"
@@ -80,3 +87,23 @@ spec = do
 
   it "invalid utf8 is handled" $ do
     parseHeaderMaybe (BS.pack [128]) `shouldBe` (Nothing :: Maybe T.Text)
+
+uuidGen :: Gen UUID.UUID
+uuidGen = UUID.fromWords <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+
+-- TODO: this generators don't generate full range items
+localTimeGen :: Gen LocalTime
+localTimeGen = LocalTime
+    <$> arbitrary
+    <*> liftA3 TimeOfDay (choose (0, 23)) (choose (0, 59)) (fromInteger <$> choose (0, 60))
+
+zonedTimeGen :: Gen ZonedTime
+zonedTimeGen = ZonedTime
+    <$> localTimeGen -- Note: not arbitrary!
+    <*> liftA3 TimeZone arbitrary arbitrary (vectorOf 3 (elements ['A'..'Z']))
+
+utcTimeGen :: Gen UTCTime
+utcTimeGen = UTCTime <$> arbitrary <*> fmap fromInteger (choose (0, 86400))
+
+nominalDiffTimeGen :: Gen NominalDiffTime
+nominalDiffTimeGen = fromInteger <$> arbitrary

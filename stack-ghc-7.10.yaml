@@ -7,5 +7,6 @@ flags:
   http-api-data:
     use-text-show: false
 
-extra-deps: []
+extra-deps:
+- QuickCheck-2.9.2
 extra-package-dbs: []

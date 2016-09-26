@@ -1,3 +1,9 @@
+0.3.1
+---
+
+* Minor changes
+    * Add instances for `Data.UUID`
+
 0.3
 ---
 * Major changes:
