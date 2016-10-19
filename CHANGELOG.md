@@ -1,8 +1,14 @@
+0.3.2
+---
+
+* Minor change:
+    * Export `Form` type from `Web.FormUrlEncoded` (see [#37](https://github.com/fizruk/http-api-data/pull/37)).
+
 0.3.1
 ---
 
-* Minor changes
-    * Add instances for `Data.UUID`
+* Minor changes:
+    * Add instances for `Data.UUID` (see [#34](https://github.com/fizruk/http-api-data/pull/34)).
 
 0.3
 ---
