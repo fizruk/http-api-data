@@ -1,3 +1,10 @@
+0.3.3
+---
+
+* Minor changes:
+    * Expose `Form` constructor from `Web.FromUrlEncoded` (see [#40](https://github.com/fizruk/http-api-data/pull/40));
+    * Fix example in `FromForm` documentation (see [#39](https://github.com/fizruk/http-api-data/issues/39)).
+
 0.3.2
 ---
 
