@@ -355,9 +355,9 @@ instance NotSupported ToForm t "is a sum type" => GToForm t (f :+: g) where gToF
 --   , age  :: Int }
 --
 -- instance 'FromForm' Person where
---   'fromForm' (Form m) = Person
---     '<$>' 'parseUnique' "name" m
---     '<*>' 'parseUnique' "age"  m
+--   'fromForm' f = Person
+--     '<$>' 'parseUnique' "name" f
+--     '<*>' 'parseUnique' "age"  f
 -- @
 --
 -- Instead of manually writing @'FromForm'@ instances you can
