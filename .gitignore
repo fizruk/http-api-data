@@ -1,4 +1,5 @@
 /dist/
+/dist-newstyle/
 /.shelly/
 /tarballs/
 *.swp
