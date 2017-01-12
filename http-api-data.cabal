@@ -16,6 +16,11 @@ extra-source-files:
   test/*.hs
   CHANGELOG.md
   README.md
+tested-with:
+  GHC==7.8.4,
+  GHC==7.10.3,
+  GHC==8.0.2,
+  GHC==8.1.*
 
 flag use-text-show
   description: Use text-show library for efficient ToHttpApiData implementations.
@@ -25,7 +30,7 @@ flag use-text-show
 library
     hs-source-dirs: src/
     include-dirs:   include/
-    build-depends:   base               >= 4.6    && < 4.10
+    build-depends:   base               >= 4.7    && < 4.10
                    , bytestring
                    , containers
                    , hashable
