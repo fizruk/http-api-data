@@ -62,11 +62,13 @@ generateBuildModule flags pkg lbi = do
     let includeArgs = map ("-I"++) $ includeDirs libBI
 
     -- CPP includes, i.e. include cabal_macros.h
-    let cppFlags = [ "-optP-include", "-optP" ++ libAutogenDir ++ "/cabal_macros.h" ]
+    let cppFlags = map ("-optP"++) $
+            [ "-include", libAutogenDir ++ "/cabal_macros.h" ]
+            ++ cppOptions libBI
 
     -- Actually we need to check whether testName suite == "doctests"
     -- pending https://github.com/haskell/cabal/pull/4229 getting into GHC HEAD tree
-    withTestLBI pkg lbi $ \suite suitecfg -> when (testName suite == testName suite) $ do
+    withTestLBI pkg lbi $ \suite suitecfg -> when (testName suite == "doctests") $ do
 
       -- get and create autogen dir
 #if MIN_VERSION_Cabal(1,25,0)

@@ -55,8 +55,4 @@ main = withUnicode $ do
     traverse_ putStrLn args
     doctest args
   where
-    args =
-#ifdef TRUSTWORTHY
-      "-DTRUSTWORTHY=1" :
-#endif
-      flags ++ pkgs ++ module_sources
+    args = flags ++ pkgs ++ module_sources
