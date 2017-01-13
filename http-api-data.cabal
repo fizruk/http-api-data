@@ -81,7 +81,7 @@ test-suite spec
                    , bytestring
                    , uuid
 
-test-suite doctest
+test-suite doctests
   ghc-options:      -Wall
   build-tools:      hsc2hs
   build-depends:
