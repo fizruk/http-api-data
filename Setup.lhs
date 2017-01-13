@@ -8,18 +8,18 @@
 #endif
 module Main (main) where
 
+import Control.Monad ( when )
 import Data.List ( nub )
 import Distribution.Package ( InstalledPackageId )
-import Distribution.Package ( PackageId, Package (..), packageVersion, packageName )
+import Distribution.Package ( PackageId, Package (..), packageVersion )
 import Distribution.PackageDescription ( PackageDescription(), TestSuite(..) , Library (..), BuildInfo (..))
 import Distribution.Simple ( defaultMainWithHooks, UserHooks(..), simpleUserHooks )
-import Distribution.Simple.Utils ( rewriteFile, createDirectoryIfMissingVerbose, copyFiles )
+import Distribution.Simple.Utils ( rewriteFile, createDirectoryIfMissingVerbose )
 import Distribution.Simple.BuildPaths ( autogenModulesDir )
-import Distribution.Simple.Setup ( BuildFlags(buildDistPref, buildVerbosity), Flag(..), fromFlag, HaddockFlags(haddockDistPref))
-import Distribution.Simple.LocalBuildInfo ( withPackageDB, withLibLBI, withTestLBI, LocalBuildInfo(), ComponentLocalBuildInfo(componentPackageDeps), compiler, buildDir )
+import Distribution.Simple.Setup ( BuildFlags(buildDistPref, buildVerbosity), fromFlag)
+import Distribution.Simple.LocalBuildInfo ( withPackageDB, withLibLBI, withTestLBI, LocalBuildInfo(), ComponentLocalBuildInfo(componentPackageDeps), compiler )
 import Distribution.Simple.Compiler ( showCompilerId , PackageDB (..))
 import Distribution.Text ( display , simpleParse )
-import Distribution.Verbosity ( Verbosity, normal )
 import System.FilePath ( (</>) )
 
 #if MIN_VERSION_Cabal(1,25,0)
@@ -33,13 +33,6 @@ main = defaultMainWithHooks simpleUserHooks
      buildHook simpleUserHooks pkg lbi hooks flags
   }
 
-haddockOutputDir :: Package p => HaddockFlags -> p -> FilePath
-haddockOutputDir flags pkg = destDir where
-  baseDir = case haddockDistPref flags of
-    NoFlag -> "."
-    Flag x -> x
-  destDir = baseDir </> "doc" </> "html" </> display (packageName pkg)
-
 generateBuildModule :: BuildFlags -> PackageDescription -> LocalBuildInfo -> IO ()
 generateBuildModule flags pkg lbi = do
   let verbosity = fromFlag (buildVerbosity flags)
@@ -49,7 +42,6 @@ generateBuildModule flags pkg lbi = do
   let dbStack = withPackageDB lbi ++ [ SpecificPackageDB $ distPref </> "package.conf.inplace" ]
   let dbFlags = "-hide-all-packages" : packageDbArgs dbStack
 
-  let bdir = buildDir lbi
   withLibLBI pkg lbi $ \lib libcfg -> do
     let libBI = libBuildInfo lib
 
@@ -67,8 +59,9 @@ generateBuildModule flags pkg lbi = do
     -- CPP includes, i.e. include cabal_macros.h
     let cppFlags = [ "-optP-include", "-optP" ++ libAutogenDir ++ "/cabal_macros.h" ]
 
-    withTestLBI pkg lbi $ \suite suitecfg -> do
-      -- when (testName suite == "doctests") $ we need IsString instance
+    -- Actually we need to check whether testName suite == "doctests"
+    -- pending https://github.com/haskell/cabal/pull/4229 getting into GHC HEAD tree
+    withTestLBI pkg lbi $ \suite suitecfg -> when (testName suite == testName suite) $ do
 
       -- get and create autogen dir
 #if MIN_VERSION_Cabal(1,25,0)
