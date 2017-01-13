@@ -15,14 +15,11 @@
 -----------------------------------------------------------------------------
 module Main where
 
-import Build_doctests (flags, pkgs, src_dirs)
+import Build_doctests (flags, pkgs, module_sources)
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
 #endif
-import Control.Monad
-import Data.List
-import System.Directory
-import System.FilePath
+import Data.Foldable (traverse_)
 import Test.DocTest
 
 ##if defined(mingw32_HOST_OS)
@@ -54,24 +51,12 @@ withUnicode m = m
 ##endif
 
 main :: IO ()
-main = withUnicode $ getSources >>= \sources -> do
-    mapM_ putStrLn (args sources)
-    doctest (args sources)
+main = withUnicode $ do
+    traverse_ putStrLn args
+    doctest args
   where
-    args sources =
+    args =
 #ifdef TRUSTWORTHY
       "-DTRUSTWORTHY=1" :
 #endif
-      flags ++ pkgs ++ sources
-
-getSources :: IO [FilePath]
-getSources = filter (isSuffixOf ".hs") . concat <$> mapM go src_dirs
-  where
-    go dir = do
-      (dirs, files) <- getFilesAndDirectories dir
-      (files ++) . concat <$> mapM go dirs
-
-getFilesAndDirectories :: FilePath -> IO ([FilePath], [FilePath])
-getFilesAndDirectories dir = do
-  c <- map (dir </>) . filter (`notElem` ["..", "."]) <$> getDirectoryContents dir
-  (,) <$> filterM doesDirectoryExist c <*> filterM doesFileExist c
+      flags ++ pkgs ++ module_sources
