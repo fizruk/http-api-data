@@ -3,6 +3,9 @@
 #ifndef MIN_VERSION_Cabal
 #define MIN_VERSION_Cabal(x,y,z) 0
 #endif
+#ifndef MIN_VERSION_directory
+#define MIN_VERSION_directory(x,y,z) 0
+#endif
 #if MIN_VERSION_Cabal(1,24,0)
 #define InstalledPackageId UnitId
 #endif
@@ -24,6 +27,19 @@ import System.FilePath ( (</>) )
 
 #if MIN_VERSION_Cabal(1,25,0)
 import Distribution.Simple.BuildPaths ( autogenComponentModulesDir )
+#endif
+
+#if MIN_VERSION_directory(1,2,2)
+import System.Directory (makeAbsolute)
+#else
+import System.Directory (getCurrentDirectory)
+import System.FilePath (isAbsolute)
+
+makeAbsolute :: FilePath -> IO FilePath
+makeAbsolute p | isAbsolute p = return p
+               | otherwise    = do
+    cwd <- getCurrentDirectory
+    return $ cwd </> p
 #endif
 
 main :: IO ()
@@ -58,8 +74,8 @@ generateBuildModule flags pkg lbi = do
 #endif
 
     -- Lib sources and includes
-    let iArgs = map ("-i"++) $ libAutogenDir : hsSourceDirs libBI
-    let includeArgs = map ("-I"++) $ includeDirs libBI
+    iArgs <- mapM (fmap ("-i"++) . makeAbsolute) $ libAutogenDir : hsSourceDirs libBI
+    includeArgs <- mapM (fmap ("-I"++) . makeAbsolute) $ includeDirs libBI
 
     -- CPP includes, i.e. include cabal_macros.h
     let cppFlags = map ("-optP"++) $
