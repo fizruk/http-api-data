@@ -84,7 +84,7 @@ generateBuildModule flags pkg lbi = do
 
     -- Actually we need to check whether testName suite == "doctests"
     -- pending https://github.com/haskell/cabal/pull/4229 getting into GHC HEAD tree
-    withTestLBI pkg lbi $ \suite suitecfg -> when (testName suite == "doctests") $ do
+    withTestLBI pkg lbi $ \suite suitecfg -> when (testName suite == testName suite) $ do
 
       -- get and create autogen dir
 #if MIN_VERSION_Cabal(1,25,0)
