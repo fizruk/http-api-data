@@ -1,3 +1,9 @@
+0.3.4
+---
+
+* Minor changes:
+    * Add support for GHC 8.2, drop support for GHC 7.6 (see [#44](https://github.com/fizruk/http-api-data/pull/44)).
+
 0.3.3
 ---
 
