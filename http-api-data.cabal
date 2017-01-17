@@ -16,15 +16,28 @@ extra-source-files:
   test/*.hs
   CHANGELOG.md
   README.md
+tested-with:
+  GHC==7.8.4,
+  GHC==7.10.3,
+  GHC==8.0.2,
+  GHC==8.1.*
+
+custom-setup
+  setup-depends:
+    base >= 4.7 && <4.10,
+    Cabal >= 1.18 && <1.26,
+    filepath,
+    directory
 
 flag use-text-show
   description: Use text-show library for efficient ToHttpApiData implementations.
   default: False
+  manual: True
 
 library
     hs-source-dirs: src/
     include-dirs:   include/
-    build-depends:   base               >= 4.6    && < 4.10
+    build-depends:   base               >= 4.7    && < 4.10
                    , bytestring
                    , containers
                    , hashable
@@ -68,8 +81,9 @@ test-suite spec
                    , bytestring
                    , uuid
 
-test-suite doctest
+test-suite doctests
   ghc-options:      -Wall
+  build-tools:      hsc2hs
   build-depends:
     base,
     directory >= 1.0,
