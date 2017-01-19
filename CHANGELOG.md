@@ -1,3 +1,9 @@
+0.3.5
+---
+
+* Minor changes:
+    * Add `LenientData` which always succeeds to parse (see [#45](https://github.com/fizruk/http-api-data/pull/45)).
+
 0.3.4
 ---
 

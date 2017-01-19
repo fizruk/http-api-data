@@ -597,6 +597,8 @@ instance FromHttpApiData UUID.UUID where
 
 
 -- | Lenient parameters. 'FromHttpApiData' combinators always return `Right`.
+--
+-- @since 0.3.5
 newtype LenientData a = LenientData { getLenientData :: Either Text a }
     deriving (Eq, Ord, Show, Read, Typeable, Data, Functor, Foldable, Traversable)
 
