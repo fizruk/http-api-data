@@ -35,6 +35,9 @@ module Web.HttpApiData (
   parseBoundedEnumOfI,
   parseBoundedTextData,
 
+  -- * Lenient data
+  LenientData (..),
+
   -- * Other helpers
   showTextData,
   readTextData,

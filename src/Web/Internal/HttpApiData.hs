@@ -1,5 +1,9 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -11,6 +15,7 @@ module Web.Internal.HttpApiData where
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
+import Data.Foldable (Foldable)
 import Data.Traversable (Traversable(traverse))
 #endif
 
@@ -47,6 +52,9 @@ import TextShow (TextShow, showt)
 #endif
 
 import qualified Data.UUID.Types as UUID
+
+import Data.Typeable (Typeable)
+import Data.Data (Data)
 
 -- $setup
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
@@ -586,3 +594,13 @@ instance ToHttpApiData UUID.UUID where
 instance FromHttpApiData UUID.UUID where
     parseUrlPiece = maybe (Left "invalid UUID") Right . UUID.fromText
     parseHeader   = maybe (Left "invalid UUID") Right . UUID.fromASCIIBytes
+
+
+-- | Lenient parameters. 'FromHttpApiData' combinators always return `Right`.
+newtype LenientData a = LenientData { getLenientData :: Either Text a }
+    deriving (Eq, Ord, Show, Read, Typeable, Data, Functor, Foldable, Traversable)
+
+instance FromHttpApiData a => FromHttpApiData (LenientData a) where
+    parseUrlPiece   = Right . LenientData . parseUrlPiece
+    parseHeader     = Right . LenientData . parseHeader
+    parseQueryParam = Right . LenientData . parseQueryParam
