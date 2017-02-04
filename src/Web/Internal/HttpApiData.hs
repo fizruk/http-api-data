@@ -508,7 +508,7 @@ instance FromHttpApiData Natural where
   parseUrlPiece s = do
     n <- runReader (signed decimal) s
     if n < 0
-      then Left ("undeflow: " <> s <> " (should be a non-negative integer)")
+      then Left ("underflow: " <> s <> " (should be a non-negative integer)")
       else Right (fromInteger n)
 #endif
 
