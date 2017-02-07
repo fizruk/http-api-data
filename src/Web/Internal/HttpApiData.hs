@@ -55,6 +55,9 @@ import qualified Data.UUID.Types as UUID
 
 import Data.Typeable (Typeable)
 import Data.Data (Data)
+import qualified Data.ByteString.Builder as BS
+import qualified Network.HTTP.Types as H
+
 
 -- $setup
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
@@ -69,6 +72,10 @@ class ToHttpApiData a where
   -- | Convert to URL path piece.
   toUrlPiece :: a -> Text
   toUrlPiece = toQueryParam
+
+  -- | Convert to a URL path piece, making sure to encode any special chars
+  toEncodedUrlPiece :: a -> BS.Builder
+  toEncodedUrlPiece = H.encodePathSegmentsRelative . (:[]) . toUrlPiece
 
   -- | Convert to HTTP header value.
   toHeader :: a -> ByteString
