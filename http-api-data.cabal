@@ -41,6 +41,7 @@ library
                    , bytestring
                    , containers
                    , hashable
+                   , http-types
                    , text               >= 0.5
                    , time
                    , time-locale-compat >=0.1.1.0 && <0.2

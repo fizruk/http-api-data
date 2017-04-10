@@ -55,6 +55,9 @@ import qualified Data.UUID.Types as UUID
 
 import Data.Typeable (Typeable)
 import Data.Data (Data)
+import qualified Data.ByteString.Builder as BS
+import qualified Network.HTTP.Types as H
+
 
 -- $setup
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
@@ -69,6 +72,12 @@ class ToHttpApiData a where
   -- | Convert to URL path piece.
   toUrlPiece :: a -> Text
   toUrlPiece = toQueryParam
+
+  -- | Convert to a URL path piece, making sure to encode any special chars.
+  -- The default definition uses 'H.encodePathSegmentsRelative',
+  -- but this may be overriden with a more efficient version.
+  toEncodedUrlPiece :: a -> BS.Builder
+  toEncodedUrlPiece = H.encodePathSegmentsRelative . (:[]) . toUrlPiece
 
   -- | Convert to HTTP header value.
   toHeader :: a -> ByteString
@@ -387,46 +396,58 @@ parseBounded reader input = do
     l = toInteger (minBound :: a)
     h = toInteger (maxBound :: a)
 
+-- | Convert to a URL-encoded path piece using 'toUrlPiece'.
+-- /Note/: this function does not check if the result contains unescaped characters!
+-- This function can be used to override 'toEncodedUrlPiece' as a more efficient implementation
+-- when the resulting URL piece /never/ has to be escaped.
+unsafeToEncodedUrlPiece :: ToHttpApiData a => a -> BS.Builder
+unsafeToEncodedUrlPiece = BS.byteString . encodeUtf8 . toUrlPiece
+
 -- |
 -- >>> toUrlPiece ()
 -- "_"
 instance ToHttpApiData () where
   toUrlPiece () = "_"
+  toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
-instance ToHttpApiData Char     where toUrlPiece = T.singleton
+instance ToHttpApiData Char where
+  toUrlPiece = T.singleton
 
 -- |
 -- >>> toUrlPiece (Version [1, 2, 3] [])
 -- "1.2.3"
 instance ToHttpApiData Version where
   toUrlPiece = T.pack . showVersion
+  toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 #if MIN_VERSION_base(4,8,0)
 instance ToHttpApiData Void    where toUrlPiece = absurd
-instance ToHttpApiData Natural where toUrlPiece = showt
+instance ToHttpApiData Natural where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 #endif
 
-instance ToHttpApiData Bool     where toUrlPiece = showTextData
-instance ToHttpApiData Ordering where toUrlPiece = showTextData
+instance ToHttpApiData Bool     where toUrlPiece = showTextData; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Ordering where toUrlPiece = showTextData; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
-instance ToHttpApiData Double   where toUrlPiece = showt
-instance ToHttpApiData Float    where toUrlPiece = showt
-instance ToHttpApiData Int      where toUrlPiece = showt
-instance ToHttpApiData Int8     where toUrlPiece = showt
-instance ToHttpApiData Int16    where toUrlPiece = showt
-instance ToHttpApiData Int32    where toUrlPiece = showt
-instance ToHttpApiData Int64    where toUrlPiece = showt
-instance ToHttpApiData Integer  where toUrlPiece = showt
-instance ToHttpApiData Word     where toUrlPiece = showt
-instance ToHttpApiData Word8    where toUrlPiece = showt
-instance ToHttpApiData Word16   where toUrlPiece = showt
-instance ToHttpApiData Word32   where toUrlPiece = showt
-instance ToHttpApiData Word64   where toUrlPiece = showt
+instance ToHttpApiData Double   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Float    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Int      where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Int8     where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Int16    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Int32    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Int64    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Integer  where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Word     where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Word8    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Word16   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Word32   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Word64   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 -- |
 -- >>> toUrlPiece (fromGregorian 2015 10 03)
 -- "2015-10-03"
-instance ToHttpApiData Day      where toUrlPiece = T.pack . show
+instance ToHttpApiData Day where
+  toUrlPiece = T.pack . show
+  toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 timeToUrlPiece :: FormatTime t => String -> t -> Text
 timeToUrlPiece fmt = T.pack . formatTime defaultTimeLocale (iso8601DateFormat (Just fmt))
@@ -434,32 +455,54 @@ timeToUrlPiece fmt = T.pack . formatTime defaultTimeLocale (iso8601DateFormat (J
 -- |
 -- >>> toUrlPiece $ LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 01)
 -- "2015-10-03T14:55:01"
-instance ToHttpApiData LocalTime where toUrlPiece = timeToUrlPiece "%H:%M:%S"
+instance ToHttpApiData LocalTime where
+  toUrlPiece = timeToUrlPiece "%H:%M:%S"
+  toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 -- |
 -- >>> toUrlPiece $ ZonedTime (LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 01)) utc
 -- "2015-10-03T14:55:01+0000"
-instance ToHttpApiData ZonedTime where toUrlPiece = timeToUrlPiece "%H:%M:%S%z"
+instance ToHttpApiData ZonedTime where
+  toUrlPiece = timeToUrlPiece "%H:%M:%S%z"
+  toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 -- |
 -- >>> toUrlPiece $ UTCTime (fromGregorian 2015 10 03) 864
 -- "2015-10-03T00:14:24Z"
-instance ToHttpApiData UTCTime   where toUrlPiece = timeToUrlPiece "%H:%M:%SZ"
+instance ToHttpApiData UTCTime where
+  toUrlPiece = timeToUrlPiece "%H:%M:%SZ"
+  toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
-instance ToHttpApiData NominalDiffTime where toUrlPiece = toUrlPiece . (floor :: NominalDiffTime -> Integer)
+instance ToHttpApiData NominalDiffTime where
+  toUrlPiece = toUrlPiece . (floor :: NominalDiffTime -> Integer)
+  toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 instance ToHttpApiData String   where toUrlPiece = T.pack
 instance ToHttpApiData Text     where toUrlPiece = id
 instance ToHttpApiData L.Text   where toUrlPiece = L.toStrict
 
-instance ToHttpApiData All where toUrlPiece = toUrlPiece . getAll
-instance ToHttpApiData Any where toUrlPiece = toUrlPiece . getAny
+instance ToHttpApiData All where toUrlPiece = toUrlPiece . getAll; toEncodedUrlPiece = toEncodedUrlPiece . getAll
+instance ToHttpApiData Any where toUrlPiece = toUrlPiece . getAny; toEncodedUrlPiece = toEncodedUrlPiece . getAny
 
-instance ToHttpApiData a => ToHttpApiData (Dual a)    where toUrlPiece = toUrlPiece . getDual
-instance ToHttpApiData a => ToHttpApiData (Sum a)     where toUrlPiece = toUrlPiece . getSum
-instance ToHttpApiData a => ToHttpApiData (Product a) where toUrlPiece = toUrlPiece . getProduct
-instance ToHttpApiData a => ToHttpApiData (First a)   where toUrlPiece = toUrlPiece . getFirst
-instance ToHttpApiData a => ToHttpApiData (Last a)    where toUrlPiece = toUrlPiece . getLast
+instance ToHttpApiData a => ToHttpApiData (Dual a) where
+  toUrlPiece = toUrlPiece . getDual
+  toEncodedUrlPiece = toEncodedUrlPiece . getDual
+
+instance ToHttpApiData a => ToHttpApiData (Sum a) where
+  toUrlPiece = toUrlPiece . getSum
+  toEncodedUrlPiece = toEncodedUrlPiece . getSum
+
+instance ToHttpApiData a => ToHttpApiData (Product a) where
+  toUrlPiece = toUrlPiece . getProduct
+  toEncodedUrlPiece = toEncodedUrlPiece . getProduct
+
+instance ToHttpApiData a => ToHttpApiData (First a) where
+  toUrlPiece = toUrlPiece . getFirst
+  toEncodedUrlPiece = toEncodedUrlPiece . getFirst
+
+instance ToHttpApiData a => ToHttpApiData (Last a) where
+  toUrlPiece = toUrlPiece . getLast
+  toEncodedUrlPiece = toEncodedUrlPiece . getLast
 
 -- |
 -- >>> toUrlPiece (Just "Hello")
@@ -590,6 +633,7 @@ instance (FromHttpApiData a, FromHttpApiData b) => FromHttpApiData (Either a b) 
 instance ToHttpApiData UUID.UUID where
     toUrlPiece = UUID.toText
     toHeader   = UUID.toASCIIBytes
+    toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 instance FromHttpApiData UUID.UUID where
     parseUrlPiece = maybe (Left "invalid UUID") Right . UUID.fromText

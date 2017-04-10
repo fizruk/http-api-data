@@ -9,6 +9,7 @@ import Data.Time
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.ByteString as BS
+import Data.ByteString.Builder (toLazyByteString)
 import Data.Version
 import qualified Data.UUID as UUID
 
@@ -29,6 +30,10 @@ import Web.Internal.TestInstances
 (<=>) :: Eq a => (a -> b) -> (b -> Either T.Text a) -> a -> Bool
 (f <=> g) x = g (f x) == Right x
 
+encodedUrlPieceProp :: ToHttpApiData a => a -> Bool
+encodedUrlPieceProp x = toLazyByteString (toEncodedUrlPiece (toUrlPiece x)) == toLazyByteString (toEncodedUrlPiece x)
+
+
 checkUrlPiece :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Show a, Arbitrary a) => Proxy a -> String -> Spec
 checkUrlPiece _ name = prop name (toUrlPiece <=> parseUrlPiece :: a -> Bool)
 
@@ -39,6 +44,15 @@ checkUrlPiece' gen name = prop name $ forAll gen (toUrlPiece <=> parseUrlPiece)
 -- | Check case insensitivity for @parseUrlPiece@.
 checkUrlPieceI :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Arbitrary a) => Proxy a -> String -> Spec
 checkUrlPieceI _ = checkUrlPiece (Proxy :: Proxy (RandomCase a))
+
+-- | Check that 'toEncodedUrlPiece' is equivallent to default implementation.
+checkEncodedUrlPiece :: forall a. (Show a, ToHttpApiData a, Arbitrary a) => Proxy a -> String -> Spec
+checkEncodedUrlPiece _ = checkEncodedUrlPiece' (arbitrary :: Gen a)
+
+-- | Check that 'toEncodedUrlPiece' is equivallent to default implementation.
+-- Use a given generator.
+checkEncodedUrlPiece' :: forall a. (Show a, ToHttpApiData a) => Gen a -> String -> Spec
+checkEncodedUrlPiece' gen name = prop name $ forAll gen encodedUrlPieceProp
 
 spec :: Spec
 spec = do
@@ -78,6 +92,42 @@ spec = do
     checkUrlPiece  (Proxy :: Proxy Natural)   "Natural"
 #endif
 
+  describe "toEncodedUrlPiece encodes correctly" $ do
+    checkEncodedUrlPiece  (Proxy :: Proxy ())        "()"
+    checkEncodedUrlPiece  (Proxy :: Proxy Char)      "Char"
+    checkEncodedUrlPiece  (Proxy :: Proxy Bool)      "Bool"
+    checkEncodedUrlPiece  (Proxy :: Proxy Ordering)  "Ordering"
+    checkEncodedUrlPiece  (Proxy :: Proxy Int)       "Int"
+    checkEncodedUrlPiece  (Proxy :: Proxy Int8)      "Int8"
+    checkEncodedUrlPiece  (Proxy :: Proxy Int16)     "Int16"
+    checkEncodedUrlPiece  (Proxy :: Proxy Int32)     "Int32"
+    checkEncodedUrlPiece  (Proxy :: Proxy Int64)     "Int64"
+    checkEncodedUrlPiece  (Proxy :: Proxy Integer)   "Integer"
+    checkEncodedUrlPiece  (Proxy :: Proxy Word)      "Word"
+    checkEncodedUrlPiece  (Proxy :: Proxy Word8)     "Word8"
+    checkEncodedUrlPiece  (Proxy :: Proxy Word16)    "Word16"
+    checkEncodedUrlPiece  (Proxy :: Proxy Word32)    "Word32"
+    checkEncodedUrlPiece  (Proxy :: Proxy Word64)    "Word64"
+    checkEncodedUrlPiece  (Proxy :: Proxy String)    "String"
+    checkEncodedUrlPiece  (Proxy :: Proxy T.Text)    "Text.Strict"
+    checkEncodedUrlPiece  (Proxy :: Proxy L.Text)    "Text.Lazy"
+    checkEncodedUrlPiece  (Proxy :: Proxy Day)       "Day"
+    checkEncodedUrlPiece' localTimeGen               "LocalTime"
+    checkEncodedUrlPiece' zonedTimeGen               "ZonedTime"
+    checkEncodedUrlPiece' utcTimeGen                 "UTCTime"
+    checkEncodedUrlPiece' nominalDiffTimeGen         "NominalDiffTime"
+    checkEncodedUrlPiece  (Proxy :: Proxy Version)   "Version"
+    checkEncodedUrlPiece' uuidGen                    "UUID"
+
+    checkEncodedUrlPiece  (Proxy :: Proxy (Maybe String))            "Maybe String"
+    checkEncodedUrlPiece  (Proxy :: Proxy (Maybe Integer))           "Maybe Integer"
+    checkEncodedUrlPiece  (Proxy :: Proxy (Either Integer T.Text))   "Either Integer Text"
+    checkEncodedUrlPiece  (Proxy :: Proxy (Either Version Day))      "Either Version Day"
+
+#if MIN_VERSION_base(4,8,0)
+    checkEncodedUrlPiece  (Proxy :: Proxy Natural)   "Natural"
+#endif
+
   it "bad integers are rejected" $ do
     parseUrlPieceMaybe (T.pack "123hello") `shouldBe` (Nothing :: Maybe Int)
 
@@ -87,6 +137,7 @@ spec = do
 
   it "invalid utf8 is handled" $ do
     parseHeaderMaybe (BS.pack [128]) `shouldBe` (Nothing :: Maybe T.Text)
+
 
 uuidGen :: Gen UUID.UUID
 uuidGen = UUID.fromWords <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
