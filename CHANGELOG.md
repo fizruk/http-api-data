@@ -1,3 +1,9 @@
+0.3.6
+---
+
+* Minor change:
+    * Add `toEncodedUrlPiece` class method for URL-encoded path segments (see [#50](https://github.com/fizruk/http-api-data/pull/50)); use efficient encoding for types whose values don't need URL-encoding.
+
 0.3.5
 ---
 
