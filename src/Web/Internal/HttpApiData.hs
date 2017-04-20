@@ -58,6 +58,9 @@ import Data.Data (Data)
 import qualified Data.ByteString.Builder as BS
 import qualified Network.HTTP.Types as H
 
+import qualified Data.Attoparsec.Text as Atto
+import qualified Data.Attoparsec.Time as Atto
+
 
 -- $setup
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
@@ -577,27 +580,25 @@ instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 -- |
 -- >>> toGregorian <$> parseUrlPiece "2016-12-01"
 -- Right (2016,12,1)
-instance FromHttpApiData Day      where parseUrlPiece = readTextData
-
-timeParseUrlPiece :: ParseTime t => String -> Text -> Either Text t
-timeParseUrlPiece fmt = parseMaybeTextData (timeParseUrlPieceMaybe . T.unpack)
-  where
-    timeParseUrlPieceMaybe = parseTime defaultTimeLocale (iso8601DateFormat (Just fmt))
+instance FromHttpApiData Day      where parseUrlPiece = runAtto Atto.day
 
 -- |
 -- >>> parseUrlPiece "2015-10-03T14:55:01" :: Either Text LocalTime
 -- Right 2015-10-03 14:55:01
-instance FromHttpApiData LocalTime where parseUrlPiece = timeParseUrlPiece "%H:%M:%S"
+instance FromHttpApiData LocalTime where parseUrlPiece = runAtto Atto.localTime
 
 -- |
 -- >>> parseUrlPiece "2015-10-03T14:55:01+0000" :: Either Text ZonedTime
 -- Right 2015-10-03 14:55:01 +0000
-instance FromHttpApiData ZonedTime where parseUrlPiece = timeParseUrlPiece "%H:%M:%S%z"
+--
+-- >>> parseQueryParam "2016-12-31T01:00:00Z" :: Either Text ZonedTime
+-- Right 2016-12-31 01:00:00 +0000
+instance FromHttpApiData ZonedTime where parseUrlPiece = runAtto Atto.zonedTime
 
 -- |
 -- >>> parseUrlPiece "2015-10-03T00:14:24Z" :: Either Text UTCTime
 -- Right 2015-10-03 00:14:24 UTC
-instance FromHttpApiData UTCTime   where parseUrlPiece = timeParseUrlPiece "%H:%M:%SZ"
+instance FromHttpApiData UTCTime   where parseUrlPiece = runAtto Atto.utcTime
 
 instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap fromInteger . parseUrlPiece
 
@@ -650,3 +651,12 @@ instance FromHttpApiData a => FromHttpApiData (LenientData a) where
     parseUrlPiece   = Right . LenientData . parseUrlPiece
     parseHeader     = Right . LenientData . parseHeader
     parseQueryParam = Right . LenientData . parseQueryParam
+
+-------------------------------------------------------------------------------
+-- Attoparsec helpers
+-------------------------------------------------------------------------------
+
+runAtto :: Atto.Parser a -> Text -> Either Text a
+runAtto p t = case Atto.parseOnly (p <* Atto.endOfInput) t of
+    Left err -> Left (T.pack err)
+    Right x  -> Right x
