@@ -37,7 +37,9 @@ flag use-text-show
 library
     hs-source-dirs: src/
     include-dirs:   include/
-    build-depends:   base               >= 4.7    && < 4.10
+    build-depends:   base               >= 4.7      && < 4.10
+                   , attoparsec         >= 0.13.0.1 && < 0.14
+                   , attoparsec-iso8601 >= 1.0.0.0  && < 1.1
                    , bytestring
                    , containers
                    , hashable
