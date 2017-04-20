@@ -459,21 +459,21 @@ timeToUrlPiece fmt = T.pack . formatTime defaultTimeLocale (iso8601DateFormat (J
 -- >>> toUrlPiece $ LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 01)
 -- "2015-10-03T14:55:01"
 instance ToHttpApiData LocalTime where
-  toUrlPiece = timeToUrlPiece "%H:%M:%S"
+  toUrlPiece = timeToUrlPiece "%H:%M:%S%Q"
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 -- |
 -- >>> toUrlPiece $ ZonedTime (LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 01)) utc
 -- "2015-10-03T14:55:01+0000"
 instance ToHttpApiData ZonedTime where
-  toUrlPiece = timeToUrlPiece "%H:%M:%S%z"
+  toUrlPiece = timeToUrlPiece "%H:%M:%S%Q%z"
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 -- |
--- >>> toUrlPiece $ UTCTime (fromGregorian 2015 10 03) 864
--- "2015-10-03T00:14:24Z"
+-- >>> toUrlPiece $ UTCTime (fromGregorian 2015 10 03) 864.5
+-- "2015-10-03T00:14:24.5Z"
 instance ToHttpApiData UTCTime where
-  toUrlPiece = timeToUrlPiece "%H:%M:%SZ"
+  toUrlPiece = timeToUrlPiece "%H:%M:%S%QZ"
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 instance ToHttpApiData NominalDiffTime where
