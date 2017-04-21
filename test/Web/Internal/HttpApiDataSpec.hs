@@ -76,6 +76,7 @@ spec = do
     checkUrlPiece  (Proxy :: Proxy T.Text)    "Text.Strict"
     checkUrlPiece  (Proxy :: Proxy L.Text)    "Text.Lazy"
     checkUrlPiece  (Proxy :: Proxy Day)       "Day"
+    checkUrlPiece' timeOfDayGen               "TimeOfDay"
     checkUrlPiece' localTimeGen               "LocalTime"
     checkUrlPiece' zonedTimeGen               "ZonedTime"
     checkUrlPiece' utcTimeGen                 "UTCTime"
@@ -112,6 +113,7 @@ spec = do
     checkEncodedUrlPiece  (Proxy :: Proxy T.Text)    "Text.Strict"
     checkEncodedUrlPiece  (Proxy :: Proxy L.Text)    "Text.Lazy"
     checkEncodedUrlPiece  (Proxy :: Proxy Day)       "Day"
+    checkEncodedUrlPiece' timeOfDayGen               "TimeOfDay"
     checkEncodedUrlPiece' localTimeGen               "LocalTime"
     checkEncodedUrlPiece' zonedTimeGen               "ZonedTime"
     checkEncodedUrlPiece' utcTimeGen                 "UTCTime"
@@ -144,9 +146,13 @@ uuidGen = UUID.fromWords <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
 -- TODO: this generators don't generate full range items
 localTimeGen :: Gen LocalTime
-localTimeGen = LocalTime
-    <$> arbitrary
-    <*> liftA3 TimeOfDay (choose (0, 23)) (choose (0, 59)) (fromInteger <$> choose (0, 60))
+localTimeGen = LocalTime <$> arbitrary <*> timeOfDayGen
+
+timeOfDayGen :: Gen TimeOfDay
+timeOfDayGen = TimeOfDay
+  <$> choose (0, 23)
+  <*> choose (0, 59)
+  <*> fmap (\x -> 0.1 * fromInteger x) (choose (0, 600))
 
 zonedTimeGen :: Gen ZonedTime
 zonedTimeGen = ZonedTime

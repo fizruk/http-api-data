@@ -456,15 +456,22 @@ timeToUrlPiece :: FormatTime t => String -> t -> Text
 timeToUrlPiece fmt = T.pack . formatTime defaultTimeLocale (iso8601DateFormat (Just fmt))
 
 -- |
--- >>> toUrlPiece $ LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 01)
--- "2015-10-03T14:55:01"
+-- >>> toUrlPiece $ TimeOfDay 14 55 23.1
+-- "14:55:23.1"
+instance ToHttpApiData TimeOfDay where
+  toUrlPiece = T.pack . formatTime defaultTimeLocale "%H:%M:%S%Q"
+  toEncodedUrlPiece = unsafeToEncodedUrlPiece
+
+-- |
+-- >>> toUrlPiece $ LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 21.687)
+-- "2015-10-03T14:55:21.687"
 instance ToHttpApiData LocalTime where
   toUrlPiece = timeToUrlPiece "%H:%M:%S%Q"
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 -- |
--- >>> toUrlPiece $ ZonedTime (LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 01)) utc
--- "2015-10-03T14:55:01+0000"
+-- >>> toUrlPiece $ ZonedTime (LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 51.001)) utc
+-- "2015-10-03T14:55:51.001+0000"
 instance ToHttpApiData ZonedTime where
   toUrlPiece = timeToUrlPiece "%H:%M:%S%Q%z"
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
@@ -580,7 +587,12 @@ instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 -- |
 -- >>> toGregorian <$> parseUrlPiece "2016-12-01"
 -- Right (2016,12,1)
-instance FromHttpApiData Day      where parseUrlPiece = runAtto Atto.day
+instance FromHttpApiData Day where parseUrlPiece = runAtto Atto.day
+
+-- |
+-- >>> parseUrlPiece "14:55:01.333" :: Either Text TimeOfDay
+-- Right 14:55:01.333
+instance FromHttpApiData TimeOfDay where parseUrlPiece = runAtto Atto.timeOfDay
 
 -- |
 -- >>> parseUrlPiece "2015-10-03T14:55:01" :: Either Text LocalTime
