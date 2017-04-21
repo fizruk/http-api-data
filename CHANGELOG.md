@@ -1,11 +1,13 @@
 0.3.7
 ---
 
-* Minor change
+* Minor changes:
     * Use [`attoparsec-iso8601`](http://hackage.haskell.org/package/attoparsec-iso8601)
       for parsing of time types. Now the accepted formats are the same as by `aeson`,
       i.e. parsers are more lenient
-      (see [#41](https://github.com/fizruk/http-api-data/pull/41)).
+      (see [#41](https://github.com/fizruk/http-api-data/pull/41));
+    * Preserve fractions of a second in `ToHttpApiData` instances (see [#53](https://github.com/fizruk/http-api-data/pull/53));
+    * Add `ToHttpApiData` and `FromHttpApiData` instances for `TimeOfDay` (see [#53](https://github.com/fizruk/http-api-data/pull/53)).
 
 0.3.6
 ---
