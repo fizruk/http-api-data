@@ -27,15 +27,21 @@ import Web.Internal.HttpApiData
 
 import Web.Internal.TestInstances
 
-(<=>) :: Eq a => (a -> b) -> (b -> Either T.Text a) -> a -> Bool
-(f <=> g) x = g (f x) == Right x
+(<=>) :: forall a b. (Show a, Show b, Eq a) => (a -> b) -> (b -> Either T.Text a) -> a -> Property
+(f <=> g) x = counterexample
+    (show lhs' ++ " : " ++ show lhs ++ " /= " ++ show rhs)
+    (lhs == rhs)
+  where
+    lhs' = f x
+    lhs = g lhs' :: Either T.Text a
+    rhs = Right x :: Either T.Text a
 
-encodedUrlPieceProp :: ToHttpApiData a => a -> Bool
-encodedUrlPieceProp x = toLazyByteString (toEncodedUrlPiece (toUrlPiece x)) == toLazyByteString (toEncodedUrlPiece x)
+encodedUrlPieceProp :: ToHttpApiData a => a -> Property
+encodedUrlPieceProp x = toLazyByteString (toEncodedUrlPiece (toUrlPiece x)) === toLazyByteString (toEncodedUrlPiece x)
 
 
 checkUrlPiece :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Show a, Arbitrary a) => Proxy a -> String -> Spec
-checkUrlPiece _ name = prop name (toUrlPiece <=> parseUrlPiece :: a -> Bool)
+checkUrlPiece _ name = prop name (toUrlPiece <=> parseUrlPiece :: a -> Property)
 
 -- | Check with given generator
 checkUrlPiece' :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Show a) => Gen a -> String -> Spec
