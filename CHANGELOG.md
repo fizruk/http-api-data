@@ -1,7 +1,7 @@
 0.3.7.1
 ---
 
-* GHC-8.2 support
+* GHC-8.2 support (see [#55](https://github.com/fizruk/http-api-data/pull/55)).
 
 0.3.7
 ---
