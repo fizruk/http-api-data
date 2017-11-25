@@ -367,7 +367,7 @@ parseBoundedHeader bs = case lookupBoundedEnumOf toHeader bs of
 -- Right 1991-06-02
 --
 -- This parser is case sensitive and will not match @'showTextData'@
--- in presense of letters:
+-- in presence of letters:
 --
 -- >>> readTextData (showTextData True) :: Either Text Bool
 -- Left "could not parse: `true'"
