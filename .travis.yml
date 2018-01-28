@@ -28,7 +28,7 @@ before_cache:
   - rm -fv $HOME/.cabal/packages/hackage.haskell.org/01-index.tar
   - rm -fv $HOME/.cabal/packages/hackage.haskell.org/01-index.tar.idx
 
-  - rm -fv $HOME/.cabal/packages/head.hackage
+  - rm -rfv $HOME/.cabal/packages/head.hackage
 
 matrix:
   include:
@@ -97,14 +97,14 @@ script:
 
   # build & run tests, build benchmarks
   - cabal new-build -w ${HC} ${TEST} ${BENCH} all
-  - if [ "x$TEST" = "x--enable-tests" ]; then cabal new-test -w ${HC} ${TEST} all; fi
+  - if [ "x$TEST" = "x--enable-tests" ]; then cabal new-test -w ${HC} ${TEST} ${BENCH} all; fi
 
   # cabal check
   - (cd http-api-data-* && cabal check)
 
   # haddock
   - rm -rf ./dist-newstyle
-  - if $HADDOCK; then cabal new-haddock -w ${HC} --disable-tests --disable-benchmarks all; else echo "Skipping haddock generation";fi
+  - if $HADDOCK; then cabal new-haddock -w ${HC} ${TEST} ${BENCH} all; else echo "Skipping haddock generation";fi
 
   - if [ $HCNUMVER -eq 70804 ]; then cabal new-build -w ${HC} --disable-tests --disable-benchmarks --constraint='attoparsec ==0.13.0.1' --constraint='attoparsec-iso8601 ==1.0.0.0' --constraint='bytestring ==0.10.4.0' --constraint='containers ==0.5.5.1' --constraint='hashable ==1.1.2.4' --constraint='http-types ==0.8.6' --constraint='text ==1.1.1.3' --constraint='time ==1.4.2' --constraint='time-local-compat ==0.1.1.0' --constraint='unordered-containers ==0.2.5.0' --constraint='uri-bytestring ==0.1.7' --constraint='uuid-types ==1.0.2' all; else echo skipping...; fi
 
