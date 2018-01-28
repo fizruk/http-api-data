@@ -1,3 +1,9 @@
+0.3.7.2
+---
+
+* Allow http-types-0.12
+* .cabal file adjustments
+
 0.3.7.1
 ---
 
