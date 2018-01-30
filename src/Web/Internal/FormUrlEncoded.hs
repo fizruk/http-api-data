@@ -508,13 +508,18 @@ instance NotSupported FromForm t "is a sum type" => GFromForm t (f :+: g) where 
 -- >>> urlEncodeForm [("fullname", "Andres Löh")]
 -- "fullname=Andres%20L%C3%B6h"
 urlEncodeForm :: Form -> BSL.ByteString
-urlEncodeForm = toLazyByteString . mconcat . intersperse (shortByteString "&") . map encodePair . toList
+urlEncodeForm = urlEncodeParams . toList
+
+-- | Encode a list of key-value pairs to an @application/x-www-form-urlencoded@ 'BSL.ByteString'.
+--
+-- See also 'urlEncodeForm'.
+urlEncodeParams :: [(Text, Text)] -> BSL.ByteString
+urlEncodeParams = toLazyByteString . mconcat . intersperse (shortByteString "&") . map encodePair
   where
     escape = urlEncodeQuery . Text.encodeUtf8
 
     encodePair (k, "") = escape k
     encodePair (k, v) = escape k <> shortByteString "=" <> escape v
-
 
 -- | Decode an @application/x-www-form-urlencoded@ 'BSL.ByteString' to a 'Form'.
 --
@@ -548,7 +553,13 @@ urlEncodeForm = toLazyByteString . mconcat . intersperse (shortByteString "&") .
 -- >>> urlDecodeForm "this=has=too=many=equals"
 -- Left "not a valid pair: this=has=too=many=equals"
 urlDecodeForm :: BSL.ByteString -> Either Text Form
-urlDecodeForm bs = toForm <$> traverse parsePair pairs
+urlDecodeForm = fmap toForm . urlDecodeParams
+
+-- | Decode an @application/x-www-form-urlencoded@ 'BSL.ByteString' to a list of key-value pairs.
+--
+-- See also 'urlDecodeForm'.
+urlDecodeParams :: BSL.ByteString -> Either Text [(Text, Text)]
+urlDecodeParams bs = traverse parsePair pairs
   where
     pairs = map (BSL8.split '=') (BSL8.split '&' bs)
 
@@ -559,6 +570,7 @@ urlDecodeForm bs = toForm <$> traverse parsePair pairs
         [k, v] -> return (k, v)
         [k]    -> return (k, "")
         xs     -> Left $ "not a valid pair: " <> Text.intercalate "=" xs
+
 
 -- | This is a convenience function for decoding a
 -- @application/x-www-form-urlencoded@ 'BSL.ByteString' directly to a datatype
