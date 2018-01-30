@@ -35,10 +35,11 @@ import qualified Data.HashMap.Strict        as HashMap
 import           Data.Int
 import           Data.IntMap                (IntMap)
 import qualified Data.IntMap                as IntMap
-import           Data.List                  (intersperse)
+import           Data.List                  (intersperse, sortBy)
 import           Data.Map                   (Map)
 import qualified Data.Map                   as Map
 import           Data.Monoid
+import           Data.Ord                   (comparing)
 
 import           Data.Text                  (Text)
 import qualified Data.Text                  as Text
@@ -186,12 +187,18 @@ newtype Form = Form { unForm :: HashMap Text [Text] }
 
 instance Show Form where
   showsPrec d form = showParen (d > 10) $
-    showString "fromList " . shows (toList form)
+    showString "fromList " . shows (toListStable form)
 
+-- | _NOTE:_ 'toList' is unstable and may result in different key order (but not values).
+-- For a stable conversion use 'toListStable'.
 instance IsList Form where
   type Item Form = (Text, Text)
   fromList = Form . HashMap.fromListWith (flip (<>)) . fmap (\(k, v) -> (k, [v]))
   toList = concatMap (\(k, vs) -> map ((,) k) vs) . HashMap.toList . unForm
+
+-- | A stable version of 'toList'.
+toListStable :: Form -> [(Text, Text)]
+toListStable = sortOn fst . toList
 
 -- | Convert a value into 'Form'.
 --
@@ -303,7 +310,7 @@ type family NotSupported (cls :: k1) (a :: k2) (reason :: Symbol) :: Constraint 
 -- instance 'ToForm' Post
 -- @
 --
--- >>> urlEncodeAsForm Post { title = "Test", subtitle = Nothing, comments = ["Nice post!", "+1"] }
+-- >>> urlEncodeAsFormStable Post { title = "Test", subtitle = Nothing, comments = ["Nice post!", "+1"] }
 -- "comments=Nice%20post%21&comments=%2B1&title=Test"
 genericToForm :: forall a. (Generic a, GToForm a (Rep a)) => FormOptions -> a -> Form
 genericToForm opts = gToForm (Proxy :: Proxy a) opts . from
@@ -388,6 +395,7 @@ class FromForm a where
 
 instance FromForm Form where fromForm = pure
 
+-- | _NOTE:_ this conversion is unstable and may result in different key order (but not values).
 instance (FromFormKey k, FromHttpApiData v) => FromForm [(k, v)] where
   fromForm = fmap (concatMap (\(k, vs) -> map ((,) k) vs)) . toEntriesByKey
 
@@ -402,12 +410,21 @@ instance FromHttpApiData v => FromForm (IntMap [v]) where
 
 -- | Parse a 'Form' into a list of entries groupped by key.
 --
--- >>> toEntriesByKey [("name", "Nick"), ("color", "red"), ("color", "white")] :: Either Text [(Text, [Text])]
--- Right [("color",["red","white"]),("name",["Nick"])]
+-- _NOTE:_ this conversion is unstable and may result in different key order
+-- (but not values). For a stable encoding see 'toEntriesByKeyStable'.
 toEntriesByKey :: (FromFormKey k, FromHttpApiData v) => Form -> Either Text [(k, [v])]
 toEntriesByKey = traverse parseGroup . HashMap.toList . unForm
   where
     parseGroup (k, vs) = (,) <$> parseFormKey k <*> traverse parseQueryParam vs
+
+-- | Parse a 'Form' into a list of entries groupped by key.
+--
+-- >>> toEntriesByKeyStable [("name", "Nick"), ("color", "red"), ("color", "white")] :: Either Text [(Text, [Text])]
+-- Right [("color",["red","white"]),("name",["Nick"])]
+--
+-- For an unstable (but faster) conversion see 'toEntriesByKey'.
+toEntriesByKeyStable :: (Ord k, FromFormKey k, FromHttpApiData v) => Form -> Either Text [(k, [v])]
+toEntriesByKeyStable = fmap (sortOn fst) . toEntriesByKey
 
 -- | A 'Generic'-based implementation of 'fromForm'.
 -- This is used as a default implementation in 'FromForm'.
@@ -482,39 +499,53 @@ instance NotSupported FromForm t "is a sum type" => GFromForm t (f :+: g) where 
 
 -- | Encode a 'Form' to an @application/x-www-form-urlencoded@ 'BSL.ByteString'.
 --
+-- _NOTE:_ this encoding is unstable and may result in different key order
+-- (but not values). For a stable encoding see 'urlEncodeFormStable'.
+urlEncodeForm :: Form -> BSL.ByteString
+urlEncodeForm = urlEncodeParams . toList
+
+-- | Encode a 'Form' to an @application/x-www-form-urlencoded@ 'BSL.ByteString'.
+--
+-- For an unstable (but faster) encoding see 'urlEncodeForm'.
+--
 -- Key-value pairs get encoded to @key=value@ and separated by @&@:
 --
--- >>> urlEncodeForm [("name", "Julian"), ("lastname", "Arni")]
+-- >>> urlEncodeFormStable [("name", "Julian"), ("lastname", "Arni")]
 -- "lastname=Arni&name=Julian"
 --
 -- Keys with empty values get encoded to just @key@ (without the @=@ sign):
 --
--- >>> urlEncodeForm [("is_test", "")]
+-- >>> urlEncodeFormStable [("is_test", "")]
 -- "is_test"
 --
 -- Empty keys are allowed too:
 --
--- >>> urlEncodeForm [("", "foobar")]
+-- >>> urlEncodeFormStable [("", "foobar")]
 -- "=foobar"
 --
--- However, if not key and value are empty, the key-value pair is ignored.
--- (This prevents @'urlDecodeForm' . 'urlEncodeForm'@ from being a true isomorphism).
+-- However, if both key and value are empty, the key-value pair is ignored.
+-- (This prevents @'urlDecodeForm' . 'urlEncodeFormStable'@ from being a true isomorphism).
 --
--- >>> urlEncodeForm [("", "")]
+-- >>> urlEncodeFormStable [("", "")]
 -- ""
 --
 -- Everything is escaped with @'escapeURIString' 'isUnreserved'@:
 --
--- >>> urlEncodeForm [("fullname", "Andres Löh")]
+-- >>> urlEncodeFormStable [("fullname", "Andres Löh")]
 -- "fullname=Andres%20L%C3%B6h"
-urlEncodeForm :: Form -> BSL.ByteString
-urlEncodeForm = toLazyByteString . mconcat . intersperse (shortByteString "&") . map encodePair . toList
+urlEncodeFormStable :: Form -> BSL.ByteString
+urlEncodeFormStable = urlEncodeParams . sortOn fst . toList
+
+-- | Encode a list of key-value pairs to an @application/x-www-form-urlencoded@ 'BSL.ByteString'.
+--
+-- See also 'urlEncodeFormStable'.
+urlEncodeParams :: [(Text, Text)] -> BSL.ByteString
+urlEncodeParams = toLazyByteString . mconcat . intersperse (shortByteString "&") . map encodePair
   where
     escape = urlEncodeQuery . Text.encodeUtf8
 
     encodePair (k, "") = escape k
     encodePair (k, v) = escape k <> shortByteString "=" <> escape v
-
 
 -- | Decode an @application/x-www-form-urlencoded@ 'BSL.ByteString' to a 'Form'.
 --
@@ -548,7 +579,13 @@ urlEncodeForm = toLazyByteString . mconcat . intersperse (shortByteString "&") .
 -- >>> urlDecodeForm "this=has=too=many=equals"
 -- Left "not a valid pair: this=has=too=many=equals"
 urlDecodeForm :: BSL.ByteString -> Either Text Form
-urlDecodeForm bs = toForm <$> traverse parsePair pairs
+urlDecodeForm = fmap toForm . urlDecodeParams
+
+-- | Decode an @application/x-www-form-urlencoded@ 'BSL.ByteString' to a list of key-value pairs.
+--
+-- See also 'urlDecodeForm'.
+urlDecodeParams :: BSL.ByteString -> Either Text [(Text, Text)]
+urlDecodeParams bs = traverse parsePair pairs
   where
     pairs = map (BSL8.split '=') (BSL8.split '&' bs)
 
@@ -559,6 +596,7 @@ urlDecodeForm bs = toForm <$> traverse parsePair pairs
         [k, v] -> return (k, v)
         [k]    -> return (k, "")
         xs     -> Left $ "not a valid pair: " <> Text.intercalate "=" xs
+
 
 -- | This is a convenience function for decoding a
 -- @application/x-www-form-urlencoded@ 'BSL.ByteString' directly to a datatype
@@ -577,10 +615,21 @@ urlDecodeAsForm = fromForm <=< urlDecodeForm
 --
 -- This is effectively @'urlEncodeForm' . 'toForm'@.
 --
--- >>> urlEncodeAsForm Person {name = "Dennis", age = 22}
--- "age=22&name=Dennis"
+-- _NOTE:_ this encoding is unstable and may result in different key order
+-- (but not values). For a stable encoding see 'urlEncodeAsFormStable'.
 urlEncodeAsForm :: ToForm a => a -> BSL.ByteString
 urlEncodeAsForm = urlEncodeForm . toForm
+
+-- | This is a convenience function for encoding a datatype that has instance
+-- of 'ToForm' directly to a @application/x-www-form-urlencoded@
+-- 'BSL.ByteString'.
+--
+-- This is effectively @'urlEncodeFormStable' . 'toForm'@.
+--
+-- >>> urlEncodeAsFormStable Person {name = "Dennis", age = 22}
+-- "age=22&name=Dennis"
+urlEncodeAsFormStable :: ToForm a => a -> BSL.ByteString
+urlEncodeAsFormStable = urlEncodeFormStable . toForm
 
 -- | Find all values corresponding to a given key in a 'Form'.
 --
@@ -692,8 +741,8 @@ parseUnique key form = lookupUnique key form >>= parseQueryParam
 --   'fromForm' = 'genericFromForm' myOptions
 -- @
 --
--- >>> urlEncodeAsForm Project { projectName = "http-api-data", projectSize = 172 }
--- "size=172&name=http-api-data"
+-- >>> urlEncodeAsFormStable Project { projectName = "http-api-data", projectSize = 172 }
+-- "name=http-api-data&size=172"
 -- >>> urlDecodeAsForm "name=http-api-data&size=172" :: Either Text Project
 -- Right (Project {projectName = "http-api-data", projectSize = 172})
 data FormOptions = FormOptions
@@ -712,3 +761,6 @@ defaultFormOptions :: FormOptions
 defaultFormOptions = FormOptions
   { fieldLabelModifier = id
   }
+
+sortOn :: Ord b => (a -> b) -> [a] -> [a]
+sortOn f = sortBy (comparing f)

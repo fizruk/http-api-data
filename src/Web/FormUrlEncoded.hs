@@ -14,9 +14,11 @@ module Web.FormUrlEncoded (
 
   -- * Encoding and decoding @'Form'@s
   urlEncodeAsForm,
+  urlEncodeAsFormStable,
   urlDecodeAsForm,
 
   urlEncodeForm,
+  urlEncodeFormStable,
   urlDecodeForm,
 
   -- * 'Generic's
@@ -28,7 +30,9 @@ module Web.FormUrlEncoded (
   defaultFormOptions,
 
   -- * Helpers
+  toListStable,
   toEntriesByKey,
+  toEntriesByKeyStable,
   fromEntriesByKey,
 
   lookupAll,
@@ -38,6 +42,9 @@ module Web.FormUrlEncoded (
   parseAll,
   parseMaybe,
   parseUnique,
+
+  urlEncodeParams,
+  urlDecodeParams,
 ) where
 
 import Web.Internal.FormUrlEncoded
