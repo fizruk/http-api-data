@@ -35,10 +35,11 @@ import qualified Data.HashMap.Strict        as HashMap
 import           Data.Int
 import           Data.IntMap                (IntMap)
 import qualified Data.IntMap                as IntMap
-import           Data.List                  (intersperse, sortOn)
+import           Data.List                  (intersperse, sortBy)
 import           Data.Map                   (Map)
 import qualified Data.Map                   as Map
 import           Data.Monoid
+import           Data.Ord                   (comparing)
 
 import           Data.Text                  (Text)
 import qualified Data.Text                  as Text
@@ -760,3 +761,6 @@ defaultFormOptions :: FormOptions
 defaultFormOptions = FormOptions
   { fieldLabelModifier = id
   }
+
+sortOn :: Ord b => (a -> b) -> [a] -> [a]
+sortOn f = sortBy (comparing f)
