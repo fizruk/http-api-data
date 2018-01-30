@@ -35,7 +35,7 @@ import qualified Data.HashMap.Strict        as HashMap
 import           Data.Int
 import           Data.IntMap                (IntMap)
 import qualified Data.IntMap                as IntMap
-import           Data.List                  (intersperse)
+import           Data.List                  (intersperse, sortOn)
 import           Data.Map                   (Map)
 import qualified Data.Map                   as Map
 import           Data.Monoid
@@ -303,7 +303,7 @@ type family NotSupported (cls :: k1) (a :: k2) (reason :: Symbol) :: Constraint 
 -- instance 'ToForm' Post
 -- @
 --
--- >>> urlEncodeAsForm Post { title = "Test", subtitle = Nothing, comments = ["Nice post!", "+1"] }
+-- >>> urlEncodeAsFormStable Post { title = "Test", subtitle = Nothing, comments = ["Nice post!", "+1"] }
 -- "comments=Nice%20post%21&comments=%2B1&title=Test"
 genericToForm :: forall a. (Generic a, GToForm a (Rep a)) => FormOptions -> a -> Form
 genericToForm opts = gToForm (Proxy :: Proxy a) opts . from
@@ -482,37 +482,46 @@ instance NotSupported FromForm t "is a sum type" => GFromForm t (f :+: g) where 
 
 -- | Encode a 'Form' to an @application/x-www-form-urlencoded@ 'BSL.ByteString'.
 --
+-- _NOTE:_ this encoding is unstable and may change the order of keys
+-- (but not values). For a stable encoding see 'urlEncodeFormStable'.
+urlEncodeForm :: Form -> BSL.ByteString
+urlEncodeForm = urlEncodeParams . toList
+
+-- | Encode a 'Form' to an @application/x-www-form-urlencoded@ 'BSL.ByteString'.
+--
+-- For an unstable (but faster) encoding see 'urlEncodeForm'.
+--
 -- Key-value pairs get encoded to @key=value@ and separated by @&@:
 --
--- >>> urlEncodeForm [("name", "Julian"), ("lastname", "Arni")]
+-- >>> urlEncodeFormStable [("name", "Julian"), ("lastname", "Arni")]
 -- "lastname=Arni&name=Julian"
 --
 -- Keys with empty values get encoded to just @key@ (without the @=@ sign):
 --
--- >>> urlEncodeForm [("is_test", "")]
+-- >>> urlEncodeFormStable [("is_test", "")]
 -- "is_test"
 --
 -- Empty keys are allowed too:
 --
--- >>> urlEncodeForm [("", "foobar")]
+-- >>> urlEncodeFormStable [("", "foobar")]
 -- "=foobar"
 --
--- However, if not key and value are empty, the key-value pair is ignored.
--- (This prevents @'urlDecodeForm' . 'urlEncodeForm'@ from being a true isomorphism).
+-- However, if both key and value are empty, the key-value pair is ignored.
+-- (This prevents @'urlDecodeForm' . 'urlEncodeFormStable'@ from being a true isomorphism).
 --
--- >>> urlEncodeForm [("", "")]
+-- >>> urlEncodeFormStable [("", "")]
 -- ""
 --
 -- Everything is escaped with @'escapeURIString' 'isUnreserved'@:
 --
--- >>> urlEncodeForm [("fullname", "Andres Löh")]
+-- >>> urlEncodeFormStable [("fullname", "Andres Löh")]
 -- "fullname=Andres%20L%C3%B6h"
-urlEncodeForm :: Form -> BSL.ByteString
-urlEncodeForm = urlEncodeParams . toList
+urlEncodeFormStable :: Form -> BSL.ByteString
+urlEncodeFormStable = urlEncodeParams . sortOn fst . toList
 
 -- | Encode a list of key-value pairs to an @application/x-www-form-urlencoded@ 'BSL.ByteString'.
 --
--- See also 'urlEncodeForm'.
+-- See also 'urlEncodeFormStable'.
 urlEncodeParams :: [(Text, Text)] -> BSL.ByteString
 urlEncodeParams = toLazyByteString . mconcat . intersperse (shortByteString "&") . map encodePair
   where
@@ -589,10 +598,21 @@ urlDecodeAsForm = fromForm <=< urlDecodeForm
 --
 -- This is effectively @'urlEncodeForm' . 'toForm'@.
 --
--- >>> urlEncodeAsForm Person {name = "Dennis", age = 22}
--- "age=22&name=Dennis"
+-- _NOTE:_ this encoding is unstable and may change the order of keys
+-- (but not values). For a stable encoding see 'urlEncodeAsFormStable'.
 urlEncodeAsForm :: ToForm a => a -> BSL.ByteString
 urlEncodeAsForm = urlEncodeForm . toForm
+
+-- | This is a convenience function for encoding a datatype that has instance
+-- of 'ToForm' directly to a @application/x-www-form-urlencoded@
+-- 'BSL.ByteString'.
+--
+-- This is effectively @'urlEncodeFormStable' . 'toForm'@.
+--
+-- >>> urlEncodeAsFormStable Person {name = "Dennis", age = 22}
+-- "age=22&name=Dennis"
+urlEncodeAsFormStable :: ToForm a => a -> BSL.ByteString
+urlEncodeAsFormStable = urlEncodeFormStable . toForm
 
 -- | Find all values corresponding to a given key in a 'Form'.
 --
@@ -704,7 +724,7 @@ parseUnique key form = lookupUnique key form >>= parseQueryParam
 --   'fromForm' = 'genericFromForm' myOptions
 -- @
 --
--- >>> urlEncodeAsForm Project { projectName = "http-api-data", projectSize = 172 }
+-- >>> urlEncodeAsFormStable Project { projectName = "http-api-data", projectSize = 172 }
 -- "size=172&name=http-api-data"
 -- >>> urlDecodeAsForm "name=http-api-data&size=172" :: Either Text Project
 -- Right (Project {projectName = "http-api-data", projectSize = 172})

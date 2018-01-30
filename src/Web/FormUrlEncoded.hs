@@ -14,9 +14,11 @@ module Web.FormUrlEncoded (
 
   -- * Encoding and decoding @'Form'@s
   urlEncodeAsForm,
+  urlEncodeAsFormStable,
   urlDecodeAsForm,
 
   urlEncodeForm,
+  urlEncodeFormStable,
   urlDecodeForm,
 
   -- * 'Generic's
