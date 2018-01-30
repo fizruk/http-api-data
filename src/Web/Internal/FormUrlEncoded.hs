@@ -186,12 +186,18 @@ newtype Form = Form { unForm :: HashMap Text [Text] }
 
 instance Show Form where
   showsPrec d form = showParen (d > 10) $
-    showString "fromList " . shows (toList form)
+    showString "fromList " . shows (toListStable form)
 
+-- | _NOTE:_ 'toList' is unstable and may result in different key order (but not values).
+-- For a stable conversion use 'toListStable'.
 instance IsList Form where
   type Item Form = (Text, Text)
   fromList = Form . HashMap.fromListWith (flip (<>)) . fmap (\(k, v) -> (k, [v]))
   toList = concatMap (\(k, vs) -> map ((,) k) vs) . HashMap.toList . unForm
+
+-- | A stable version of 'toList'.
+toListStable :: Form -> [(Text, Text)]
+toListStable = sortOn fst . toList
 
 -- | Convert a value into 'Form'.
 --
@@ -388,6 +394,7 @@ class FromForm a where
 
 instance FromForm Form where fromForm = pure
 
+-- | _NOTE:_ this conversion is unstable and may result in different key order (but not values).
 instance (FromFormKey k, FromHttpApiData v) => FromForm [(k, v)] where
   fromForm = fmap (concatMap (\(k, vs) -> map ((,) k) vs)) . toEntriesByKey
 
@@ -402,12 +409,21 @@ instance FromHttpApiData v => FromForm (IntMap [v]) where
 
 -- | Parse a 'Form' into a list of entries groupped by key.
 --
--- >>> toEntriesByKey [("name", "Nick"), ("color", "red"), ("color", "white")] :: Either Text [(Text, [Text])]
--- Right [("color",["red","white"]),("name",["Nick"])]
+-- _NOTE:_ this conversion is unstable and may result in different key order
+-- (but not values). For a stable encoding see 'toEntriesByKeyStable'.
 toEntriesByKey :: (FromFormKey k, FromHttpApiData v) => Form -> Either Text [(k, [v])]
 toEntriesByKey = traverse parseGroup . HashMap.toList . unForm
   where
     parseGroup (k, vs) = (,) <$> parseFormKey k <*> traverse parseQueryParam vs
+
+-- | Parse a 'Form' into a list of entries groupped by key.
+--
+-- >>> toEntriesByKeyStable [("name", "Nick"), ("color", "red"), ("color", "white")] :: Either Text [(Text, [Text])]
+-- Right [("color",["red","white"]),("name",["Nick"])]
+--
+-- For an unstable (but faster) conversion see 'toEntriesByKey'.
+toEntriesByKeyStable :: (Ord k, FromFormKey k, FromHttpApiData v) => Form -> Either Text [(k, [v])]
+toEntriesByKeyStable = fmap (sortOn fst) . toEntriesByKey
 
 -- | A 'Generic'-based implementation of 'fromForm'.
 -- This is used as a default implementation in 'FromForm'.
@@ -482,7 +498,7 @@ instance NotSupported FromForm t "is a sum type" => GFromForm t (f :+: g) where 
 
 -- | Encode a 'Form' to an @application/x-www-form-urlencoded@ 'BSL.ByteString'.
 --
--- _NOTE:_ this encoding is unstable and may change the order of keys
+-- _NOTE:_ this encoding is unstable and may result in different key order
 -- (but not values). For a stable encoding see 'urlEncodeFormStable'.
 urlEncodeForm :: Form -> BSL.ByteString
 urlEncodeForm = urlEncodeParams . toList
@@ -598,7 +614,7 @@ urlDecodeAsForm = fromForm <=< urlDecodeForm
 --
 -- This is effectively @'urlEncodeForm' . 'toForm'@.
 --
--- _NOTE:_ this encoding is unstable and may change the order of keys
+-- _NOTE:_ this encoding is unstable and may result in different key order
 -- (but not values). For a stable encoding see 'urlEncodeAsFormStable'.
 urlEncodeAsForm :: ToForm a => a -> BSL.ByteString
 urlEncodeAsForm = urlEncodeForm . toForm

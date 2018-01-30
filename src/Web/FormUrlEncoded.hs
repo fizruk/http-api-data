@@ -30,7 +30,9 @@ module Web.FormUrlEncoded (
   defaultFormOptions,
 
   -- * Helpers
+  toListStable,
   toEntriesByKey,
+  toEntriesByKeyStable,
   fromEntriesByKey,
 
   lookupAll,
