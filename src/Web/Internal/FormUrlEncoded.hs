@@ -725,7 +725,7 @@ parseUnique key form = lookupUnique key form >>= parseQueryParam
 -- @
 --
 -- >>> urlEncodeAsFormStable Project { projectName = "http-api-data", projectSize = 172 }
--- "size=172&name=http-api-data"
+-- "name=http-api-data&size=172"
 -- >>> urlDecodeAsForm "name=http-api-data&size=172" :: Either Text Project
 -- Right (Project {projectName = "http-api-data", projectSize = 172})
 data FormOptions = FormOptions
