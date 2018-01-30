@@ -38,6 +38,9 @@ module Web.FormUrlEncoded (
   parseAll,
   parseMaybe,
   parseUnique,
+
+  urlEncodeParams,
+  urlDecodeParams,
 ) where
 
 import Web.Internal.FormUrlEncoded
