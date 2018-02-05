@@ -53,7 +53,7 @@ library
                    , uri-bytestring        >= 0.1.7    && < 0.4
                    , uuid-types            >= 1.0.2    && <1.1
     if !impl(ghc >= 8.0)
-      build-options: semigroups            >= 0.16     && < 0.19
+      build-depends: semigroups            >= 0.16     && < 0.19
     if flag(use-text-show)
       cpp-options: -DUSE_TEXT_SHOW
       build-depends: text-show        >= 2
