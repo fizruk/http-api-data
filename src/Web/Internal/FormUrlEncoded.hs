@@ -39,6 +39,7 @@ import           Data.List                  (intersperse, sortBy)
 import           Data.Map                   (Map)
 import qualified Data.Map                   as Map
 import           Data.Monoid
+import qualified Data.Semigroup             as Semi
 import           Data.Ord                   (comparing)
 
 import           Data.Text                  (Text)
@@ -183,7 +184,7 @@ instance FromFormKey Natural  where parseFormKey = parseQueryParam
 --
 -- 'Form' can be URL-encoded with 'urlEncodeForm' and URL-decoded with 'urlDecodeForm'.
 newtype Form = Form { unForm :: HashMap Text [Text] }
-  deriving (Eq, Read, Generic, Monoid)
+  deriving (Eq, Read, Generic, Semi.Semigroup, Monoid)
 
 instance Show Form where
   showsPrec d form = showParen (d > 10) $
