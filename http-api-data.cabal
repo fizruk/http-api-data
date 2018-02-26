@@ -1,5 +1,5 @@
 name:            http-api-data
-version:         0.3.7.2
+version:         0.3.7.3
 license:         BSD3
 license-file:    LICENSE
 author:          Nickolay Kudasov <nickolay.kudasov@gmail.com>
@@ -28,8 +28,8 @@ tested-with:
 
 custom-setup
   setup-depends:
-    base >= 4.7 && <4.11,
-    Cabal >= 1.18 && <2.1,
+    base >= 4.7 && <4.12,
+    Cabal >= 1.18 && <2.2,
     cabal-doctest >=1.0.6 && <1.1
 
 flag use-text-show
@@ -40,7 +40,7 @@ flag use-text-show
 library
     hs-source-dirs: src/
     include-dirs:   include/
-    build-depends:   base                  >= 4.7      && < 4.11
+    build-depends:   base                  >= 4.7      && < 4.12
                    , attoparsec            >= 0.13.0.1 && < 0.14
                    , attoparsec-iso8601    >= 1.0.0.0  && < 1.1
                    , bytestring            >= 0.10.4.0 && < 0.11
