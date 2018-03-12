@@ -1,3 +1,14 @@
+0.3.8
+---
+
+* Minor changes:
+    * Stable URL-encoding for `Form`s (see [#67](https://github.com/fizruk/http-api-data/pull/67)):
+        * Introduce `urlEncodeParams` and `urlDecodeParams`;
+        * Introduce `urlEncodeAsFormStable` and use stable encoding for doctests;
+        * Add `toEntriesByKeyStable` and `toListStable`;
+    * Add `Semigroup` instance for `Form` (see [#69](https://github.com/fizruk/http-api-data/pull/69));
+    * Relax upper bound on Cabal (see [#73](https://github.com/fizruk/http-api-data/pull/73)).
+
 0.3.7.2
 ---
 
