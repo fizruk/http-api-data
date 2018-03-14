@@ -11,7 +11,7 @@ import qualified Data.Text.Lazy as L
 import qualified Data.ByteString as BS
 import Data.ByteString.Builder (toLazyByteString)
 import Data.Version
-import qualified Data.UUID as UUID
+import qualified Data.UUID.Types as UUID
 
 import Data.Proxy
 
