@@ -61,6 +61,8 @@ import qualified Network.HTTP.Types as H
 import qualified Data.Attoparsec.Text as Atto
 import qualified Data.Attoparsec.Time as Atto
 
+import Web.Cookie (parseSetCookie, SetCookie)
+
 
 -- $setup
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
@@ -664,6 +666,13 @@ instance FromHttpApiData a => FromHttpApiData (LenientData a) where
     parseHeader     = Right . LenientData . parseHeader
     parseQueryParam = Right . LenientData . parseQueryParam
 
+-- |
+-- >> parseUrlPiece "PHPSESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
+-- Right (SetCookie {setCookieName = "PHPSESSID", setCookieValue = "r2t5uvjq435r4q7ib3vtdjq120", setCookiePath = Nothing, setCookieExpires = Nothing, 
+-- setCookieMaxAge = Nothing, setCookieDomain = Nothing, setCookieHttpOnly = False, setCookieSecure = False, setCookieSameSite = Nothing})
+instance FromHttpApiData SetCookie where 
+  parseUrlPiece = parseHeader  . encodeUtf8
+  parseHeader   = Right . parseSetCookie 
 -------------------------------------------------------------------------------
 -- Attoparsec helpers
 -------------------------------------------------------------------------------
