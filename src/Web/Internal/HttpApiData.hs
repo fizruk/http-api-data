@@ -533,10 +533,10 @@ instance (ToHttpApiData a, ToHttpApiData b) => ToHttpApiData (Either a b) where
   toUrlPiece (Right x) = "right " <> toUrlPiece x
 
 -- | 
--- >>> Right c = parseUrlPiece "PHPSESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
+-- >>> let Right c = parseUrlPiece "SESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
 -- SetCookie {..}
 -- >>> toUrlPiece c
--- "\"PHPSESSID=r2t5uvjq435r4q7ib3vtdjq120\""
+-- "\"SESSID=r2t5uvjq435r4q7ib3vtdjq120\""
 instance ToHttpApiData SetCookie where 
   toUrlPiece = showt . BS.toLazyByteString . renderSetCookie 
   toEncodedUrlPiece = renderSetCookie 
@@ -676,8 +676,8 @@ instance FromHttpApiData a => FromHttpApiData (LenientData a) where
     parseQueryParam = Right . LenientData . parseQueryParam
 
 -- |
--- >> parseUrlPiece "PHPSESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
--- Right (SetCookie {setCookieName = "PHPSESSID", setCookieValue = "r2t5uvjq435r4q7ib3vtdjq120", setCookiePath = Nothing, setCookieExpires = Nothing, 
+-- >> parseUrlPiece "SESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
+-- Right (SetCookie {setCookieName = "SESSID", setCookieValue = "r2t5uvjq435r4q7ib3vtdjq120", setCookiePath = Nothing, setCookieExpires = Nothing, 
 -- setCookieMaxAge = Nothing, setCookieDomain = Nothing, setCookieHttpOnly = False, setCookieSecure = False, setCookieSameSite = Nothing})
 instance FromHttpApiData SetCookie where 
   parseUrlPiece = parseHeader  . encodeUtf8
