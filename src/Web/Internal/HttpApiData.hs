@@ -534,7 +534,6 @@ instance (ToHttpApiData a, ToHttpApiData b) => ToHttpApiData (Either a b) where
 
 -- | 
 -- >>> let Right c = parseUrlPiece "SESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
--- SetCookie {..}
 -- >>> toUrlPiece c
 -- "\"SESSID=r2t5uvjq435r4q7ib3vtdjq120\""
 instance ToHttpApiData SetCookie where 
