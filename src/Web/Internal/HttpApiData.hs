@@ -61,7 +61,7 @@ import qualified Network.HTTP.Types as H
 import qualified Data.Attoparsec.Text as Atto
 import qualified Data.Attoparsec.Time as Atto
 
-import Web.Cookie (parseSetCookie, SetCookie)
+import Web.Cookie (SetCookie,parseSetCookie,renderSetCookie)
 
 
 -- $setup
@@ -531,6 +531,15 @@ instance ToHttpApiData a => ToHttpApiData (Maybe a) where
 instance (ToHttpApiData a, ToHttpApiData b) => ToHttpApiData (Either a b) where
   toUrlPiece (Left x)  = "left " <> toUrlPiece x
   toUrlPiece (Right x) = "right " <> toUrlPiece x
+
+-- | 
+-- >>> Right c = parseUrlPiece "PHPSESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
+-- SetCookie {..}
+-- >>> toUrlPiece c
+-- "\"PHPSESSID=r2t5uvjq435r4q7ib3vtdjq120\""
+instance ToHttpApiData SetCookie where 
+  toUrlPiece = showt . BS.toLazyByteString . renderSetCookie 
+  toEncodedUrlPiece = renderSetCookie 
 
 -- |
 -- >>> parseUrlPiece "_" :: Either Text ()
