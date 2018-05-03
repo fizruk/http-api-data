@@ -60,7 +60,7 @@ import Numeric.Natural
 import           GHC.Exts                   (IsList (..), Constraint)
 import           GHC.Generics
 import           GHC.TypeLits
-import           URI.ByteString             (urlEncodeQuery, urlDecodeQuery)
+import           Network.HTTP.Types.URI     (urlEncodeBuilder, urlDecode)
 
 import Web.Internal.HttpApiData
 
@@ -543,7 +543,7 @@ urlEncodeFormStable = urlEncodeParams . sortOn fst . toList
 urlEncodeParams :: [(Text, Text)] -> BSL.ByteString
 urlEncodeParams = toLazyByteString . mconcat . intersperse (shortByteString "&") . map encodePair
   where
-    escape = urlEncodeQuery . Text.encodeUtf8
+    escape = urlEncodeBuilder True . Text.encodeUtf8
 
     encodePair (k, "") = escape k
     encodePair (k, v) = escape k <> shortByteString "=" <> escape v
@@ -590,7 +590,7 @@ urlDecodeParams bs = traverse parsePair pairs
   where
     pairs = map (BSL8.split '=') (BSL8.split '&' bs)
 
-    unescape = Text.decodeUtf8With lenientDecode . urlDecodeQuery . BSL.toStrict
+    unescape = Text.decodeUtf8With lenientDecode . urlDecode True . BSL.toStrict
 
     parsePair p =
       case map unescape p of
