@@ -32,21 +32,21 @@ before_cache:
 
 matrix:
   include:
-    - compiler: "ghc-7.8.4"
+    - compiler: "ghc-8.4.3"
     # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-7.8.4], sources: [hvr-ghc]}}
-    - compiler: "ghc-7.10.3"
-    # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-7.10.3], sources: [hvr-ghc]}}
-    - compiler: "ghc-8.0.2"
-    # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-8.0.2], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.4.3], sources: [hvr-ghc]}}
     - compiler: "ghc-8.2.2"
     # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-8.2.2], sources: [hvr-ghc]}}
-    - compiler: "ghc-8.4.1"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
+    - compiler: "ghc-8.0.2"
     # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-8.4.1], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
+    - compiler: "ghc-7.10.3"
+    # env: TEST=--disable-tests BENCH=--disable-benchmarks
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-7.10.3], sources: [hvr-ghc]}}
+    - compiler: "ghc-7.8.4"
+    # env: TEST=--disable-tests BENCH=--disable-benchmarks
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-7.8.4], sources: [hvr-ghc]}}
 
 before_install:
   - HC=${CC}
@@ -64,7 +64,8 @@ install:
   - BENCH=${BENCH---enable-benchmarks}
   - TEST=${TEST---enable-tests}
   - HADDOCK=${HADDOCK-true}
-  - INSTALLED=${INSTALLED-true}
+  - UNCONSTRAINED=${UNCONSTRAINED-true}
+  - NOINSTALLEDCONSTRAINTS=${NOINSTALLEDCONSTRAINTS-false}
   - GHCHEAD=${GHCHEAD-false}
   - travis_retry cabal update -v
   - "sed -i.bak 's/^jobs:/-- jobs:/' ${HOME}/.cabal/config"
@@ -72,7 +73,10 @@ install:
   - "if [ $HCNUMVER -ge 70800 ]; then sed -i.bak 's/-- ghc-options:.*/ghc-options: -j2/' ${HOME}/.cabal/config; fi"
   - grep -Ev -- '^\s*--' ${HOME}/.cabal/config | grep -Ev '^\s*$'
   - "printf 'packages: \".\"\\n' > cabal.project"
-  - cat cabal.project
+  - touch cabal.project.local
+  - "if ! $NOINSTALLEDCONSTRAINTS; then for pkg in $($HCPKG list --simple-output); do echo $pkg  | grep -vw -- http-api-data | sed 's/^/constraints: /' | sed 's/-[^-]*$/ installed/' >> cabal.project.local; done; fi"
+  - cat cabal.project || true
+  - cat cabal.project.local || true
   - if [ -f "./configure.ac" ]; then
       (cd "." && autoreconf -i);
     fi
@@ -91,12 +95,12 @@ script:
   - cd ${DISTDIR} || false
   - find . -maxdepth 1 -name '*.tar.gz' -exec tar -xvf '{}' \;
   - "printf 'packages: http-api-data-*/*.cabal\\n' > cabal.project"
-  - cat cabal.project
+  - touch cabal.project.local
+  - "if ! $NOINSTALLEDCONSTRAINTS; then for pkg in $($HCPKG list --simple-output); do echo $pkg  | grep -vw -- http-api-data | sed 's/^/constraints: /' | sed 's/-[^-]*$/ installed/' >> cabal.project.local; done; fi"
+  - cat cabal.project || true
+  - cat cabal.project.local || true
   # this builds all libraries and executables (without tests/benchmarks)
   - cabal new-build -w ${HC} --disable-tests --disable-benchmarks all
-
-  # Build with installed constraints for packages in global-db
-  - if $INSTALLED; then echo cabal new-build -w ${HC} --disable-tests --disable-benchmarks $(${HCPKG} list --global --simple-output --names-only | sed 's/\([a-zA-Z0-9-]\{1,\}\) */--constraint="\1 installed" /g') all | sh; else echo "Not building with installed constraints"; fi
 
   # build & run tests, build benchmarks
   - cabal new-build -w ${HC} ${TEST} ${BENCH} all
@@ -109,11 +113,21 @@ script:
   - rm -rf ./dist-newstyle
   - if $HADDOCK; then cabal new-haddock -w ${HC} ${TEST} ${BENCH} all; else echo "Skipping haddock generation";fi
 
+  # Build without installed constraints for packages in global-db
+  - if $UNCONSTRAINED; then rm -f cabal.project.local; echo cabal new-build -w ${HC} --disable-tests --disable-benchmarks all; else echo "Not building without installed constraints"; fi
+
+  # Constraint sets
+  - rm -rf cabal.project.local
+
+  # Constraint set lower-bounds-7.8.4
   - if [ $HCNUMVER -eq 70804 ]; then cabal new-build -w ${HC} --disable-tests --disable-benchmarks --constraint='attoparsec ==0.13.0.1' --constraint='attoparsec-iso8601 ==1.0.0.0' --constraint='bytestring ==0.10.4.0' --constraint='containers ==0.5.5.1' --constraint='hashable ==1.1.2.4' --constraint='http-types ==0.8.6' --constraint='semigroups ==0.16' --constraint='text ==1.1.1.3' --constraint='time ==1.4.2' --constraint='time-local-compat ==0.1.1.0' --constraint='unordered-containers ==0.2.6.0' --constraint='uri-bytestring ==0.1.7' --constraint='uuid-types ==1.0.2' all; else echo skipping...; fi
 
+  # Constraint set lower-bounds-7.10.3
   - if [ $HCNUMVER -eq 71003 ]; then cabal new-build -w ${HC} --disable-tests --disable-benchmarks --constraint='attoparsec ==0.13.0.1' --constraint='attoparsec-iso8601 ==1.0.0.0' --constraint='bytestring ==0.10.6.0' --constraint='containers ==0.5.6.1' --constraint='hashable ==1.2.3.2' --constraint='http-types ==0.8.6' --constraint='semigroups ==0.16.0.1' --constraint='text ==1.2.0.2' --constraint='time ==1.5.0.1' --constraint='time-local-compat ==0.1.1.0' --constraint='unordered-containers ==0.2.6.0' --constraint='uri-bytestring ==0.1.7' --constraint='uuid-types ==1.0.2' all; else echo skipping...; fi
 
+  # Constraint set lower-bounds-8.0.2
   - if [ $HCNUMVER -eq 80002 ]; then cabal new-build -w ${HC} --disable-tests --disable-benchmarks --constraint='attoparsec ==0.13.0.1' --constraint='attoparsec-iso8601 ==1.0.0.0' --constraint='bytestring ==0.10.6.0' --constraint='containers ==0.5.7.0' --constraint='hashable ==1.2.4.0' --constraint='http-types ==0.8.6' --constraint='text ==1.2.2.0' --constraint='time ==1.5.0.1' --constraint='time-local-compat ==0.1.1.0' --constraint='unordered-containers ==0.2.6.0' --constraint='uri-bytestring ==0.2.1.0' --constraint='uuid-types ==1.0.2' all; else echo skipping...; fi
+
 
 # REGENDATA ["--config","--output",".travis.yml","http-api-data.cabal"]
 # EOF
