@@ -24,7 +24,7 @@ tested-with:
   GHC==7.10.3,
   GHC==8.0.2,
   GHC==8.2.2,
-  GHC==8.4.1
+  GHC==8.4.3
 
 custom-setup
   setup-depends:
@@ -95,7 +95,7 @@ test-suite doctests
   build-depends:
     base,
     directory >= 1.0,
-    doctest >= 0.11 && <0.16,
+    doctest >= 0.11 && <0.17,
     filepath
   default-language: Haskell2010
   hs-source-dirs:   test
