@@ -61,6 +61,8 @@ import qualified Network.HTTP.Types as H
 import qualified Data.Attoparsec.Text as Atto
 import qualified Data.Attoparsec.Time as Atto
 
+import Web.Cookie (SetCookie,parseSetCookie,renderSetCookie)
+
 
 -- $setup
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
@@ -530,6 +532,14 @@ instance (ToHttpApiData a, ToHttpApiData b) => ToHttpApiData (Either a b) where
   toUrlPiece (Left x)  = "left " <> toUrlPiece x
   toUrlPiece (Right x) = "right " <> toUrlPiece x
 
+-- | 
+-- >>> let Right c = parseUrlPiece "SESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
+-- >>> toUrlPiece c
+-- "\"SESSID=r2t5uvjq435r4q7ib3vtdjq120\""
+instance ToHttpApiData SetCookie where 
+  toUrlPiece = showt . BS.toLazyByteString . renderSetCookie 
+  toEncodedUrlPiece = renderSetCookie 
+
 -- |
 -- >>> parseUrlPiece "_" :: Either Text ()
 -- Right ()
@@ -664,6 +674,13 @@ instance FromHttpApiData a => FromHttpApiData (LenientData a) where
     parseHeader     = Right . LenientData . parseHeader
     parseQueryParam = Right . LenientData . parseQueryParam
 
+-- |
+-- >> parseUrlPiece "SESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
+-- Right (SetCookie {setCookieName = "SESSID", setCookieValue = "r2t5uvjq435r4q7ib3vtdjq120", setCookiePath = Nothing, setCookieExpires = Nothing, 
+-- setCookieMaxAge = Nothing, setCookieDomain = Nothing, setCookieHttpOnly = False, setCookieSecure = False, setCookieSameSite = Nothing})
+instance FromHttpApiData SetCookie where 
+  parseUrlPiece = parseHeader  . encodeUtf8
+  parseHeader   = Right . parseSetCookie 
 -------------------------------------------------------------------------------
 -- Attoparsec helpers
 -------------------------------------------------------------------------------
