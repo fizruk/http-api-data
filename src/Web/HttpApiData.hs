@@ -43,7 +43,7 @@ module Web.HttpApiData (
   readTextData,
 ) where
 
-import Web.Internal.HttpApiData
+import           Web.Internal.HttpApiData
 
 -- $setup
 --

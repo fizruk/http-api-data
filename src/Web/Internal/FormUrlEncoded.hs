@@ -1,5 +1,5 @@
-{-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE CPP                        #-}
+{-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE DeriveGeneric              #-}
@@ -18,14 +18,14 @@
 module Web.Internal.FormUrlEncoded where
 
 #if __GLASGOW_HASKELL__ < 710
-import Control.Applicative
-import Data.Traversable
+import           Control.Applicative
+import           Data.Traversable
 #endif
 
 
 import           Control.Arrow              ((***))
 import           Control.Monad              ((<=<))
-import           Data.ByteString.Builder    (toLazyByteString, shortByteString)
+import           Data.ByteString.Builder    (shortByteString, toLazyByteString)
 import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSL8
 import qualified Data.Foldable              as F
@@ -39,30 +39,30 @@ import           Data.List                  (intersperse, sortBy)
 import           Data.Map                   (Map)
 import qualified Data.Map                   as Map
 import           Data.Monoid
-import qualified Data.Semigroup             as Semi
 import           Data.Ord                   (comparing)
+import qualified Data.Semigroup             as Semi
 
 import           Data.Text                  (Text)
 import qualified Data.Text                  as Text
-import qualified Data.Text.Lazy             as Lazy
 import           Data.Text.Encoding         as Text
 import           Data.Text.Encoding.Error   (lenientDecode)
+import qualified Data.Text.Lazy             as Lazy
 
-import           Data.Time
 import           Data.Proxy
+import           Data.Time
 import           Data.Word
 
 #if MIN_VERSION_base(4,8,0)
-import Data.Void
-import Numeric.Natural
+import           Data.Void
+import           Numeric.Natural
 #endif
 
-import           GHC.Exts                   (IsList (..), Constraint)
+import           GHC.Exts                   (Constraint, IsList (..))
 import           GHC.Generics
 import           GHC.TypeLits
-import           Network.HTTP.Types.URI     (urlEncodeBuilder, urlDecode)
+import           Network.HTTP.Types.URI     (urlDecode, urlEncodeBuilder)
 
-import Web.Internal.HttpApiData
+import           Web.Internal.HttpApiData
 
 -- $setup
 -- >>> :set -XDeriveGeneric
@@ -546,7 +546,7 @@ urlEncodeParams = toLazyByteString . mconcat . intersperse (shortByteString "&")
     escape = urlEncodeBuilder True . Text.encodeUtf8
 
     encodePair (k, "") = escape k
-    encodePair (k, v) = escape k <> shortByteString "=" <> escape v
+    encodePair (k, v)  = escape k <> shortByteString "=" <> escape v
 
 -- | Decode an @application/x-www-form-urlencoded@ 'BSL.ByteString' to a 'Form'.
 --
