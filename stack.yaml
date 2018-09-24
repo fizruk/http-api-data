@@ -1,6 +1,6 @@
+resolver: lts-12.10
+packages:
+- '.'
 flags:
   http-api-data:
     use-text-show: false
-packages:
-- .
-resolver: lts-12.9

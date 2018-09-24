@@ -24,7 +24,8 @@ tested-with:
   GHC==7.10.3,
   GHC==8.0.2,
   GHC==8.2.2,
-  GHC==8.4.3
+  GHC==8.4.3,
+  GHC==8.6.1
 
 custom-setup
   setup-depends:
@@ -40,24 +41,32 @@ flag use-text-show
 library
     hs-source-dirs: src/
     include-dirs:   include/
-    build-depends:   base                  >= 4.7      && < 4.12
-                   , attoparsec            >= 0.13.0.1 && < 0.14
-                   , attoparsec-iso8601    >= 1.0.0.0  && < 1.1
+
+    -- GHC bundled
+    build-depends:   base                  >= 4.7      && < 4.13
                    , bytestring            >= 0.10.4.0 && < 0.11
-                   , containers            >= 0.5.5.1  && < 0.6
-                   , hashable              >= 1.1.2.4  && < 1.3
-                   , http-types            >= 0.8.6    && < 0.13
-                   , text                  >= 1.1.1.3  && < 1.3
+                   , containers            >= 0.5.5.1  && < 0.7
+                   , text                  >= 1.2.3.0  && < 1.3
                    , time                  >= 1.4.2    && < 1.9
-                   , time-locale-compat    >= 0.1.1.0  && < 0.2
-                   , unordered-containers  >= 0.2.6.0  && < 0.3
-                   , uuid-types            >= 1.0.2    && < 1.1
-                   , cookie                >= 0.4      && < 0.45
+    
+    -- other-dependencies
+    build-depends:
+                     attoparsec            >= 0.13.2.2 && < 0.14
+                   , attoparsec-iso8601    >= 1.0.0.0  && < 1.1
+                   , cookie                >= 0.4.3    && < 0.4.5
+                   , hashable              >= 1.2.7.0  && < 1.3
+                   , http-types            >= 0.12.1   && < 0.13
+                   , time-locale-compat    >= 0.1.1.5  && < 0.2
+                   , unordered-containers  >= 0.2.9.0  && < 0.3
+                   , uuid-types            >= 1.0.3    && <1.1
+
     if !impl(ghc >= 8.0)
-      build-depends: semigroups            >= 0.16     && < 0.19
+      build-depends: semigroups            >= 0.18.5   && < 0.19
+
     if flag(use-text-show)
       cpp-options: -DUSE_TEXT_SHOW
-      build-depends: text-show        >= 2
+      build-depends: text-show        >= 3.7.4 && <3.8
+
     exposed-modules:
       Web.HttpApiData
       Web.FormUrlEncoded
@@ -76,13 +85,11 @@ test-suite spec
     hs-source-dirs: test
     ghc-options:   -Wall
     default-language: Haskell2010
-    build-tool-depends: hspec-discover:hspec-discover >= 2.4.7 && <2.5
-    build-depends:   HUnit
-                   , hspec >= 2.4.7
-                   , base
+    build-tool-depends: hspec-discover:hspec-discover >= 2.5.5 && <2.6
+    -- inherited  depndencies
+    build-depends:
+                     base
                    , bytestring
-                   , QuickCheck >=2.9
-                   , quickcheck-instances >= 0.3.12
                    , unordered-containers
                    , http-api-data
                    , text
@@ -90,12 +97,17 @@ test-suite spec
                    , bytestring
                    , uuid-types
 
+    build-depends:   HUnit                >= 1.6.0.0 && <1.7
+                   , hspec                >= 2.5.5   && <2.6
+                   , QuickCheck           >= 2.11.3  && <2.13
+                   , quickcheck-instances >= 0.3.19  && <0.4
+
 test-suite doctests
   ghc-options:      -Wall
   build-depends:
     base,
     directory >= 1.0,
-    doctest >= 0.11 && <0.17,
+    doctest >= 0.16.0 && <0.17,
     filepath
   default-language: Haskell2010
   hs-source-dirs:   test
