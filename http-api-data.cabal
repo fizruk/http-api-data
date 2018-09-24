@@ -51,7 +51,8 @@ library
                    , time                  >= 1.4.2    && < 1.9
                    , time-locale-compat    >= 0.1.1.0  && < 0.2
                    , unordered-containers  >= 0.2.6.0  && < 0.3
-                   , uuid-types            >= 1.0.2    && <1.1
+                   , uuid-types            >= 1.0.2    && < 1.1
+                   , cookie                >= 0.4      && < 0.45
     if !impl(ghc >= 8.0)
       build-depends: semigroups            >= 0.16     && < 0.19
     if flag(use-text-show)
