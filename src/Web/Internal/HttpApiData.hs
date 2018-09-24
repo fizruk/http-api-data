@@ -1,12 +1,12 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE CPP                  #-}
+{-# LANGUAGE DefaultSignatures    #-}
+{-# LANGUAGE DeriveDataTypeable   #-}
+{-# LANGUAGE DeriveFoldable       #-}
+{-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE DeriveTraversable    #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 -- |
 -- Convert Haskell values to and from HTTP API data
@@ -14,52 +14,56 @@
 module Web.Internal.HttpApiData where
 
 #if __GLASGOW_HASKELL__ < 710
-import Control.Applicative
-import Data.Foldable (Foldable)
-import Data.Traversable (Traversable(traverse))
+import           Control.Applicative
+import           Data.Foldable                (Foldable)
+import           Data.Traversable             (Traversable (traverse))
 #endif
 
-import Control.Arrow ((&&&), left)
-import Control.Monad ((<=<))
+import           Control.Arrow                (left, (&&&))
+import           Control.Monad                ((<=<))
 
-import Data.Monoid
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
+import           Data.ByteString              (ByteString)
+import qualified Data.ByteString              as BS
+import           Data.Monoid
 
-import Data.Int
-import Data.Word
+import           Data.Int
+import           Data.Word
 
-import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8, decodeUtf8')
-import Data.Text.Read (signed, decimal, rational, Reader)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as L
+import           Data.Text                    (Text)
+import qualified Data.Text                    as T
+import           Data.Text.Encoding           (decodeUtf8', encodeUtf8)
+import qualified Data.Text.Lazy               as L
+import           Data.Text.Read               (Reader, decimal, rational,
+                                               signed)
 
-import Data.Time.Locale.Compat
-import Data.Time
-import Data.Version
+import           Data.Time
+import           Data.Time.Locale.Compat
+import           Data.Version
 
 #if MIN_VERSION_base(4,8,0)
-import Data.Void
-import Numeric.Natural
+import           Data.Void
+import           Numeric.Natural
 #endif
 
-import Text.Read (readMaybe)
-import Text.ParserCombinators.ReadP (readP_to_S)
+import           Text.ParserCombinators.ReadP (readP_to_S)
+import           Text.Read                    (readMaybe)
 
 #if USE_TEXT_SHOW
-import TextShow (TextShow, showt)
+import           TextShow                     (TextShow, showt)
 #endif
 
-import qualified Data.UUID.Types as UUID
+import qualified Data.UUID.Types              as UUID
 
-import Data.Typeable (Typeable)
-import Data.Data (Data)
-import qualified Data.ByteString.Builder as BS
-import qualified Network.HTTP.Types as H
+import qualified Data.ByteString.Builder      as BS
+import           Data.Data                    (Data)
+import           Data.Typeable                (Typeable)
+import qualified Network.HTTP.Types           as H
 
-import qualified Data.Attoparsec.Text as Atto
-import qualified Data.Attoparsec.Time as Atto
+import qualified Data.Attoparsec.Text         as Atto
+import qualified Data.Attoparsec.Time         as Atto
+
+import           Web.Cookie                   (SetCookie, parseSetCookie,
+                                               renderSetCookie)
 
 
 -- $setup
@@ -531,6 +535,14 @@ instance (ToHttpApiData a, ToHttpApiData b) => ToHttpApiData (Either a b) where
   toUrlPiece (Right x) = "right " <> toUrlPiece x
 
 -- |
+-- >>> let Right c = parseUrlPiece "SESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
+-- >>> toUrlPiece c
+-- "\"SESSID=r2t5uvjq435r4q7ib3vtdjq120\""
+instance ToHttpApiData SetCookie where
+  toUrlPiece = showt . BS.toLazyByteString . renderSetCookie
+  toEncodedUrlPiece = renderSetCookie
+
+-- |
 -- >>> parseUrlPiece "_" :: Either Text ()
 -- Right ()
 instance FromHttpApiData () where
@@ -664,6 +676,12 @@ instance FromHttpApiData a => FromHttpApiData (LenientData a) where
     parseHeader     = Right . LenientData . parseHeader
     parseQueryParam = Right . LenientData . parseQueryParam
 
+-- |
+-- >>> parseUrlPiece "SESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
+-- Right (SetCookie {setCookieName = "SESSID", setCookieValue = "r2t5uvjq435r4q7ib3vtdjq120", setCookiePath = Nothing, setCookieExpires = Nothing, setCookieMaxAge = Nothing, setCookieDomain = Nothing, setCookieHttpOnly = False, setCookieSecure = False, setCookieSameSite = Nothing})
+instance FromHttpApiData SetCookie where
+  parseUrlPiece = parseHeader  . encodeUtf8
+  parseHeader   = Right . parseSetCookie
 -------------------------------------------------------------------------------
 -- Attoparsec helpers
 -------------------------------------------------------------------------------

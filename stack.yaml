@@ -1,12 +1,6 @@
-resolver: nightly-2017-04-01
-
+resolver: lts-12.10
 packages:
 - '.'
-
 flags:
   http-api-data:
     use-text-show: false
-
-extra-deps:
-- attoparsec-iso8601-1.0.0.0
-extra-package-dbs: []
