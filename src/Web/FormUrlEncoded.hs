@@ -47,5 +47,5 @@ module Web.FormUrlEncoded (
   urlDecodeParams,
 ) where
 
-import Web.Internal.FormUrlEncoded
+import           Web.Internal.FormUrlEncoded
 
