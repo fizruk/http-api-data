@@ -99,6 +99,7 @@ test-suite spec
                    , time
                    , bytestring
                    , uuid-types
+                   , cookie
 
     build-depends:   HUnit                >= 1.6.0.0 && <1.7
                    , hspec                >= 2.5.5   && <2.6

@@ -5,14 +5,17 @@ module Web.Internal.HttpApiDataSpec (spec) where
 import Control.Applicative
 import qualified Data.Fixed as F
 import Data.Int
+import Data.Char
 import Data.Word
 import Data.Time
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import qualified Data.Text.Lazy as L
 import qualified Data.ByteString as BS
 import Data.ByteString.Builder (toLazyByteString)
 import Data.Version
 import qualified Data.UUID.Types as UUID
+import Web.Cookie (SetCookie, defaultSetCookie, setCookieName, setCookieValue)
 
 import Data.Proxy
 
@@ -56,7 +59,7 @@ checkUrlPieceI _ = checkUrlPiece (Proxy :: Proxy (RandomCase a))
 checkEncodedUrlPiece :: forall a. (Show a, ToHttpApiData a, Arbitrary a) => Proxy a -> String -> Spec
 checkEncodedUrlPiece _ = checkEncodedUrlPiece' (arbitrary :: Gen a)
 
--- | Check that 'toEncodedUrlPiece' is equivallent to default implementation.
+-- | Check that 'toEncodedUrlPiece' is equivalent to default implementation.
 -- Use a given generator.
 checkEncodedUrlPiece' :: forall a. (Show a, ToHttpApiData a) => Gen a -> String -> Spec
 checkEncodedUrlPiece' gen name = prop name $ forAll gen encodedUrlPieceProp
@@ -90,6 +93,7 @@ spec = do
     checkUrlPiece' nominalDiffTimeGen         "NominalDiffTime"
     checkUrlPiece  (Proxy :: Proxy Version)   "Version"
     checkUrlPiece' uuidGen                    "UUID"
+    checkUrlPiece' setCookieGen               "Cookie"
 
     checkUrlPiece  (Proxy :: Proxy (Maybe String))            "Maybe String"
     checkUrlPieceI (Proxy :: Proxy (Maybe Integer))           "Maybe Integer"
@@ -127,6 +131,7 @@ spec = do
     checkEncodedUrlPiece' nominalDiffTimeGen         "NominalDiffTime"
     checkEncodedUrlPiece  (Proxy :: Proxy Version)   "Version"
     checkEncodedUrlPiece' uuidGen                    "UUID"
+    checkEncodedUrlPiece' setCookieGen               "SetCookie"
 
     checkEncodedUrlPiece  (Proxy :: Proxy (Maybe String))            "Maybe String"
     checkEncodedUrlPiece  (Proxy :: Proxy (Maybe Integer))           "Maybe Integer"
@@ -179,3 +184,9 @@ utcTimeGen = UTCTime <$> arbitrary <*> fmap fromInteger (choose (0, 86400))
 
 nominalDiffTimeGen :: Gen NominalDiffTime
 nominalDiffTimeGen = fromInteger <$> arbitrary
+
+setCookieGen :: Gen SetCookie
+setCookieGen = do
+    n <- TE.encodeUtf8 . T.pack . filter isAlphaNum <$> arbitrary
+    v <- TE.encodeUtf8 . T.pack . filter isAlphaNum <$> arbitrary
+    return $ defaultSetCookie { setCookieName = n, setCookieValue = v }
