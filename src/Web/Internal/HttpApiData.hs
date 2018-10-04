@@ -38,7 +38,9 @@ import           Data.Text.Read               (Reader, decimal, rational,
                                                signed)
 
 import           Data.Time
+#if __GLASGOW_HASKELL__ < 710
 import           Data.Time.Locale.Compat
+#endif
 import           Data.Version
 
 #if MIN_VERSION_base(4,8,0)
