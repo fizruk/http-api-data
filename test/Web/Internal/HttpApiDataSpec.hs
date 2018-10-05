@@ -3,6 +3,7 @@
 module Web.Internal.HttpApiDataSpec (spec) where
 
 import Control.Applicative
+import qualified Data.Fixed as F
 import Data.Int
 import Data.Word
 import Data.Time
@@ -135,6 +136,14 @@ spec = do
 #if MIN_VERSION_base(4,8,0)
     checkEncodedUrlPiece  (Proxy :: Proxy Natural)   "Natural"
 #endif
+
+    checkEncodedUrlPiece  (Proxy :: Proxy F.Uni)   "Uni"
+    checkEncodedUrlPiece  (Proxy :: Proxy F.Deci)  "Deci"
+    checkEncodedUrlPiece  (Proxy :: Proxy F.Centi) "Centi"
+    checkEncodedUrlPiece  (Proxy :: Proxy F.Milli) "Milli"
+    checkEncodedUrlPiece  (Proxy :: Proxy F.Micro) "Micro"
+    checkEncodedUrlPiece  (Proxy :: Proxy F.Nano)  "Nano"
+    checkEncodedUrlPiece  (Proxy :: Proxy F.Pico)  "Pico"
 
   it "bad integers are rejected" $ do
     parseUrlPieceMaybe (T.pack "123hello") `shouldBe` (Nothing :: Maybe Int)

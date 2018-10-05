@@ -26,6 +26,7 @@ import           Data.ByteString              (ByteString)
 import qualified Data.ByteString              as BS
 import           Data.Monoid
 
+import qualified Data.Fixed                   as F
 import           Data.Int
 import           Data.Word
 
@@ -37,7 +38,9 @@ import           Data.Text.Read               (Reader, decimal, rational,
                                                signed)
 
 import           Data.Time
+#if __GLASGOW_HASKELL__ < 710
 import           Data.Time.Locale.Compat
+#endif
 import           Data.Version
 
 #if MIN_VERSION_base(4,8,0)
@@ -448,6 +451,8 @@ instance ToHttpApiData Word8    where toUrlPiece = showt; toEncodedUrlPiece = un
 instance ToHttpApiData Word16   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 instance ToHttpApiData Word32   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 instance ToHttpApiData Word64   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+
+instance F.HasResolution a => ToHttpApiData (F.Fixed a) where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 -- |
 -- >>> toUrlPiece (fromGregorian 2015 10 03)
