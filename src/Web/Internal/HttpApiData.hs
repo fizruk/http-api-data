@@ -609,6 +609,9 @@ instance FromHttpApiData String   where parseUrlPiece = Right . T.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 
+instance F.HasResolution a => FromHttpApiData (F.Fixed a) where
+    parseUrlPiece = runReader rational
+
 -- |
 -- >>> toGregorian <$> parseUrlPiece "2016-12-01"
 -- Right (2016,12,1)
