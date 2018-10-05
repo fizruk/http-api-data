@@ -24,6 +24,7 @@ import           Control.Monad                ((<=<))
 
 import           Data.ByteString              (ByteString)
 import qualified Data.ByteString              as BS
+import qualified Data.ByteString.Lazy         as LBS
 import           Data.Monoid
 
 import qualified Data.Fixed                   as F
@@ -32,7 +33,8 @@ import           Data.Word
 
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
-import           Data.Text.Encoding           (decodeUtf8', encodeUtf8)
+import           Data.Text.Encoding           (decodeUtf8With, decodeUtf8', encodeUtf8)
+import           Data.Text.Encoding.Error     (lenientDecode)
 import qualified Data.Text.Lazy               as L
 import           Data.Text.Read               (Reader, decimal, rational,
                                                signed)
@@ -539,13 +541,19 @@ instance (ToHttpApiData a, ToHttpApiData b) => ToHttpApiData (Either a b) where
   toUrlPiece (Left x)  = "left " <> toUrlPiece x
   toUrlPiece (Right x) = "right " <> toUrlPiece x
 
--- |
+-- | /Note:/ this instance works correctly for alphanumeric name and value
+--
 -- >>> let Right c = parseUrlPiece "SESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
 -- >>> toUrlPiece c
--- "\"SESSID=r2t5uvjq435r4q7ib3vtdjq120\""
+-- "SESSID=r2t5uvjq435r4q7ib3vtdjq120"
+--
+-- >>> toHeader c
+-- "SESSID=r2t5uvjq435r4q7ib3vtdjq120"
+--
 instance ToHttpApiData SetCookie where
-  toUrlPiece = showt . BS.toLazyByteString . renderSetCookie
-  toEncodedUrlPiece = renderSetCookie
+  toUrlPiece = decodeUtf8With lenientDecode . toHeader
+  toHeader = LBS.toStrict . BS.toLazyByteString . renderSetCookie
+  -- toEncodedUrlPiece = renderSetCookie -- doesn't do things.
 
 -- |
 -- >>> parseUrlPiece "_" :: Either Text ()
@@ -600,6 +608,9 @@ instance FromHttpApiData Word64   where parseUrlPiece = parseBounded decimal
 instance FromHttpApiData String   where parseUrlPiece = Right . T.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
+
+instance F.HasResolution a => FromHttpApiData (F.Fixed a) where
+    parseUrlPiece = runReader rational
 
 -- |
 -- >>> toGregorian <$> parseUrlPiece "2016-12-01"
@@ -681,12 +692,14 @@ instance FromHttpApiData a => FromHttpApiData (LenientData a) where
     parseHeader     = Right . LenientData . parseHeader
     parseQueryParam = Right . LenientData . parseQueryParam
 
--- |
+-- | /Note:/ this instance works correctly for alphanumeric name and value
+--
 -- >>> parseUrlPiece "SESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
 -- Right (SetCookie {setCookieName = "SESSID", setCookieValue = "r2t5uvjq435r4q7ib3vtdjq120", setCookiePath = Nothing, setCookieExpires = Nothing, setCookieMaxAge = Nothing, setCookieDomain = Nothing, setCookieHttpOnly = False, setCookieSecure = False, setCookieSameSite = Nothing})
 instance FromHttpApiData SetCookie where
   parseUrlPiece = parseHeader  . encodeUtf8
   parseHeader   = Right . parseSetCookie
+
 -------------------------------------------------------------------------------
 -- Attoparsec helpers
 -------------------------------------------------------------------------------
