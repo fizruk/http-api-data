@@ -1,10 +1,18 @@
+0.3.10
+---
+
+* Fix 'SetCookie' instances
+  (see [#86](https://github.com/fizruk/http-api-data/pull/86))
+* Add support for `Fixed`
+  (see [#78](https://github.com/fizruk/http-api-data/pull/87))
+
 0.3.9
 ---
 
 * GHC-8.6 support
 * Remove dependency on `uri-bytestring` and use functions from `http-types` instead
   (see [#75](https://github.com/fizruk/http-api-data/pull/78))
-* Add support for `Cookie`
+* Add support for `SetCookie`
   (see [#74](https://github.com/fizruk/http-api-data/pull/74))
 
 0.3.8.1
