@@ -41,6 +41,10 @@ import           Data.Text.Read               (Reader, decimal, rational,
                                                signed)
 
 import           Data.Time
+#if MIN_VERSION_time(1,9,1)
+import Data.Time (nominalDiffTimeToSeconds)
+#endif
+
 import           Data.Version
 
 #if MIN_VERSION_base(4,8,0)
@@ -492,8 +496,13 @@ instance ToHttpApiData UTCTime where
   toUrlPiece = timeToUrlPiece "%H:%M:%S%QZ"
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
+#if !MIN_VERSION_time(1,9,1)
+nominalDiffTimeToSeconds :: NominalDiffTime -> F.Pico
+nominalDiffTimeToSeconds = realToFrac
+#endif
+
 instance ToHttpApiData NominalDiffTime where
-  toUrlPiece = toUrlPiece . (realToFrac :: NominalDiffTime -> F.Pico)
+  toUrlPiece = toUrlPiece . nominalDiffTimeToSeconds
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 instance ToHttpApiData String   where toUrlPiece = T.pack
