@@ -16,6 +16,7 @@ module Web.Internal.HttpApiData where
 #if __GLASGOW_HASKELL__ < 710
 import           Control.Applicative
 import           Data.Foldable                (Foldable)
+import           Data.Time.Locale.Compat
 import           Data.Traversable             (Traversable (traverse))
 #endif
 
@@ -40,9 +41,6 @@ import           Data.Text.Read               (Reader, decimal, rational,
                                                signed)
 
 import           Data.Time
-#if __GLASGOW_HASKELL__ < 710
-import           Data.Time.Locale.Compat
-#endif
 import           Data.Version
 
 #if MIN_VERSION_base(4,8,0)
@@ -495,7 +493,7 @@ instance ToHttpApiData UTCTime where
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 instance ToHttpApiData NominalDiffTime where
-  toUrlPiece = toUrlPiece . (floor :: NominalDiffTime -> Integer)
+  toUrlPiece = toUrlPiece . (realToFrac :: NominalDiffTime -> F.Pico)
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 instance ToHttpApiData String   where toUrlPiece = T.pack
@@ -640,7 +638,7 @@ instance FromHttpApiData ZonedTime where parseUrlPiece = runAtto Atto.zonedTime
 -- Right 2015-10-03 00:14:24 UTC
 instance FromHttpApiData UTCTime   where parseUrlPiece = runAtto Atto.utcTime
 
-instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap fromInteger . parseUrlPiece
+instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap (realToFrac :: F.Pico -> NominalDiffTime) . parseUrlPiece
 
 instance FromHttpApiData All where parseUrlPiece = fmap All . parseUrlPiece
 instance FromHttpApiData Any where parseUrlPiece = fmap Any . parseUrlPiece
