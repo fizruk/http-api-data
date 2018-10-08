@@ -42,7 +42,7 @@ import           Data.Text.Read               (Reader, decimal, rational,
 
 import           Data.Time
 #if MIN_VERSION_time(1,9,1)
-import Data.Time (nominalDiffTimeToSeconds)
+import Data.Time (nominalDiffTimeToSeconds, secondsToNominalDiffTime)
 #endif
 
 import           Data.Version
@@ -499,6 +499,9 @@ instance ToHttpApiData UTCTime where
 #if !MIN_VERSION_time(1,9,1)
 nominalDiffTimeToSeconds :: NominalDiffTime -> F.Pico
 nominalDiffTimeToSeconds = realToFrac
+
+secondsToNominalDiffTime :: F.Pico -> NominalDiffTime
+secondsToNominalDiffTime = realToFrac
 #endif
 
 instance ToHttpApiData NominalDiffTime where
@@ -647,7 +650,7 @@ instance FromHttpApiData ZonedTime where parseUrlPiece = runAtto Atto.zonedTime
 -- Right 2015-10-03 00:14:24 UTC
 instance FromHttpApiData UTCTime   where parseUrlPiece = runAtto Atto.utcTime
 
-instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap (realToFrac :: F.Pico -> NominalDiffTime) . parseUrlPiece
+instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap secondsToNominalDiffTime . parseUrlPiece
 
 instance FromHttpApiData All where parseUrlPiece = fmap All . parseUrlPiece
 instance FromHttpApiData Any where parseUrlPiece = fmap Any . parseUrlPiece
