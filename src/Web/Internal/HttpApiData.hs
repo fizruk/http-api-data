@@ -39,6 +39,11 @@ import           Data.Text.Read               (Reader, decimal, rational,
 
 import           Data.Time
 import           Data.Time.Locale.Compat
+
+#if MIN_VERSION_time(1,9,1)
+import Data.Time (nominalDiffTimeToSeconds, secondsToNominalDiffTime)
+#endif
+
 import           Data.Version
 
 import           Data.Void
@@ -486,8 +491,28 @@ instance ToHttpApiData UTCTime where
   toUrlPiece = timeToUrlPiece "%H:%M:%S%QZ"
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
+-- The CPP in both this function and the function after it are to avoid
+-- exporting @nominalDiffTimeToSeconds@ and @secondsToNominalDiffTime@,
+-- since these names are already used by @Data.Time@ from the @time@ library
+-- starting in version @1.9.1@.
+nominalDiffTimeToSecs :: NominalDiffTime -> F.Pico
+nominalDiffTimeToSecs =
+#if !MIN_VERSION_time(1,9,1)
+    realToFrac
+#else
+    nominalDiffTimeToSeconds
+#endif
+
+secsToNominalDiffTime :: F.Pico -> NominalDiffTime
+secsToNominalDiffTime =
+#if !MIN_VERSION_time(1,9,1)
+    realToFrac
+#else
+    secondsToNominalDiffTime
+#endif
+
 instance ToHttpApiData NominalDiffTime where
-  toUrlPiece = toUrlPiece . (floor :: NominalDiffTime -> Integer)
+  toUrlPiece = toUrlPiece . nominalDiffTimeToSecs
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 instance ToHttpApiData String   where toUrlPiece = T.pack
@@ -630,7 +655,7 @@ instance FromHttpApiData ZonedTime where parseUrlPiece = runAtto Atto.zonedTime
 -- Right 2015-10-03 00:14:24 UTC
 instance FromHttpApiData UTCTime   where parseUrlPiece = runAtto Atto.utcTime
 
-instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap fromInteger . parseUrlPiece
+instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap secsToNominalDiffTime . parseUrlPiece
 
 instance FromHttpApiData All where parseUrlPiece = fmap All . parseUrlPiece
 instance FromHttpApiData Any where parseUrlPiece = fmap Any . parseUrlPiece
