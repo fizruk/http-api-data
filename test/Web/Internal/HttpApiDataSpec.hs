@@ -19,6 +19,10 @@ import Web.Cookie (SetCookie, defaultSetCookie, setCookieName, setCookieValue)
 
 import Data.Proxy
 
+#if MIN_VERSION_time(1,9,1)
+import Data.Time (nominalDiffTimeToSeconds, secondsToNominalDiffTime)
+#endif
+
 #if MIN_VERSION_base(4,8,0)
 import Numeric.Natural
 #endif
@@ -138,8 +142,19 @@ zonedTimeGen = ZonedTime
 utcTimeGen :: Gen UTCTime
 utcTimeGen = UTCTime <$> arbitrary <*> fmap fromInteger (choose (0, 86400))
 
+#if !MIN_VERSION_time(1,9,1)
+nominalDiffTimeToSeconds :: NominalDiffTime -> F.Pico
+nominalDiffTimeToSeconds = realToFrac
+
+secondsToNominalDiffTime :: F.Pico -> NominalDiffTime
+secondsToNominalDiffTime = realToFrac
+#endif
+
 nominalDiffTimeGen :: Gen NominalDiffTime
-nominalDiffTimeGen = fromInteger <$> arbitrary
+nominalDiffTimeGen = oneof 
+    [ fromInteger <$> arbitrary              -- integral
+    , secondsToNominalDiffTime <$> arbitrary -- with decimal part
+    ]
 
 setCookieGen :: Gen SetCookie
 setCookieGen = do
