@@ -1,32 +1,36 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Web.Internal.HttpApiDataSpec (spec) where
 
-import Control.Applicative
-import qualified Data.Fixed as F
-import Data.Int
-import Data.Char
-import Data.Word
-import Data.Time
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
-import qualified Data.Text.Lazy as L
-import qualified Data.ByteString as BS
-import Data.ByteString.Builder (toLazyByteString)
-import Data.Version
-import qualified Data.UUID.Types as UUID
-import Web.Cookie (SetCookie, defaultSetCookie, setCookieName, setCookieValue)
 
-import Data.Proxy
+import           Prelude                    ()
+import           Prelude.Compat
 
-import Numeric.Natural
+import qualified Data.ByteString            as BS
+import           Data.ByteString.Builder    (toLazyByteString)
+import           Data.Char
+import qualified Data.Fixed                 as F
+import           Data.Int
+import qualified Data.Text                  as T
+import qualified Data.Text.Encoding         as TE
+import qualified Data.Text.Lazy             as L
+import           Data.Time
+import qualified Data.UUID.Types            as UUID
+import           Data.Version
+import           Data.Word
+import           Web.Cookie                 (SetCookie, defaultSetCookie,
+                                             setCookieName, setCookieValue)
 
-import Test.Hspec
-import Test.Hspec.QuickCheck(prop)
-import Test.QuickCheck
+import           Data.Proxy
 
-import Web.Internal.HttpApiData
+import           Numeric.Natural
 
-import Web.Internal.TestInstances
+import           Test.Hspec
+import           Test.Hspec.QuickCheck      (prop)
+import           Test.QuickCheck
+
+import           Web.Internal.HttpApiData
+
+import           Web.Internal.TestInstances
 
 (<=>) :: forall a b. (Show a, Show b, Eq a) => (a -> b) -> (b -> Either T.Text a) -> a -> Property
 (f <=> g) x = counterexample

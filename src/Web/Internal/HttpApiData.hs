@@ -13,21 +13,27 @@
 -- such as URL pieces, headers and query parameters.
 module Web.Internal.HttpApiData where
 
-import           Prelude ()
+import           Prelude                      ()
 import           Prelude.Compat
 
 import           Control.Arrow                (left, (&&&))
 import           Control.Monad                ((<=<))
-
+import qualified Data.Attoparsec.Text         as Atto
+import qualified Data.Attoparsec.Time         as Atto
 import           Data.ByteString              (ByteString)
 import qualified Data.ByteString              as BS
+import qualified Data.ByteString.Builder      as BS
 import qualified Data.ByteString.Lazy         as LBS
-import           Data.Monoid
-
+import           Data.Coerce                  (coerce)
+import           Data.Data                    (Data)
 import qualified Data.Fixed                   as F
-import           Data.Int
-import           Data.Word
-
+import           Data.Int                     (Int16, Int32, Int64, Int8)
+import           Data.Monoid                  (All (..), Any (..), Dual (..),
+                                               First (..), Last (..),
+                                               Product (..), Sum (..))
+import           Data.Semigroup               (Semigroup (..))
+import qualified Data.Semigroup               as Semi
+import           Data.Tagged                  (Tagged (..))
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
 import           Data.Text.Encoding           (decodeUtf8', decodeUtf8With,
@@ -36,43 +42,41 @@ import           Data.Text.Encoding.Error     (lenientDecode)
 import qualified Data.Text.Lazy               as L
 import           Data.Text.Read               (Reader, decimal, rational,
                                                signed)
-
-import           Data.Time
-import           Data.Time.Locale.Compat
-
-#if MIN_VERSION_time(1,9,1)
-import Data.Time (nominalDiffTimeToSeconds, secondsToNominalDiffTime)
-#endif
-
-import           Data.Version
-
-import           Data.Void
-import           Numeric.Natural
-
+import           Data.Time                    (Day, FormatTime, LocalTime,
+                                               NominalDiffTime, TimeOfDay,
+                                               UTCTime, ZonedTime, formatTime)
+import           Data.Time.Locale.Compat      (defaultTimeLocale,
+                                               iso8601DateFormat)
+import           Data.Typeable                (Typeable)
+import qualified Data.UUID.Types              as UUID
+import           Data.Version                 (Version, parseVersion,
+                                               showVersion)
+import           Data.Void                    (Void, absurd)
+import           Data.Word                    (Word16, Word32, Word64, Word8)
+import qualified Network.HTTP.Types           as H
+import           Numeric.Natural              (Natural)
 import           Text.ParserCombinators.ReadP (readP_to_S)
 import           Text.Read                    (readMaybe)
+import           Web.Cookie                   (SetCookie, parseSetCookie,
+                                               renderSetCookie)
+
+#if MIN_VERSION_time(1,9,1)
+import           Data.Time                    (nominalDiffTimeToSeconds,
+                                               secondsToNominalDiffTime)
+#endif
 
 #if USE_TEXT_SHOW
 import           TextShow                     (TextShow, showt)
 #endif
 
-import qualified Data.UUID.Types              as UUID
 
-import qualified Data.ByteString.Builder      as BS
-import           Data.Data                    (Data)
-import           Data.Typeable                (Typeable)
-import qualified Network.HTTP.Types           as H
-
-import qualified Data.Attoparsec.Text         as Atto
-import qualified Data.Attoparsec.Time         as Atto
-
-import           Web.Cookie                   (SetCookie, parseSetCookie,
-                                               renderSetCookie)
 
 
 -- $setup
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
 -- >>> instance FromHttpApiData BasicAuthToken where parseHeader h = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h; parseQueryParam p = BasicAuthToken <$> parseQueryParam p
+-- >>> import Data.Time
+-- >>> import Data.Version
 
 -- | Convert value to HTTP API data.
 --
@@ -519,28 +523,49 @@ instance ToHttpApiData String   where toUrlPiece = T.pack
 instance ToHttpApiData Text     where toUrlPiece = id
 instance ToHttpApiData L.Text   where toUrlPiece = L.toStrict
 
-instance ToHttpApiData All where toUrlPiece = toUrlPiece . getAll; toEncodedUrlPiece = toEncodedUrlPiece . getAll
-instance ToHttpApiData Any where toUrlPiece = toUrlPiece . getAny; toEncodedUrlPiece = toEncodedUrlPiece . getAny
+instance ToHttpApiData All where
+  toUrlPiece        = coerce (toUrlPiece :: Bool -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece :: Bool -> BS.Builder)
+
+instance ToHttpApiData Any where
+  toUrlPiece        = coerce (toUrlPiece :: Bool -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece :: Bool -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (Dual a) where
-  toUrlPiece = toUrlPiece . getDual
-  toEncodedUrlPiece = toEncodedUrlPiece . getDual
+  toUrlPiece        = coerce (toUrlPiece :: a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (Sum a) where
-  toUrlPiece = toUrlPiece . getSum
-  toEncodedUrlPiece = toEncodedUrlPiece . getSum
+  toUrlPiece        = coerce (toUrlPiece :: a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (Product a) where
-  toUrlPiece = toUrlPiece . getProduct
-  toEncodedUrlPiece = toEncodedUrlPiece . getProduct
+  toUrlPiece        = coerce (toUrlPiece :: a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (First a) where
-  toUrlPiece = toUrlPiece . getFirst
-  toEncodedUrlPiece = toEncodedUrlPiece . getFirst
+  toUrlPiece        = coerce (toUrlPiece :: Maybe a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece :: Maybe a -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (Last a) where
-  toUrlPiece = toUrlPiece . getLast
-  toEncodedUrlPiece = toEncodedUrlPiece . getLast
+  toUrlPiece        = coerce (toUrlPiece :: Maybe a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece :: Maybe a -> BS.Builder)
+
+instance ToHttpApiData a => ToHttpApiData (Semi.Min a) where
+  toUrlPiece        = coerce (toUrlPiece :: a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
+
+instance ToHttpApiData a => ToHttpApiData (Semi.Max a) where
+  toUrlPiece        = coerce (toUrlPiece :: a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
+
+instance ToHttpApiData a => ToHttpApiData (Semi.First a) where
+  toUrlPiece        = coerce (toUrlPiece :: a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
+
+instance ToHttpApiData a => ToHttpApiData (Semi.Last a) where
+  toUrlPiece        = coerce (toUrlPiece :: a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
 
 -- |
 -- >>> toUrlPiece (Just "Hello")
@@ -571,6 +596,12 @@ instance ToHttpApiData SetCookie where
   toUrlPiece = decodeUtf8With lenientDecode . toHeader
   toHeader = LBS.toStrict . BS.toLazyByteString . renderSetCookie
   -- toEncodedUrlPiece = renderSetCookie -- doesn't do things.
+
+instance ToHttpApiData a => ToHttpApiData (Tagged b a) where
+  toUrlPiece        = coerce (toUrlPiece :: a -> Text)
+  toHeader          = coerce (toHeader :: a -> ByteString)
+  toQueryParam      = coerce (toQueryParam :: a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece ::  a -> BS.Builder)
 
 -- |
 -- >>> parseUrlPiece "_" :: Either Text ()
@@ -657,14 +688,19 @@ instance FromHttpApiData UTCTime   where parseUrlPiece = runAtto Atto.utcTime
 
 instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap secsToNominalDiffTime . parseUrlPiece
 
-instance FromHttpApiData All where parseUrlPiece = fmap All . parseUrlPiece
-instance FromHttpApiData Any where parseUrlPiece = fmap Any . parseUrlPiece
+instance FromHttpApiData All where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text Bool)
+instance FromHttpApiData Any where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text Bool)
 
-instance FromHttpApiData a => FromHttpApiData (Dual a)    where parseUrlPiece = fmap Dual    . parseUrlPiece
-instance FromHttpApiData a => FromHttpApiData (Sum a)     where parseUrlPiece = fmap Sum     . parseUrlPiece
-instance FromHttpApiData a => FromHttpApiData (Product a) where parseUrlPiece = fmap Product . parseUrlPiece
-instance FromHttpApiData a => FromHttpApiData (First a)   where parseUrlPiece = fmap First   . parseUrlPiece
-instance FromHttpApiData a => FromHttpApiData (Last a)    where parseUrlPiece = fmap Last    . parseUrlPiece
+instance FromHttpApiData a => FromHttpApiData (Dual a)    where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text a)
+instance FromHttpApiData a => FromHttpApiData (Sum a)     where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text a)
+instance FromHttpApiData a => FromHttpApiData (Product a) where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text a)
+instance FromHttpApiData a => FromHttpApiData (First a)   where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text (Maybe a))
+instance FromHttpApiData a => FromHttpApiData (Last a)    where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text (Maybe a))
+
+instance FromHttpApiData a => FromHttpApiData (Semi.Min a)    where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text a)
+instance FromHttpApiData a => FromHttpApiData (Semi.Max a)    where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text a)
+instance FromHttpApiData a => FromHttpApiData (Semi.First a)  where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text a)
+instance FromHttpApiData a => FromHttpApiData (Semi.Last a)   where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text a)
 
 -- |
 -- >>> parseUrlPiece "Just 123" :: Either Text (Maybe Int)
@@ -715,6 +751,11 @@ instance FromHttpApiData SetCookie where
   parseUrlPiece = parseHeader  . encodeUtf8
   parseHeader   = Right . parseSetCookie
 
+instance FromHttpApiData a => FromHttpApiData (Tagged b a) where
+  parseUrlPiece   = coerce (parseUrlPiece :: Text -> Either Text a)
+  parseHeader     = coerce (parseHeader :: ByteString -> Either Text a)
+  parseQueryParam = coerce (parseQueryParam :: Text -> Either Text a)
+
 -------------------------------------------------------------------------------
 -- Attoparsec helpers
 -------------------------------------------------------------------------------
@@ -723,3 +764,5 @@ runAtto :: Atto.Parser a -> Text -> Either Text a
 runAtto p t = case Atto.parseOnly (p <* Atto.endOfInput) t of
     Left err -> Left (T.pack err)
     Right x  -> Right x
+
+
