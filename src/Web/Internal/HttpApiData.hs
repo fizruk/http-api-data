@@ -13,11 +13,8 @@
 -- such as URL pieces, headers and query parameters.
 module Web.Internal.HttpApiData where
 
-#if __GLASGOW_HASKELL__ < 710
-import           Control.Applicative
-import           Data.Foldable                (Foldable)
-import           Data.Traversable             (Traversable (traverse))
-#endif
+import           Prelude ()
+import           Prelude.Compat
 
 import           Control.Arrow                (left, (&&&))
 import           Control.Monad                ((<=<))
@@ -33,22 +30,19 @@ import           Data.Word
 
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
-import           Data.Text.Encoding           (decodeUtf8With, decodeUtf8', encodeUtf8)
+import           Data.Text.Encoding           (decodeUtf8', decodeUtf8With,
+                                               encodeUtf8)
 import           Data.Text.Encoding.Error     (lenientDecode)
 import qualified Data.Text.Lazy               as L
 import           Data.Text.Read               (Reader, decimal, rational,
                                                signed)
 
 import           Data.Time
-#if __GLASGOW_HASKELL__ < 710
 import           Data.Time.Locale.Compat
-#endif
 import           Data.Version
 
-#if MIN_VERSION_base(4,8,0)
 import           Data.Void
 import           Numeric.Natural
-#endif
 
 import           Text.ParserCombinators.ReadP (readP_to_S)
 import           Text.Read                    (readMaybe)
@@ -432,10 +426,8 @@ instance ToHttpApiData Version where
   toUrlPiece = T.pack . showVersion
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
-#if MIN_VERSION_base(4,8,0)
 instance ToHttpApiData Void    where toUrlPiece = absurd
 instance ToHttpApiData Natural where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-#endif
 
 instance ToHttpApiData Bool     where toUrlPiece = showTextData; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 instance ToHttpApiData Ordering where toUrlPiece = showTextData; toEncodedUrlPiece = unsafeToEncodedUrlPiece
@@ -566,7 +558,7 @@ instance FromHttpApiData Char where
   parseUrlPiece s =
     case T.uncons s of
       Just (c, s') | T.null s' -> pure c
-      _                        -> defaultParseError s
+      _            -> defaultParseError s
 
 -- |
 -- >>> showVersion <$> parseUrlPiece "1.2.3"
@@ -577,7 +569,6 @@ instance FromHttpApiData Version where
       ((x, ""):_) -> pure x
       _           -> defaultParseError s
 
-#if MIN_VERSION_base(4,8,0)
 -- | Parsing a @'Void'@ value is always an error, considering @'Void'@ as a data type with no constructors.
 instance FromHttpApiData Void where
   parseUrlPiece _ = Left "Void cannot be parsed!"
@@ -588,7 +579,6 @@ instance FromHttpApiData Natural where
     if n < 0
       then Left ("underflow: " <> s <> " (should be a non-negative integer)")
       else Right (fromInteger n)
-#endif
 
 instance FromHttpApiData Bool     where parseUrlPiece = parseBoundedUrlPiece
 instance FromHttpApiData Ordering where parseUrlPiece = parseBoundedUrlPiece
