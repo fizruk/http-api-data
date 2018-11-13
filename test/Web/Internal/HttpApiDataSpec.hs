@@ -1,35 +1,36 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Web.Internal.HttpApiDataSpec (spec) where
 
-import Control.Applicative
-import qualified Data.Fixed as F
-import Data.Int
-import Data.Char
-import Data.Word
-import Data.Time
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
-import qualified Data.Text.Lazy as L
-import qualified Data.ByteString as BS
-import Data.ByteString.Builder (toLazyByteString)
-import Data.Version
-import qualified Data.UUID.Types as UUID
-import Web.Cookie (SetCookie, defaultSetCookie, setCookieName, setCookieValue)
 
-import Data.Proxy
+import           Prelude                    ()
+import           Prelude.Compat
 
-#if MIN_VERSION_base(4,8,0)
-import Numeric.Natural
-#endif
+import qualified Data.ByteString            as BS
+import           Data.ByteString.Builder    (toLazyByteString)
+import           Data.Char
+import qualified Data.Fixed                 as F
+import           Data.Int
+import qualified Data.Text                  as T
+import qualified Data.Text.Encoding         as TE
+import qualified Data.Text.Lazy             as L
+import           Data.Time
+import qualified Data.UUID.Types            as UUID
+import           Data.Version
+import           Data.Word
+import           Web.Cookie                 (SetCookie, defaultSetCookie,
+                                             setCookieName, setCookieValue)
 
-import Test.Hspec
-import Test.Hspec.QuickCheck(prop)
-import Test.QuickCheck
+import           Data.Proxy
 
-import Web.Internal.HttpApiData
+import           Numeric.Natural
 
-import Web.Internal.TestInstances
+import           Test.Hspec
+import           Test.Hspec.QuickCheck      (prop)
+import           Test.QuickCheck
+
+import           Web.Internal.HttpApiData
+
+import           Web.Internal.TestInstances
 
 (<=>) :: forall a b. (Show a, Show b, Eq a) => (a -> b) -> (b -> Either T.Text a) -> a -> Property
 (f <=> g) x = counterexample
@@ -80,13 +81,13 @@ spec = do
     checkUrlPiece  (Proxy :: Proxy T.Text)    "Text.Strict"
     checkUrlPiece  (Proxy :: Proxy L.Text)    "Text.Lazy"
     checkUrlPiece  (Proxy :: Proxy Day)       "Day"
-    checkUrlPiece' timeOfDayGen               "TimeOfDay"
-    checkUrlPiece' localTimeGen               "LocalTime"
-    checkUrlPiece' zonedTimeGen               "ZonedTime"
-    checkUrlPiece' utcTimeGen                 "UTCTime"
-    checkUrlPiece' nominalDiffTimeGen         "NominalDiffTime"
+    checkUrlPiece  (Proxy :: Proxy TimeOfDay) "TimeOfDay"
+    checkUrlPiece  (Proxy :: Proxy LocalTime) "LocalTime"
+    checkUrlPiece  (Proxy :: Proxy ZonedTime) "ZonedTime"
+    checkUrlPiece  (Proxy :: Proxy UTCTime)   "UTCTime"
+    checkUrlPiece  (Proxy :: Proxy NominalDiffTime) "NominalDiffTime"
     checkUrlPiece  (Proxy :: Proxy Version)   "Version"
-    checkUrlPiece' uuidGen                    "UUID"
+    checkUrlPiece  (Proxy :: Proxy UUID.UUID) "UUID"
     checkUrlPiece' setCookieGen               "Cookie"
 
     checkUrlPiece  (Proxy :: Proxy F.Uni)   "Uni"
@@ -102,9 +103,7 @@ spec = do
     checkUrlPiece  (Proxy :: Proxy (Either Integer T.Text))   "Either Integer Text"
     checkUrlPieceI (Proxy :: Proxy (Either Version Day))      "Either Version Day"
 
-#if MIN_VERSION_base(4,8,0)
     checkUrlPiece  (Proxy :: Proxy Natural)   "Natural"
-#endif
 
   it "bad integers are rejected" $ do
     parseUrlPieceMaybe (T.pack "123hello") `shouldBe` (Nothing :: Maybe Int)
@@ -115,31 +114,6 @@ spec = do
 
   it "invalid utf8 is handled" $ do
     parseHeaderMaybe (BS.pack [128]) `shouldBe` (Nothing :: Maybe T.Text)
-
-
-uuidGen :: Gen UUID.UUID
-uuidGen = UUID.fromWords <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
-
--- TODO: this generators don't generate full range items
-localTimeGen :: Gen LocalTime
-localTimeGen = LocalTime <$> arbitrary <*> timeOfDayGen
-
-timeOfDayGen :: Gen TimeOfDay
-timeOfDayGen = TimeOfDay
-  <$> choose (0, 23)
-  <*> choose (0, 59)
-  <*> fmap (\x -> 0.1 * fromInteger x) (choose (0, 600))
-
-zonedTimeGen :: Gen ZonedTime
-zonedTimeGen = ZonedTime
-    <$> localTimeGen -- Note: not arbitrary!
-    <*> liftA3 TimeZone arbitrary arbitrary (vectorOf 3 (elements ['A'..'Z']))
-
-utcTimeGen :: Gen UTCTime
-utcTimeGen = UTCTime <$> arbitrary <*> fmap fromInteger (choose (0, 86400))
-
-nominalDiffTimeGen :: Gen NominalDiffTime
-nominalDiffTimeGen = fromInteger <$> arbitrary
 
 setCookieGen :: Gen SetCookie
 setCookieGen = do

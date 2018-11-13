@@ -1,3 +1,10 @@
+0.4
+---
+
+* `NominalDiffTime` instances preserve precision (roundtrip)
+* Add `Semigroup.Min`, `Max`, `First`, `Last` instances
+* Add `Tagged b a` instances
+
 0.3.10
 ---
 

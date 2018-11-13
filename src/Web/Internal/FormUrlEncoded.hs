@@ -17,51 +17,46 @@
 #include "overlapping-compat.h"
 module Web.Internal.FormUrlEncoded where
 
-#if __GLASGOW_HASKELL__ < 710
-import           Control.Applicative
-import           Data.Traversable
-#endif
-
+import           Prelude                    ()
+import           Prelude.Compat
 
 import           Control.Arrow              ((***))
 import           Control.Monad              ((<=<))
 import           Data.ByteString.Builder    (shortByteString, toLazyByteString)
 import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSL8
+import           Data.Coerce                (coerce)
 import qualified Data.Foldable              as F
 import           Data.Hashable              (Hashable)
 import           Data.HashMap.Strict        (HashMap)
 import qualified Data.HashMap.Strict        as HashMap
-import           Data.Int
+import           Data.Int                   (Int16, Int32, Int64, Int8)
 import           Data.IntMap                (IntMap)
 import qualified Data.IntMap                as IntMap
 import           Data.List                  (intersperse, sortBy)
 import           Data.Map                   (Map)
 import qualified Data.Map                   as Map
-import           Data.Monoid
+import           Data.Monoid                (All (..), Any (..), Dual (..),
+                                             Product (..), Sum (..))
 import           Data.Ord                   (comparing)
+import           Data.Proxy                 (Proxy (..))
+import           Data.Semigroup             (Semigroup (..))
 import qualified Data.Semigroup             as Semi
-
+import           Data.Tagged                (Tagged (..))
 import           Data.Text                  (Text)
 import qualified Data.Text                  as Text
-import           Data.Text.Encoding         as Text
+import qualified Data.Text.Encoding         as Text
 import           Data.Text.Encoding.Error   (lenientDecode)
 import qualified Data.Text.Lazy             as Lazy
-
-import           Data.Proxy
-import           Data.Time
-import           Data.Word
-
-#if MIN_VERSION_base(4,8,0)
-import           Data.Void
-import           Numeric.Natural
-#endif
-
+import           Data.Time                  (Day, LocalTime, NominalDiffTime,
+                                             UTCTime, ZonedTime)
+import           Data.Void                  (Void)
+import           Data.Word                  (Word16, Word32, Word64, Word8)
 import           GHC.Exts                   (Constraint, IsList (..))
 import           GHC.Generics
 import           GHC.TypeLits
 import           Network.HTTP.Types.URI     (urlDecode, urlEncodeBuilder)
-
+import           Numeric.Natural            (Natural)
 import           Web.Internal.HttpApiData
 
 -- $setup
@@ -124,14 +119,19 @@ instance ToFormKey Lazy.Text  where toFormKey = toQueryParam
 instance ToFormKey All where toFormKey = toQueryParam
 instance ToFormKey Any where toFormKey = toQueryParam
 
-instance ToFormKey a => ToFormKey (Dual a)    where toFormKey = toFormKey . getDual
-instance ToFormKey a => ToFormKey (Sum a)     where toFormKey = toFormKey . getSum
-instance ToFormKey a => ToFormKey (Product a) where toFormKey = toFormKey . getProduct
+instance ToFormKey a => ToFormKey (Dual a)    where toFormKey = coerce (toFormKey :: a -> Text)
+instance ToFormKey a => ToFormKey (Sum a)     where toFormKey = coerce (toFormKey :: a -> Text)
+instance ToFormKey a => ToFormKey (Product a) where toFormKey = coerce (toFormKey :: a -> Text)
 
-#if MIN_VERSION_base(4,8,0)
+instance ToFormKey a => ToFormKey (Semi.Min a)   where toFormKey = coerce (toFormKey :: a -> Text)
+instance ToFormKey a => ToFormKey (Semi.Max a)   where toFormKey = coerce (toFormKey :: a -> Text)
+instance ToFormKey a => ToFormKey (Semi.First a) where toFormKey = coerce (toFormKey :: a -> Text)
+instance ToFormKey a => ToFormKey (Semi.Last a)  where toFormKey = coerce (toFormKey :: a -> Text)
+
+instance ToFormKey a => ToFormKey (Tagged b a)  where toFormKey = coerce (toFormKey :: a -> Text)
+
 instance ToFormKey Void     where toFormKey = toQueryParam
 instance ToFormKey Natural  where toFormKey = toQueryParam
-#endif
 
 -- | Typeclass for types that can be parsed from keys of a 'Form'. This is the reverse of 'ToFormKey'.
 class FromFormKey k where
@@ -171,20 +171,25 @@ instance FromFormKey Lazy.Text  where parseFormKey = parseQueryParam
 instance FromFormKey All where parseFormKey = parseQueryParam
 instance FromFormKey Any where parseFormKey = parseQueryParam
 
-instance FromFormKey a => FromFormKey (Dual a)    where parseFormKey = fmap Dual . parseFormKey
-instance FromFormKey a => FromFormKey (Sum a)     where parseFormKey = fmap Sum . parseFormKey
-instance FromFormKey a => FromFormKey (Product a) where parseFormKey = fmap Product . parseFormKey
+instance FromFormKey a => FromFormKey (Dual a)    where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+instance FromFormKey a => FromFormKey (Sum a)     where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+instance FromFormKey a => FromFormKey (Product a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 
-#if MIN_VERSION_base(4,8,0)
+instance FromFormKey a => FromFormKey (Semi.Min a)   where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+instance FromFormKey a => FromFormKey (Semi.Max a)   where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+instance FromFormKey a => FromFormKey (Semi.First a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+instance FromFormKey a => FromFormKey (Semi.Last a)  where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+
+instance FromFormKey a => FromFormKey (Tagged b a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+
 instance FromFormKey Void     where parseFormKey = parseQueryParam
 instance FromFormKey Natural  where parseFormKey = parseQueryParam
-#endif
 
 -- | The contents of a form, not yet URL-encoded.
 --
 -- 'Form' can be URL-encoded with 'urlEncodeForm' and URL-decoded with 'urlDecodeForm'.
 newtype Form = Form { unForm :: HashMap Text [Text] }
-  deriving (Eq, Read, Generic, Semi.Semigroup, Monoid)
+  deriving (Eq, Read, Generic, Semigroup, Monoid)
 
 instance Show Form where
   showsPrec d form = showParen (d > 10) $
