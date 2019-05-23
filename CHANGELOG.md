@@ -18,7 +18,7 @@
 
 * GHC-8.6 support
 * Remove dependency on `uri-bytestring` and use functions from `http-types` instead
-  (see [#75](https://github.com/fizruk/http-api-data/pull/78))
+  (see [#75](https://github.com/fizruk/http-api-data/pull/75))
 * Add support for `SetCookie`
   (see [#74](https://github.com/fizruk/http-api-data/pull/74))
 
