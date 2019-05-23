@@ -1,3 +1,8 @@
+0.4.1
+-----
+
+* Use `time-compat` to provide instances for `DayOfWeek`.
+
 0.4
 ---
 

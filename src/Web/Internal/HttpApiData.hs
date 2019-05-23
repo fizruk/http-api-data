@@ -28,6 +28,7 @@ import           Data.Coerce                  (coerce)
 import           Data.Data                    (Data)
 import qualified Data.Fixed                   as F
 import           Data.Int                     (Int16, Int32, Int64, Int8)
+import qualified Data.Map                     as Map
 import           Data.Monoid                  (All (..), Any (..), Dual (..),
                                                First (..), Last (..),
                                                Product (..), Sum (..))
@@ -42,10 +43,13 @@ import           Data.Text.Encoding.Error     (lenientDecode)
 import qualified Data.Text.Lazy               as L
 import           Data.Text.Read               (Reader, decimal, rational,
                                                signed)
-import           Data.Time                    (Day, FormatTime, LocalTime,
+import           Data.Time.Compat             (Day, FormatTime, LocalTime,
                                                NominalDiffTime, TimeOfDay,
-                                               UTCTime, ZonedTime, formatTime)
-import           Data.Time.Locale.Compat      (defaultTimeLocale,
+                                               UTCTime, ZonedTime, formatTime,
+                                               DayOfWeek (..),
+                                               nominalDiffTimeToSeconds,
+                                               secondsToNominalDiffTime)
+import           Data.Time.Format.Compat      (defaultTimeLocale,
                                                iso8601DateFormat)
 import           Data.Typeable                (Typeable)
 import qualified Data.UUID.Types              as UUID
@@ -60,10 +64,6 @@ import           Text.Read                    (readMaybe)
 import           Web.Cookie                   (SetCookie, parseSetCookie,
                                                renderSetCookie)
 
-#if MIN_VERSION_time(1,9,1)
-import           Data.Time                    (nominalDiffTimeToSeconds,
-                                               secondsToNominalDiffTime)
-#endif
 
 #if USE_TEXT_SHOW
 import           TextShow                     (TextShow, showt)
@@ -75,7 +75,7 @@ import           TextShow                     (TextShow, showt)
 -- $setup
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
 -- >>> instance FromHttpApiData BasicAuthToken where parseHeader h = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h; parseQueryParam p = BasicAuthToken <$> parseQueryParam p
--- >>> import Data.Time
+-- >>> import Data.Time.Compat
 -- >>> import Data.Version
 
 -- | Convert value to HTTP API data.
@@ -495,28 +495,23 @@ instance ToHttpApiData UTCTime where
   toUrlPiece = timeToUrlPiece "%H:%M:%S%QZ"
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
--- The CPP in both this function and the function after it are to avoid
--- exporting @nominalDiffTimeToSeconds@ and @secondsToNominalDiffTime@,
--- since these names are already used by @Data.Time@ from the @time@ library
--- starting in version @1.9.1@.
-nominalDiffTimeToSecs :: NominalDiffTime -> F.Pico
-nominalDiffTimeToSecs =
-#if !MIN_VERSION_time(1,9,1)
-    realToFrac
-#else
-    nominalDiffTimeToSeconds
-#endif
+-- |
+-- >>> toUrlPiece Monday
+-- "monday"
+instance ToHttpApiData DayOfWeek where
+  toUrlPiece Monday    = "monday"
+  toUrlPiece Tuesday   = "tuesday"
+  toUrlPiece Wednesday = "wednesday"
+  toUrlPiece Thursday  = "thursday"
+  toUrlPiece Friday    = "friday"
+  toUrlPiece Saturday  = "saturday"
+  toUrlPiece Sunday    = "sunday"
 
-secsToNominalDiffTime :: F.Pico -> NominalDiffTime
-secsToNominalDiffTime =
-#if !MIN_VERSION_time(1,9,1)
-    realToFrac
-#else
-    secondsToNominalDiffTime
-#endif
+  toEncodedUrlPiece = unsafeToEncodedUrlPiece
+
 
 instance ToHttpApiData NominalDiffTime where
-  toUrlPiece = toUrlPiece . nominalDiffTimeToSecs
+  toUrlPiece = toUrlPiece . nominalDiffTimeToSeconds
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 instance ToHttpApiData String   where toUrlPiece = T.pack
@@ -686,7 +681,16 @@ instance FromHttpApiData ZonedTime where parseUrlPiece = runAtto Atto.zonedTime
 -- Right 2015-10-03 00:14:24 UTC
 instance FromHttpApiData UTCTime   where parseUrlPiece = runAtto Atto.utcTime
 
-instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap secsToNominalDiffTime . parseUrlPiece
+instance FromHttpApiData DayOfWeek where
+  parseUrlPiece t = case Map.lookup (T.toLower t) m of
+      Just dow -> Right dow
+      Nothing  -> Left $ "Incorrect DayOfWeek: " <> T.take 10 t
+    where
+      m :: Map.Map Text DayOfWeek
+      m = Map.fromList [ (toUrlPiece dow, dow) | dow <- [Monday .. Sunday] ]
+
+
+instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap secondsToNominalDiffTime . parseUrlPiece
 
 instance FromHttpApiData All where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text Bool)
 instance FromHttpApiData Any where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text Bool)

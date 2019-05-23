@@ -48,7 +48,7 @@ import qualified Data.Text                  as Text
 import qualified Data.Text.Encoding         as Text
 import           Data.Text.Encoding.Error   (lenientDecode)
 import qualified Data.Text.Lazy             as Lazy
-import           Data.Time                  (Day, LocalTime, NominalDiffTime,
+import           Data.Time.Compat           (Day, LocalTime, NominalDiffTime,
                                              UTCTime, ZonedTime)
 import           Data.Void                  (Void)
 import           Data.Word                  (Word16, Word32, Word64, Word8)

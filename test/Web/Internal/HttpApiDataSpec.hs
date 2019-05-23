@@ -13,7 +13,7 @@ import           Data.Int
 import qualified Data.Text                  as T
 import qualified Data.Text.Encoding         as TE
 import qualified Data.Text.Lazy             as L
-import           Data.Time
+import           Data.Time.Compat
 import qualified Data.UUID.Types            as UUID
 import           Data.Version
 import           Data.Word
@@ -86,6 +86,7 @@ spec = do
     checkUrlPiece  (Proxy :: Proxy ZonedTime) "ZonedTime"
     checkUrlPiece  (Proxy :: Proxy UTCTime)   "UTCTime"
     checkUrlPiece  (Proxy :: Proxy NominalDiffTime) "NominalDiffTime"
+    checkUrlPiece  (Proxy :: Proxy DayOfWeek) "DayOfWeek"
     checkUrlPiece  (Proxy :: Proxy Version)   "Version"
     checkUrlPiece  (Proxy :: Proxy UUID.UUID) "UUID"
     checkUrlPiece' setCookieGen               "Cookie"

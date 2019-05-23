@@ -12,7 +12,7 @@ import           Control.Applicative
 import           Data.Char
 import qualified Data.HashMap.Strict  as HashMap
 import qualified Data.Text            as T
-import           Data.Time
+import           Data.Time.Compat
 import           GHC.Exts             (fromList)
 import           GHC.Generics
 

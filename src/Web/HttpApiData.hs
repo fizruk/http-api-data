@@ -49,10 +49,9 @@ import           Web.Internal.HttpApiData
 --
 -- >>> :set -XOverloadedStrings
 -- >>> import Control.Applicative
--- >>> import Data.Time
+-- >>> import Data.Time.Compat
 -- >>> import Data.Int
 -- >>> import Data.Text (Text)
--- >>> import Data.Time (Day)
 -- >>> import Data.Version
 
 -- $examples
