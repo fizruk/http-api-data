@@ -63,7 +63,7 @@ library
                      attoparsec            >= 0.13.2.2 && < 0.14
                    , attoparsec-iso8601    >= 1.0.1.0  && < 1.1
                    , base-compat           >= 0.10.5   && < 0.12
-                   , cookie                >= 0.4.3    && < 0.4.5
+                   , cookie                >= 0.4.3    && < 0.5
                    , hashable              >= 1.2.7.0  && < 1.4
                    , http-types            >= 0.12.3   && < 0.13
                    , tagged                >= 0.8.5    && < 0.9
