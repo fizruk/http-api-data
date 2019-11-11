@@ -1,3 +1,14 @@
+0.4.2
+-----
+
+* Add instances for `Const` and `Identity`
+
+0.4.1.1
+-------
+
+* Allow cookie <0.5
+* Change to `build-type: Simple`
+
 0.4.1
 -----
 
