@@ -1,5 +1,5 @@
 branches: master
-doctest: True
+doctest: <8.10
 
 constraint-set text-show
   constraints: http-api-data +use-text-show

@@ -1,6 +1,7 @@
 cabal-version:   >= 1.10
 name:            http-api-data
 version:         0.4.1.1
+x-revision:      1
 
 synopsis:        Converting to/from HTTP API data like URL pieces, headers and query parameters.
 category:        Web
@@ -30,7 +31,8 @@ tested-with:
   GHC==8.2.2,
   GHC==8.4.4,
   GHC==8.6.5,
-  GHC==8.8.1
+  GHC==8.8.3,
+  GHC==8.10.1
 
 flag use-text-show
   description: Use text-show library for efficient ToHttpApiData implementations.
@@ -42,7 +44,7 @@ library
     include-dirs:   include/
 
     -- GHC bundled
-    build-depends:   base                  >= 4.7      && < 4.14
+    build-depends:   base                  >= 4.7      && < 4.15
                    , bytestring            >= 0.10.4.0 && < 0.11
                    , containers            >= 0.5.5.1  && < 0.7
                    , text                  >= 1.2.3.0  && < 1.3
