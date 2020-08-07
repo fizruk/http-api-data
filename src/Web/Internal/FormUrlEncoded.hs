@@ -28,6 +28,7 @@ import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSL8
 import           Data.Coerce                (coerce)
 import qualified Data.Foldable              as F
+import           Data.Functor.Identity      (Identity(Identity))
 import           Data.Hashable              (Hashable)
 import           Data.HashMap.Strict        (HashMap)
 import qualified Data.HashMap.Strict        as HashMap
@@ -59,10 +60,6 @@ import           GHC.TypeLits
 import           Network.HTTP.Types.URI     (urlDecode, urlEncodeBuilder)
 import           Numeric.Natural            (Natural)
 import           Web.Internal.HttpApiData
-
-#if MIN_VERSION_base(4,8,0)
-import           Data.Functor.Identity      (Identity(Identity))
-#endif
 
 #if MIN_VERSION_base(4,9,0)
 #else
@@ -137,10 +134,7 @@ instance ToFormKey a => ToFormKey (Semi.Min a)   where toFormKey = coerce (toFor
 instance ToFormKey a => ToFormKey (Semi.Max a)   where toFormKey = coerce (toFormKey :: a -> Text)
 instance ToFormKey a => ToFormKey (Semi.First a) where toFormKey = coerce (toFormKey :: a -> Text)
 instance ToFormKey a => ToFormKey (Semi.Last a)  where toFormKey = coerce (toFormKey :: a -> Text)
-
-#if MIN_VERSION_base(4,8,0)
 instance ToFormKey a => ToFormKey (Identity a)   where toFormKey = coerce (toFormKey :: a -> Text)
-#endif
 
 #if MIN_VERSION_base(4,9,0)
 instance ToFormKey a => ToFormKey (Tagged (b :: k) a)  where toFormKey = coerce (toFormKey :: a -> Text)
@@ -199,10 +193,7 @@ instance FromFormKey a => FromFormKey (Semi.Min a)   where parseFormKey = coerce
 instance FromFormKey a => FromFormKey (Semi.Max a)   where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 instance FromFormKey a => FromFormKey (Semi.First a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 instance FromFormKey a => FromFormKey (Semi.Last a)  where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
-
-#if MIN_VERSION_base(4,8,0)
 instance FromFormKey a => FromFormKey (Identity a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
-#endif
 
 #if MIN_VERSION_base(4,9,0)
 instance FromFormKey a => FromFormKey (Tagged (b :: k) a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
