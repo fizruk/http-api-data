@@ -61,6 +61,12 @@ import           Network.HTTP.Types.URI     (urlDecode, urlEncodeBuilder)
 import           Numeric.Natural            (Natural)
 import           Web.Internal.HttpApiData
 
+#if MIN_VERSION_base(4,9,0)
+import Data.Kind (Type)
+#else
+#define Type *
+#endif
+
 -- $setup
 -- >>> :set -XDeriveGeneric
 -- >>> :set -XOverloadedLists
@@ -130,7 +136,7 @@ instance ToFormKey a => ToFormKey (Semi.Max a)   where toFormKey = coerce (toFor
 instance ToFormKey a => ToFormKey (Semi.First a) where toFormKey = coerce (toFormKey :: a -> Text)
 instance ToFormKey a => ToFormKey (Semi.Last a)  where toFormKey = coerce (toFormKey :: a -> Text)
 
-instance ToFormKey a => ToFormKey (Tagged b a)  where toFormKey = coerce (toFormKey :: a -> Text)
+instance ToFormKey a => ToFormKey (Tagged (b :: Type) a)  where toFormKey = coerce (toFormKey :: a -> Text)
 instance ToFormKey a => ToFormKey (Const a (b :: k))  where toFormKey = coerce (toFormKey :: a -> Text)
 instance ToFormKey a => ToFormKey (Identity a)  where toFormKey = coerce (toFormKey :: a -> Text)
 
@@ -184,7 +190,7 @@ instance FromFormKey a => FromFormKey (Semi.Max a)   where parseFormKey = coerce
 instance FromFormKey a => FromFormKey (Semi.First a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 instance FromFormKey a => FromFormKey (Semi.Last a)  where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 
-instance FromFormKey a => FromFormKey (Tagged b a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+instance FromFormKey a => FromFormKey (Tagged (b :: Type) a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 instance FromFormKey a => FromFormKey (Const a (b :: k)) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 instance FromFormKey a => FromFormKey (Identity a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 

@@ -67,12 +67,17 @@ import           Text.ParserCombinators.ReadP (readP_to_S)
 import           Text.Read                    (readMaybe)
 import           Web.Cookie                   (SetCookie, parseSetCookie,
                                                renderSetCookie)
+#if MIN_VERSION_base(4,9,0)
+import Data.Kind (Type)
+#else
+#define Type *
+#endif
+
 
 
 #if USE_TEXT_SHOW
 import           TextShow                     (TextShow, showt)
 #endif
-
 
 
 
@@ -459,7 +464,7 @@ instance ToHttpApiData Word16   where toUrlPiece = showt; toEncodedUrlPiece = un
 instance ToHttpApiData Word32   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 instance ToHttpApiData Word64   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
-instance F.HasResolution a => ToHttpApiData (F.Fixed a) where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance F.HasResolution a => ToHttpApiData (F.Fixed (a :: Type)) where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 -- |
 -- >>> toUrlPiece (fromGregorian 2015 10 03)
@@ -596,7 +601,7 @@ instance ToHttpApiData SetCookie where
   toHeader = LBS.toStrict . BS.toLazyByteString . renderSetCookie
   -- toEncodedUrlPiece = renderSetCookie -- doesn't do things.
 
-instance ToHttpApiData a => ToHttpApiData (Tagged b a) where
+instance ToHttpApiData a => ToHttpApiData (Tagged (b :: Type) a) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toHeader          = coerce (toHeader :: a -> ByteString)
   toQueryParam      = coerce (toQueryParam :: a -> Text)
@@ -666,7 +671,7 @@ instance FromHttpApiData String   where parseUrlPiece = Right . T.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 
-instance F.HasResolution a => FromHttpApiData (F.Fixed a) where
+instance F.HasResolution a => FromHttpApiData (F.Fixed (a :: Type)) where
     parseUrlPiece = runReader rational
 
 -- |
