@@ -30,7 +30,6 @@ import qualified Data.ByteString.Lazy         as LBS
 import           Data.Coerce                  (coerce)
 import           Data.Data                    (Data)
 import qualified Data.Fixed                   as F
-import           Data.Functor.Identity        (Identity(Identity))
 import           Data.Int                     (Int16, Int32, Int64, Int8)
 import qualified Data.Map                     as Map
 import           Data.Monoid                  (All (..), Any (..), Dual (..),
@@ -67,6 +66,11 @@ import           Text.ParserCombinators.ReadP (readP_to_S)
 import           Text.Read                    (readMaybe)
 import           Web.Cookie                   (SetCookie, parseSetCookie,
                                                renderSetCookie)
+
+#if MIN_VERSION_base(4,8,0)
+import           Data.Functor.Identity        (Identity(Identity))
+#endif
+
 #if MIN_VERSION_base(4,9,0)
 import Data.Kind (Type)
 #else
@@ -632,11 +636,13 @@ instance ToHttpApiData a => ToHttpApiData (Const a (b :: Type)) where
 
 #endif
 
+#if MIN_VERSION_base(4,8,0)
 instance ToHttpApiData a => ToHttpApiData (Identity a) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toHeader          = coerce (toHeader :: a -> ByteString)
   toQueryParam      = coerce (toQueryParam :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece ::  a -> BS.Builder)
+#endif
 
 -- |
 -- >>> parseUrlPiece "_" :: Either Text ()
@@ -821,10 +827,12 @@ instance FromHttpApiData a => FromHttpApiData (Const a (b :: Type)) where
 
 #endif
 
+#if MIN_VERSION_base(4,8,0)
 instance FromHttpApiData a => FromHttpApiData (Identity a) where
   parseUrlPiece   = coerce (parseUrlPiece :: Text -> Either Text a)
   parseHeader     = coerce (parseHeader :: ByteString -> Either Text a)
   parseQueryParam = coerce (parseQueryParam :: Text -> Either Text a)
+#endif
 
 -------------------------------------------------------------------------------
 -- Attoparsec helpers
