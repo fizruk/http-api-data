@@ -1,8 +1,9 @@
-{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE ConstraintKinds            #-}
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -11,6 +12,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
@@ -27,6 +29,7 @@ import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSL8
 import           Data.Coerce                (coerce)
 import qualified Data.Foldable              as F
+import           Data.Functor.Const         (Const(Const))
 import           Data.Hashable              (Hashable)
 import           Data.HashMap.Strict        (HashMap)
 import qualified Data.HashMap.Strict        as HashMap
@@ -119,6 +122,8 @@ instance ToFormKey Lazy.Text  where toFormKey = toQueryParam
 instance ToFormKey All where toFormKey = toQueryParam
 instance ToFormKey Any where toFormKey = toQueryParam
 
+deriving newtype instance ToFormKey a => ToFormKey (Const a (b :: k))
+
 instance ToFormKey a => ToFormKey (Dual a)    where toFormKey = coerce (toFormKey :: a -> Text)
 instance ToFormKey a => ToFormKey (Sum a)     where toFormKey = coerce (toFormKey :: a -> Text)
 instance ToFormKey a => ToFormKey (Product a) where toFormKey = coerce (toFormKey :: a -> Text)
@@ -170,6 +175,8 @@ instance FromFormKey Lazy.Text  where parseFormKey = parseQueryParam
 
 instance FromFormKey All where parseFormKey = parseQueryParam
 instance FromFormKey Any where parseFormKey = parseQueryParam
+
+deriving newtype instance FromFormKey a => FromFormKey (Const a (b :: k))
 
 instance FromFormKey a => FromFormKey (Dual a)    where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 instance FromFormKey a => FromFormKey (Sum a)     where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)

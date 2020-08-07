@@ -4,9 +4,14 @@
 {-# LANGUAGE DeriveFoldable       #-}
 {-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE DeriveTraversable    #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE KindSignatures       #-}
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE PolyKinds            #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE StandaloneDeriving   #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 -- |
 -- Convert Haskell values to and from HTTP API data
@@ -27,6 +32,7 @@ import qualified Data.ByteString.Lazy         as LBS
 import           Data.Coerce                  (coerce)
 import           Data.Data                    (Data)
 import qualified Data.Fixed                   as F
+import           Data.Functor.Const           (Const(Const))
 import           Data.Int                     (Int16, Int32, Int64, Int8)
 import qualified Data.Map                     as Map
 import           Data.Monoid                  (All (..), Any (..), Dual (..),
@@ -526,6 +532,8 @@ instance ToHttpApiData Any where
   toUrlPiece        = coerce (toUrlPiece :: Bool -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: Bool -> BS.Builder)
 
+deriving newtype instance ToHttpApiData a => ToHttpApiData (Const a (b :: k))
+
 instance ToHttpApiData a => ToHttpApiData (Dual a) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
@@ -694,6 +702,8 @@ instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap secondsToNom
 
 instance FromHttpApiData All where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text Bool)
 instance FromHttpApiData Any where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text Bool)
+
+deriving newtype instance FromHttpApiData a => FromHttpApiData (Const a (b :: k))
 
 instance FromHttpApiData a => FromHttpApiData (Dual a)    where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text a)
 instance FromHttpApiData a => FromHttpApiData (Sum a)     where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text a)
