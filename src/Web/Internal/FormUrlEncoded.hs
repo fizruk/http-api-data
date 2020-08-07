@@ -27,7 +27,6 @@ import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSL8
 import           Data.Coerce                (coerce)
 import qualified Data.Foldable              as F
-import           Data.Functor.Const         (Const(Const))
 import           Data.Functor.Identity      (Identity(Identity))
 import           Data.Hashable              (Hashable)
 import           Data.HashMap.Strict        (HashMap)
@@ -62,6 +61,7 @@ import           Numeric.Natural            (Natural)
 import           Web.Internal.HttpApiData
 
 #if MIN_VERSION_base(4,9,0)
+import Data.Functor.Const (Const(Const))
 import Data.Kind (Type)
 #else
 #define Type *
@@ -137,8 +137,11 @@ instance ToFormKey a => ToFormKey (Semi.First a) where toFormKey = coerce (toFor
 instance ToFormKey a => ToFormKey (Semi.Last a)  where toFormKey = coerce (toFormKey :: a -> Text)
 
 instance ToFormKey a => ToFormKey (Tagged (b :: Type) a)  where toFormKey = coerce (toFormKey :: a -> Text)
-instance ToFormKey a => ToFormKey (Const a (b :: k))  where toFormKey = coerce (toFormKey :: a -> Text)
 instance ToFormKey a => ToFormKey (Identity a)  where toFormKey = coerce (toFormKey :: a -> Text)
+
+#if MIN_VERSION_base(4,9,0)
+instance ToFormKey a => ToFormKey (Const a (b :: k))  where toFormKey = coerce (toFormKey :: a -> Text)
+#endif
 
 instance ToFormKey Void     where toFormKey = toQueryParam
 instance ToFormKey Natural  where toFormKey = toQueryParam
