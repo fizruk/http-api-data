@@ -18,6 +18,7 @@ module Web.Internal.HttpApiData where
 import           Prelude                      ()
 import           Prelude.Compat
 
+import           Control.Applicative          (Const(Const))
 import           Control.Arrow                (left, (&&&))
 import           Control.Monad                ((<=<))
 import qualified Data.Attoparsec.Text         as Atto
@@ -67,7 +68,6 @@ import           Text.Read                    (readMaybe)
 import           Web.Cookie                   (SetCookie, parseSetCookie,
                                                renderSetCookie)
 #if MIN_VERSION_base(4,9,0)
-import Data.Functor.Const (Const(Const))
 import Data.Kind (Type)
 #else
 #define Type *
@@ -601,18 +601,35 @@ instance ToHttpApiData SetCookie where
   toHeader = LBS.toStrict . BS.toLazyByteString . renderSetCookie
   -- toEncodedUrlPiece = renderSetCookie -- doesn't do things.
 
+
+#if MIN_VERSION_base(4,9,0)
+
+instance ToHttpApiData a => ToHttpApiData (Tagged (b :: k) a) where
+  toUrlPiece        = coerce (toUrlPiece :: a -> Text)
+  toHeader          = coerce (toHeader :: a -> ByteString)
+  toQueryParam      = coerce (toQueryParam :: a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece ::  a -> BS.Builder)
+
+instance ToHttpApiData a => ToHttpApiData (Const a (b :: k)) where
+  toUrlPiece        = coerce (toUrlPiece :: a -> Text)
+  toHeader          = coerce (toHeader :: a -> ByteString)
+  toQueryParam      = coerce (toQueryParam :: a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece ::  a -> BS.Builder)
+
+#else
+
 instance ToHttpApiData a => ToHttpApiData (Tagged (b :: Type) a) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toHeader          = coerce (toHeader :: a -> ByteString)
   toQueryParam      = coerce (toQueryParam :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece ::  a -> BS.Builder)
 
-#if MIN_VERSION_base(4,9,0)
-instance ToHttpApiData a => ToHttpApiData (Const a (b :: k)) where
+instance ToHttpApiData a => ToHttpApiData (Const a (b :: Type)) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toHeader          = coerce (toHeader :: a -> ByteString)
   toQueryParam      = coerce (toQueryParam :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece ::  a -> BS.Builder)
+
 #endif
 
 instance ToHttpApiData a => ToHttpApiData (Identity a) where
@@ -778,16 +795,30 @@ instance FromHttpApiData SetCookie where
   parseUrlPiece = parseHeader  . encodeUtf8
   parseHeader   = Right . parseSetCookie
 
-instance FromHttpApiData a => FromHttpApiData (Tagged b a) where
+#if MIN_VERSION_base(4,9,0)
+
+instance FromHttpApiData a => FromHttpApiData (Tagged (b :: k) a) where
   parseUrlPiece   = coerce (parseUrlPiece :: Text -> Either Text a)
   parseHeader     = coerce (parseHeader :: ByteString -> Either Text a)
   parseQueryParam = coerce (parseQueryParam :: Text -> Either Text a)
 
-#if MIN_VERSION_base(4,9,0)
 instance FromHttpApiData a => FromHttpApiData (Const a (b :: k)) where
   parseUrlPiece   = coerce (parseUrlPiece :: Text -> Either Text a)
   parseHeader     = coerce (parseHeader :: ByteString -> Either Text a)
   parseQueryParam = coerce (parseQueryParam :: Text -> Either Text a)
+
+#else
+
+instance FromHttpApiData a => FromHttpApiData (Tagged (b :: Type) a) where
+  parseUrlPiece   = coerce (parseUrlPiece :: Text -> Either Text a)
+  parseHeader     = coerce (parseHeader :: ByteString -> Either Text a)
+  parseQueryParam = coerce (parseQueryParam :: Text -> Either Text a)
+
+instance FromHttpApiData a => FromHttpApiData (Const a (b :: Type)) where
+  parseUrlPiece   = coerce (parseUrlPiece :: Text -> Either Text a)
+  parseHeader     = coerce (parseHeader :: ByteString -> Either Text a)
+  parseQueryParam = coerce (parseQueryParam :: Text -> Either Text a)
+
 #endif
 
 instance FromHttpApiData a => FromHttpApiData (Identity a) where

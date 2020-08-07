@@ -20,6 +20,7 @@ module Web.Internal.FormUrlEncoded where
 import           Prelude                    ()
 import           Prelude.Compat
 
+import           Control.Applicative        (Const(Const))
 import           Control.Arrow              ((***))
 import           Control.Monad              ((<=<))
 import           Data.ByteString.Builder    (shortByteString, toLazyByteString)
@@ -61,8 +62,6 @@ import           Numeric.Natural            (Natural)
 import           Web.Internal.HttpApiData
 
 #if MIN_VERSION_base(4,9,0)
-import Data.Functor.Const (Const(Const))
-import Data.Kind (Type)
 #else
 #define Type *
 #endif
@@ -135,12 +134,14 @@ instance ToFormKey a => ToFormKey (Semi.Min a)   where toFormKey = coerce (toFor
 instance ToFormKey a => ToFormKey (Semi.Max a)   where toFormKey = coerce (toFormKey :: a -> Text)
 instance ToFormKey a => ToFormKey (Semi.First a) where toFormKey = coerce (toFormKey :: a -> Text)
 instance ToFormKey a => ToFormKey (Semi.Last a)  where toFormKey = coerce (toFormKey :: a -> Text)
-
-instance ToFormKey a => ToFormKey (Tagged (b :: Type) a)  where toFormKey = coerce (toFormKey :: a -> Text)
-instance ToFormKey a => ToFormKey (Identity a)  where toFormKey = coerce (toFormKey :: a -> Text)
+instance ToFormKey a => ToFormKey (Identity a)   where toFormKey = coerce (toFormKey :: a -> Text)
 
 #if MIN_VERSION_base(4,9,0)
-instance ToFormKey a => ToFormKey (Const a (b :: k))  where toFormKey = coerce (toFormKey :: a -> Text)
+instance ToFormKey a => ToFormKey (Tagged (b :: k) a)  where toFormKey = coerce (toFormKey :: a -> Text)
+instance ToFormKey a => ToFormKey (Const a (b :: k))   where toFormKey = coerce (toFormKey :: a -> Text)
+#else
+instance ToFormKey a => ToFormKey (Tagged (b :: Type) a) where toFormKey = coerce (toFormKey :: a -> Text)
+instance ToFormKey a => ToFormKey (Const a (b :: Type))  where toFormKey = coerce (toFormKey :: a -> Text)
 #endif
 
 instance ToFormKey Void     where toFormKey = toQueryParam
@@ -193,9 +194,15 @@ instance FromFormKey a => FromFormKey (Semi.Max a)   where parseFormKey = coerce
 instance FromFormKey a => FromFormKey (Semi.First a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 instance FromFormKey a => FromFormKey (Semi.Last a)  where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 
-instance FromFormKey a => FromFormKey (Tagged (b :: Type) a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
-instance FromFormKey a => FromFormKey (Const a (b :: k)) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 instance FromFormKey a => FromFormKey (Identity a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+
+#if MIN_VERSION_base(4,9,0)
+instance FromFormKey a => FromFormKey (Tagged (b :: k) a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+instance FromFormKey a => FromFormKey (Const a (b :: k)) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+#else
+instance FromFormKey a => FromFormKey (Tagged (b :: Type) a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+instance FromFormKey a => FromFormKey (Const a (b :: Type)) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+#endif
 
 instance FromFormKey Void     where parseFormKey = parseQueryParam
 instance FromFormKey Natural  where parseFormKey = parseQueryParam
