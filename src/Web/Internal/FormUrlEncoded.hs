@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE ConstraintKinds            #-}
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE DeriveGeneric              #-}
@@ -20,6 +20,7 @@ module Web.Internal.FormUrlEncoded where
 import           Prelude                    ()
 import           Prelude.Compat
 
+import           Control.Applicative        (Const(Const))
 import           Control.Arrow              ((***))
 import           Control.Monad              ((<=<))
 import           Data.ByteString.Builder    (shortByteString, toLazyByteString)
@@ -27,6 +28,7 @@ import qualified Data.ByteString.Lazy       as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSL8
 import           Data.Coerce                (coerce)
 import qualified Data.Foldable              as F
+import           Data.Functor.Identity      (Identity(Identity))
 import           Data.Hashable              (Hashable)
 import           Data.HashMap.Strict        (HashMap)
 import qualified Data.HashMap.Strict        as HashMap
@@ -130,6 +132,13 @@ instance ToFormKey a => ToFormKey (Semi.Last a)  where toFormKey = coerce (toFor
 
 instance ToFormKey a => ToFormKey (Tagged b a)  where toFormKey = coerce (toFormKey :: a -> Text)
 
+-- | @since 0.4.2
+instance ToFormKey a => ToFormKey (Identity a)   where toFormKey = coerce (toFormKey :: a -> Text)
+
+-- | @since 0.4.2
+instance ToFormKey a => ToFormKey (Const a b) where
+    toFormKey = coerce (toFormKey :: a -> Text)
+
 instance ToFormKey Void     where toFormKey = toQueryParam
 instance ToFormKey Natural  where toFormKey = toQueryParam
 
@@ -181,6 +190,13 @@ instance FromFormKey a => FromFormKey (Semi.First a) where parseFormKey = coerce
 instance FromFormKey a => FromFormKey (Semi.Last a)  where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 
 instance FromFormKey a => FromFormKey (Tagged b a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+
+-- | @since 0.4.2
+instance FromFormKey a => FromFormKey (Identity a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+
+-- | @since 0.4.2
+instance FromFormKey a => FromFormKey (Const a b) where
+    parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 
 instance FromFormKey Void     where parseFormKey = parseQueryParam
 instance FromFormKey Natural  where parseFormKey = parseQueryParam
