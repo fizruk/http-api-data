@@ -783,10 +783,12 @@ instance FromHttpApiData a => FromHttpApiData (Tagged b a) where
   parseHeader     = coerce (parseHeader :: ByteString -> Either Text a)
   parseQueryParam = coerce (parseQueryParam :: Text -> Either Text a)
 
+#if MIN_VERSION_base(4,9,0)
 instance FromHttpApiData a => FromHttpApiData (Const a (b :: k)) where
   parseUrlPiece   = coerce (parseUrlPiece :: Text -> Either Text a)
   parseHeader     = coerce (parseHeader :: ByteString -> Either Text a)
   parseQueryParam = coerce (parseQueryParam :: Text -> Either Text a)
+#endif
 
 instance FromHttpApiData a => FromHttpApiData (Identity a) where
   parseUrlPiece   = coerce (parseUrlPiece :: Text -> Either Text a)
