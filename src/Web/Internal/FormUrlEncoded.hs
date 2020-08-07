@@ -3,7 +3,6 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -12,7 +11,6 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
@@ -30,6 +28,7 @@ import qualified Data.ByteString.Lazy.Char8 as BSL8
 import           Data.Coerce                (coerce)
 import qualified Data.Foldable              as F
 import           Data.Functor.Const         (Const(Const))
+import           Data.Functor.Identity      (Identity(Identity))
 import           Data.Hashable              (Hashable)
 import           Data.HashMap.Strict        (HashMap)
 import qualified Data.HashMap.Strict        as HashMap
@@ -122,8 +121,6 @@ instance ToFormKey Lazy.Text  where toFormKey = toQueryParam
 instance ToFormKey All where toFormKey = toQueryParam
 instance ToFormKey Any where toFormKey = toQueryParam
 
-deriving newtype instance ToFormKey a => ToFormKey (Const a (b :: k))
-
 instance ToFormKey a => ToFormKey (Dual a)    where toFormKey = coerce (toFormKey :: a -> Text)
 instance ToFormKey a => ToFormKey (Sum a)     where toFormKey = coerce (toFormKey :: a -> Text)
 instance ToFormKey a => ToFormKey (Product a) where toFormKey = coerce (toFormKey :: a -> Text)
@@ -134,6 +131,8 @@ instance ToFormKey a => ToFormKey (Semi.First a) where toFormKey = coerce (toFor
 instance ToFormKey a => ToFormKey (Semi.Last a)  where toFormKey = coerce (toFormKey :: a -> Text)
 
 instance ToFormKey a => ToFormKey (Tagged b a)  where toFormKey = coerce (toFormKey :: a -> Text)
+instance ToFormKey a => ToFormKey (Const a (b :: k))  where toFormKey = coerce (toFormKey :: a -> Text)
+instance ToFormKey a => ToFormKey (Identity a)  where toFormKey = coerce (toFormKey :: a -> Text)
 
 instance ToFormKey Void     where toFormKey = toQueryParam
 instance ToFormKey Natural  where toFormKey = toQueryParam
@@ -176,8 +175,6 @@ instance FromFormKey Lazy.Text  where parseFormKey = parseQueryParam
 instance FromFormKey All where parseFormKey = parseQueryParam
 instance FromFormKey Any where parseFormKey = parseQueryParam
 
-deriving newtype instance FromFormKey a => FromFormKey (Const a (b :: k))
-
 instance FromFormKey a => FromFormKey (Dual a)    where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 instance FromFormKey a => FromFormKey (Sum a)     where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 instance FromFormKey a => FromFormKey (Product a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
@@ -188,6 +185,8 @@ instance FromFormKey a => FromFormKey (Semi.First a) where parseFormKey = coerce
 instance FromFormKey a => FromFormKey (Semi.Last a)  where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 
 instance FromFormKey a => FromFormKey (Tagged b a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+instance FromFormKey a => FromFormKey (Const a (b :: k)) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
+instance FromFormKey a => FromFormKey (Identity a) where parseFormKey = coerce (parseFormKey :: Text -> Either Text a)
 
 instance FromFormKey Void     where parseFormKey = parseQueryParam
 instance FromFormKey Natural  where parseFormKey = parseQueryParam
