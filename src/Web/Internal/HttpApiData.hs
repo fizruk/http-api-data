@@ -334,7 +334,7 @@ lookupBoundedEnumOf f = flip lookup (map (f &&& id) [minBound..maxBound])
 -- >>> parseBoundedEnumOf toUrlPiece "true" :: Either Text Bool
 -- Right True
 --
--- For case sensitive parser see 'parseBoundedEnumOfI'.
+-- For case insensitive parser see 'parseBoundedEnumOfI'.
 parseBoundedEnumOf :: (Bounded a, Enum a) => (a -> Text) -> Text -> Either Text a
 parseBoundedEnumOf = parseMaybeTextData . lookupBoundedEnumOf
 
