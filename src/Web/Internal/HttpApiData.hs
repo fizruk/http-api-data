@@ -5,7 +5,9 @@
 {-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE DeriveTraversable    #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE KindSignatures       #-}
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE PolyKinds            #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 -- |
@@ -16,6 +18,7 @@ module Web.Internal.HttpApiData where
 import           Prelude                      ()
 import           Prelude.Compat
 
+import           Control.Applicative          (Const(Const))
 import           Control.Arrow                (left, (&&&))
 import           Control.Monad                ((<=<))
 import qualified Data.Attoparsec.Text         as Atto
@@ -27,6 +30,7 @@ import qualified Data.ByteString.Lazy         as LBS
 import           Data.Coerce                  (coerce)
 import           Data.Data                    (Data)
 import qualified Data.Fixed                   as F
+import           Data.Functor.Identity        (Identity(Identity))
 import           Data.Int                     (Int16, Int32, Int64, Int8)
 import qualified Data.Map                     as Map
 import           Data.Monoid                  (All (..), Any (..), Dual (..),
@@ -64,13 +68,15 @@ import           Text.Read                    (readMaybe)
 import           Web.Cookie                   (SetCookie, parseSetCookie,
                                                renderSetCookie)
 
+#if MIN_VERSION_base(4,9,0)
+import Data.Kind (Type)
+#else
+#define Type *
+#endif
 
 #if USE_TEXT_SHOW
 import           TextShow                     (TextShow, showt)
 #endif
-
-
-
 
 -- $setup
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
@@ -455,7 +461,8 @@ instance ToHttpApiData Word16   where toUrlPiece = showt; toEncodedUrlPiece = un
 instance ToHttpApiData Word32   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 instance ToHttpApiData Word64   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
-instance F.HasResolution a => ToHttpApiData (F.Fixed a) where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+-- | Note: this instance is not polykinded
+instance F.HasResolution a => ToHttpApiData (F.Fixed (a :: Type)) where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 -- |
 -- >>> toUrlPiece (fromGregorian 2015 10 03)
@@ -592,7 +599,22 @@ instance ToHttpApiData SetCookie where
   toHeader = LBS.toStrict . BS.toLazyByteString . renderSetCookie
   -- toEncodedUrlPiece = renderSetCookie -- doesn't do things.
 
-instance ToHttpApiData a => ToHttpApiData (Tagged b a) where
+-- | Note: this instance is not polykinded
+instance ToHttpApiData a => ToHttpApiData (Tagged (b :: Type) a) where
+  toUrlPiece        = coerce (toUrlPiece :: a -> Text)
+  toHeader          = coerce (toHeader :: a -> ByteString)
+  toQueryParam      = coerce (toQueryParam :: a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece ::  a -> BS.Builder)
+
+-- | @since 0.4.2
+instance ToHttpApiData a => ToHttpApiData (Const a b) where
+  toUrlPiece        = coerce (toUrlPiece :: a -> Text)
+  toHeader          = coerce (toHeader :: a -> ByteString)
+  toQueryParam      = coerce (toQueryParam :: a -> Text)
+  toEncodedUrlPiece = coerce (toEncodedUrlPiece ::  a -> BS.Builder)
+
+-- | @since 0.4.2
+instance ToHttpApiData a => ToHttpApiData (Identity a) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toHeader          = coerce (toHeader :: a -> ByteString)
   toQueryParam      = coerce (toQueryParam :: a -> Text)
@@ -650,7 +672,8 @@ instance FromHttpApiData String   where parseUrlPiece = Right . T.unpack
 instance FromHttpApiData Text     where parseUrlPiece = Right
 instance FromHttpApiData L.Text   where parseUrlPiece = Right . L.fromStrict
 
-instance F.HasResolution a => FromHttpApiData (F.Fixed a) where
+-- | Note: this instance is not polykinded
+instance F.HasResolution a => FromHttpApiData (F.Fixed (a :: Type)) where
     parseUrlPiece = runReader rational
 
 -- |
@@ -755,7 +778,20 @@ instance FromHttpApiData SetCookie where
   parseUrlPiece = parseHeader  . encodeUtf8
   parseHeader   = Right . parseSetCookie
 
-instance FromHttpApiData a => FromHttpApiData (Tagged b a) where
+-- | Note: this instance is not polykinded
+instance FromHttpApiData a => FromHttpApiData (Tagged (b :: Type) a) where
+  parseUrlPiece   = coerce (parseUrlPiece :: Text -> Either Text a)
+  parseHeader     = coerce (parseHeader :: ByteString -> Either Text a)
+  parseQueryParam = coerce (parseQueryParam :: Text -> Either Text a)
+
+-- | @since 0.4.2
+instance FromHttpApiData a => FromHttpApiData (Const a b) where
+  parseUrlPiece   = coerce (parseUrlPiece :: Text -> Either Text a)
+  parseHeader     = coerce (parseHeader :: ByteString -> Either Text a)
+  parseQueryParam = coerce (parseQueryParam :: Text -> Either Text a)
+
+-- | @since 0.4.2
+instance FromHttpApiData a => FromHttpApiData (Identity a) where
   parseUrlPiece   = coerce (parseUrlPiece :: Text -> Either Text a)
   parseHeader     = coerce (parseHeader :: ByteString -> Either Text a)
   parseQueryParam = coerce (parseQueryParam :: Text -> Either Text a)
