@@ -110,7 +110,7 @@ jobs:
       - name: cache (tools)
         uses: actions/cache@v2
         with:
-          key: ${{ runner.os }}-${{ matrix.ghc }}-tools-9caa866f
+          key: ${{ runner.os }}-${{ matrix.ghc }}-tools-0f645703
           path: ~/.haskell-ci-tools
       - name: install cabal-plan
         run: |
@@ -177,6 +177,7 @@ jobs:
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
       - name: doctest
         run: |
+          perl -i -e 'while (<ARGV>) { print unless /package-id\s+(base-compat)-\d+(\.\d+)*/; }' .ghc.environment.*
           if [ $((HCNUMVER >= 80000 && HCNUMVER < 81000)) -ne 0 ] ; then cd ${PKGDIR_http_api_data} || false ; fi
           if [ $((HCNUMVER >= 80000 && HCNUMVER < 81000)) -ne 0 ] ; then doctest  src/ ; fi
       - name: cabal check

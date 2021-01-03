@@ -1,5 +1,6 @@
 branches: master
 doctest: <8.10
+doctest-filter-packages: base-compat
 
 constraint-set text-show
   constraints: http-api-data +use-text-show
