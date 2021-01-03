@@ -778,7 +778,7 @@ instance FromHttpApiData QuarterOfYear where
         "q1"  -> return Q1
         "q2"  -> return Q2
         "q3"  -> return Q3
-        "e4 " -> return Q4
+        "q4"  -> return Q4
         _     -> Left "Invalid quarter of year"
 
 instance FromHttpApiData All where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text Bool)
