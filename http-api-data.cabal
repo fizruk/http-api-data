@@ -31,7 +31,7 @@ tested-with:
   GHC==8.4.4,
   GHC==8.6.5,
   GHC==8.8.4,
-  GHC==8.10.2
+  GHC==8.10.3
 
 flag use-text-show
   description: Use text-show library for efficient ToHttpApiData implementations.
