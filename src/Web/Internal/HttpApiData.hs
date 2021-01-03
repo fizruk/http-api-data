@@ -55,6 +55,9 @@ import           Data.Time.Compat             (Day, FormatTime, LocalTime,
                                                secondsToNominalDiffTime)
 import           Data.Time.Format.Compat      (defaultTimeLocale,
                                                iso8601DateFormat)
+import           Data.Time.Calendar.Month.Compat (Month)
+import           Data.Time.Calendar.Quarter.Compat (Quarter, QuarterOfYear (..),
+                                               toYearQuarter)
 import           Data.Typeable                (Typeable)
 import qualified Data.UUID.Types              as UUID
 import           Data.Version                 (Version, parseVersion,
@@ -516,6 +519,42 @@ instance ToHttpApiData DayOfWeek where
 
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
+-- | 
+-- >>> toUrlPiece Q4
+-- "q4"
+instance ToHttpApiData QuarterOfYear where
+  toUrlPiece Q1 = "q1"
+  toUrlPiece Q2 = "q2"
+  toUrlPiece Q3 = "q3"
+  toUrlPiece Q4 = "q4"
+
+-- |
+-- >>> import Data.Time.Calendar.Quarter.Compat (Quarter (..))
+-- >>> MkQuarter 8040
+-- 2010-Q1
+--
+-- >>> toUrlPiece $ MkQuarter 8040
+-- "2010-q1"
+--
+instance ToHttpApiData Quarter where
+  toUrlPiece q = case toYearQuarter q of
+    (y, qoy) -> T.pack (show y ++ "-" ++ f qoy)
+    where
+      f Q1 = "q1"
+      f Q2 = "q2"
+      f Q3 = "q3"
+      f Q4 = "q4"
+
+-- |
+-- >>> import Data.Time.Calendar.Month.Compat (Month (..))
+-- >>> MkMonth 24482
+-- 2040-03
+--
+-- >>> toUrlPiece $ MkMonth 24482
+-- "2040-03"
+--
+instance ToHttpApiData Month where
+  toUrlPiece = T.pack . formatTime defaultTimeLocale "%Y-%m"
 
 instance ToHttpApiData NominalDiffTime where
   toUrlPiece = toUrlPiece . nominalDiffTimeToSeconds
@@ -704,6 +743,9 @@ instance FromHttpApiData ZonedTime where parseUrlPiece = runAtto Atto.zonedTime
 -- Right 2015-10-03 00:14:24 UTC
 instance FromHttpApiData UTCTime   where parseUrlPiece = runAtto Atto.utcTime
 
+-- |
+-- >>> parseUrlPiece "Monday" :: Either Text DayOfWeek
+-- Right Monday
 instance FromHttpApiData DayOfWeek where
   parseUrlPiece t = case Map.lookup (T.toLower t) m of
       Just dow -> Right dow
@@ -714,6 +756,30 @@ instance FromHttpApiData DayOfWeek where
 
 
 instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap secondsToNominalDiffTime . parseUrlPiece
+
+-- |
+-- >>> parseUrlPiece "2021-01" :: Either Text Month
+-- Right 2021-01
+instance FromHttpApiData Month where parseUrlPiece = runAtto Atto.month
+
+-- |
+-- >>> parseUrlPiece "2021-q1" :: Either Text Quarter
+-- Right 2021-Q1
+instance FromHttpApiData Quarter where parseUrlPiece = runAtto Atto.quarter
+
+-- |
+-- >>> parseUrlPiece "q2" :: Either Text QuarterOfYear
+-- Right Q2
+--
+-- >>> parseUrlPiece "Q3" :: Either Text QuarterOfYear
+-- Right Q3
+instance FromHttpApiData QuarterOfYear where
+    parseUrlPiece t = case T.toLower t of
+        "q1"  -> return Q1
+        "q2"  -> return Q2
+        "q3"  -> return Q3
+        "e4 " -> return Q4
+        _     -> Left "Invalid quarter of year"
 
 instance FromHttpApiData All where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text Bool)
 instance FromHttpApiData Any where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text Bool)

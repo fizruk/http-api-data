@@ -52,6 +52,8 @@ import           Data.Text.Encoding.Error   (lenientDecode)
 import qualified Data.Text.Lazy             as Lazy
 import           Data.Time.Compat           (Day, LocalTime, NominalDiffTime,
                                              UTCTime, ZonedTime)
+import           Data.Time.Calendar.Month.Compat (Month)
+import           Data.Time.Calendar.Quarter.Compat (Quarter, QuarterOfYear (..))
 import           Data.Void                  (Void)
 import           Data.Word                  (Word16, Word32, Word64, Word8)
 import           GHC.Exts                   (Constraint, IsList (..))
@@ -113,6 +115,9 @@ instance ToFormKey LocalTime        where toFormKey = toQueryParam
 instance ToFormKey ZonedTime        where toFormKey = toQueryParam
 instance ToFormKey UTCTime          where toFormKey = toQueryParam
 instance ToFormKey NominalDiffTime  where toFormKey = toQueryParam
+instance ToFormKey Quarter          where toFormKey = toQueryParam
+instance ToFormKey QuarterOfYear    where toFormKey = toQueryParam
+instance ToFormKey Month            where toFormKey = toQueryParam
 
 instance ToFormKey String     where toFormKey = toQueryParam
 instance ToFormKey Text       where toFormKey = toQueryParam
@@ -172,6 +177,9 @@ instance FromFormKey LocalTime        where parseFormKey = parseQueryParam
 instance FromFormKey ZonedTime        where parseFormKey = parseQueryParam
 instance FromFormKey UTCTime          where parseFormKey = parseQueryParam
 instance FromFormKey NominalDiffTime  where parseFormKey = parseQueryParam
+instance FromFormKey Quarter          where parseFormKey = parseQueryParam
+instance FromFormKey QuarterOfYear    where parseFormKey = parseQueryParam
+instance FromFormKey Month            where parseFormKey = parseQueryParam
 
 instance FromFormKey String     where parseFormKey = parseQueryParam
 instance FromFormKey Text       where parseFormKey = parseQueryParam
