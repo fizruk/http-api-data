@@ -1,3 +1,9 @@
+0.4.3
+-----
+
+* Add `Quarter`, `QuarterOfYear` and `Month` instances
+* Support `bytestring-0.11`
+
 0.4.2
 -----
 
