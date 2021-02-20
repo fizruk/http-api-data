@@ -1,5 +1,5 @@
 branches: master
-doctest:  True
+doctest:  <9
 doctest-filter-packages: base-compat
 
 constraint-set text-show
