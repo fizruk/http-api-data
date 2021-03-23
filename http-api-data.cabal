@@ -1,7 +1,7 @@
 cabal-version:   >= 1.10
 name:            http-api-data
 version:         0.4.3
-x-revision:      1
+x-revision:      2
 
 synopsis:        Converting to/from HTTP API data like URL pieces, headers and query parameters.
 category:        Web
@@ -57,7 +57,7 @@ library
 
     -- other-dependencies
     build-depends:
-                     attoparsec            >= 0.13.2.2 && < 0.14
+                     attoparsec            >= 0.13.2.2 && < 0.15
                    , attoparsec-iso8601    >= 1.0.2.0  && < 1.1
                    , base-compat           >= 0.10.5   && < 0.12
                    , cookie                >= 0.4.3    && < 0.5
