@@ -1,7 +1,7 @@
 cabal-version:   >= 1.10
 name:            http-api-data
 version:         0.4.3
-x-revision:      4
+x-revision:      5
 
 synopsis:        Converting to/from HTTP API data like URL pieces, headers and query parameters.
 category:        Web
@@ -75,7 +75,7 @@ library
         void >= 0.7.3 && < 0.8
 
     if !impl(ghc >= 8.0)
-      build-depends: semigroups            >= 0.18.5   && < 0.20
+      build-depends: semigroups            >= 0.18.5   && < 0.21
 
     if flag(use-text-show)
       cpp-options: -DUSE_TEXT_SHOW
