@@ -1,3 +1,10 @@
+0.5
+---
+
+* Use `attoparsec-iso8601-1.1.0.0`.
+  `Day` and `UTCTime` parsers require at least 4 digits now, which is a breaking change.
+* Drop GHC-7.8 and GHC-7.10 support.
+
 0.4.3
 -----
 

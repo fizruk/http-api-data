@@ -1,7 +1,6 @@
 cabal-version:   >= 1.10
 name:            http-api-data
-version:         0.4.3
-x-revision:      6
+version:         0.5
 
 synopsis:        Converting to/from HTTP API data like URL pieces, headers and query parameters.
 category:        Web
@@ -25,16 +24,15 @@ extra-source-files:
   README.md
 
 tested-with:
-  GHC==7.8.4,
-  GHC==7.10.3,
   GHC==8.0.2,
   GHC==8.2.2,
   GHC==8.4.4,
   GHC==8.6.5,
   GHC==8.8.4,
   GHC==8.10.7,
-  GHC==9.0.1,
-  GHC==9.2.1
+  GHC==9.0.2,
+  GHC==9.2.3,
+  GHC==9.4.1
 
 flag use-text-show
   description: Use text-show library for efficient ToHttpApiData implementations.
@@ -46,20 +44,16 @@ library
     include-dirs:   include/
 
     -- GHC bundled
-    build-depends:   base                  >= 4.7      && < 4.17
-                   , bytestring            >= 0.10.4.0 && < 0.12
-                   , containers            >= 0.5.5.1  && < 0.7
+    build-depends:   base                  >= 4.9      && < 4.17
+                   , bytestring            >= 0.10.8.1 && < 0.12
+                   , containers            >= 0.5.7.1  && < 0.7
                    , text                  >= 1.2.3.0  && < 1.3 || >=2.0 && <2.1
-                   , transformers          >= 0.3      && < 0.7
-
-    -- so Semigroup Builder exists
-    if impl(ghc >= 8.0)
-      build-depends: bytestring >= 0.10.8.1
+                   , transformers          >= 0.5.2.0  && < 0.7
 
     -- other-dependencies
     build-depends:
                      attoparsec            >= 0.13.2.2 && < 0.15
-                   , attoparsec-iso8601    >= 1.0.2.0  && < 1.1
+                   , attoparsec-iso8601    >= 1.1.0.0  && < 1.2
                    , base-compat           >= 0.10.5   && < 0.13
                    , cookie                >= 0.4.3    && < 0.5
                    , hashable              >= 1.2.7.0  && < 1.5
@@ -68,14 +62,6 @@ library
                    , time-compat           >= 1.9.5    && < 1.10
                    , unordered-containers  >= 0.2.10.0 && < 0.3
                    , uuid-types            >= 1.0.3    && < 1.1
-
-    if !impl(ghc >= 7.10)
-      build-depends:
-        nats >= 1.1.2 && < 1.2,
-        void >= 0.7.3 && < 0.8
-
-    if !impl(ghc >= 8.0)
-      build-depends: semigroups            >= 0.18.5   && < 0.21
 
     if flag(use-text-show)
       cpp-options: -DUSE_TEXT_SHOW
@@ -99,7 +85,7 @@ test-suite spec
     hs-source-dirs: test
     ghc-options:   -Wall
     default-language: Haskell2010
-    build-tool-depends: hspec-discover:hspec-discover >= 2.7.1 && <2.10
+    build-tool-depends: hspec-discover:hspec-discover >= 2.7.1 && <2.11
     -- inherited  depndencies
     build-depends:
                      base
@@ -116,7 +102,7 @@ test-suite spec
       build-depends: nats
 
     build-depends:   HUnit                >= 1.6.0.0  && <1.7
-                   , hspec                >= 2.7.1    && <2.10
+                   , hspec                >= 2.7.1    && <2.11
                    , QuickCheck           >= 2.13.1   && <2.15
                    , quickcheck-instances >= 0.3.25.2 && <0.4
 
