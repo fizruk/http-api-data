@@ -32,6 +32,7 @@ import           Data.Data                    (Data)
 import qualified Data.Fixed                   as F
 import           Data.Functor.Identity        (Identity(Identity))
 import           Data.Int                     (Int16, Int32, Int64, Int8)
+import           Data.Kind                    (Type)
 import qualified Data.Map                     as Map
 import           Data.Monoid                  (All (..), Any (..), Dual (..),
                                                First (..), Last (..),
@@ -70,12 +71,6 @@ import           Text.ParserCombinators.ReadP (readP_to_S)
 import           Text.Read                    (readMaybe)
 import           Web.Cookie                   (SetCookie, parseSetCookie,
                                                renderSetCookie)
-
-#if MIN_VERSION_base(4,9,0)
-import Data.Kind (Type)
-#else
-#define Type *
-#endif
 
 #if USE_TEXT_SHOW
 import           TextShow                     (TextShow, showt)
