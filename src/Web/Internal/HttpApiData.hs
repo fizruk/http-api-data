@@ -96,7 +96,7 @@ class ToHttpApiData a where
   -- The default definition uses 'H.encodePathSegmentsRelative',
   -- but this may be overriden with a more efficient version.
   toEncodedUrlPiece :: a -> BS.Builder
-  toEncodedUrlPiece = H.encodePathSegmentsRelative . (:[]) . toUrlPiece
+  toEncodedUrlPiece = H.urlEncodeBuilder True . encodeUtf8 . toUrlPiece
 
   -- | Convert to HTTP header value.
   toHeader :: a -> ByteString
@@ -514,7 +514,7 @@ instance ToHttpApiData DayOfWeek where
 
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
--- | 
+-- |
 -- >>> toUrlPiece Q4
 -- "q4"
 instance ToHttpApiData QuarterOfYear where
@@ -865,5 +865,3 @@ runAtto :: Atto.Parser a -> Text -> Either Text a
 runAtto p t = case Atto.parseOnly (p <* Atto.endOfInput) t of
     Left err -> Left (T.pack err)
     Right x  -> Right x
-
-
