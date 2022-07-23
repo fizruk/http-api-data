@@ -1,6 +1,6 @@
 cabal-version:   >= 1.10
 name:            http-api-data
-version:         0.5
+version:         0.5.1
 
 synopsis:        Converting to/from HTTP API data like URL pieces, headers and query parameters.
 category:        Web

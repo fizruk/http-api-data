@@ -46,6 +46,9 @@ import           Web.Internal.TestInstances
 encodedUrlPieceProp :: ToHttpApiData a => a -> Property
 encodedUrlPieceProp x = toLazyByteString (toEncodedUrlPiece (toUrlPiece x)) === toLazyByteString (toEncodedUrlPiece x)
 
+encodedQueryParamProp :: ToHttpApiData a => a -> Property
+encodedQueryParamProp x = toLazyByteString (toEncodedQueryParam (toQueryParam x)) === toLazyByteString (toEncodedQueryParam x)
+
 -- | Check 'ToHttpApiData' and 'FromHttpApiData' compatibility
 checkUrlPiece :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Show a, Arbitrary a) => Proxy a -> String -> Spec
 checkUrlPiece _ = checkUrlPiece' (arbitrary :: Gen a)
@@ -56,6 +59,7 @@ checkUrlPiece' gen name = describe name $ do
     prop "toQueryParam <=> parseQueryParam" $ forAll gen (toQueryParam <=> parseQueryParam :: a -> Property)
     prop "toHeader <=> parseHeader" $ forAll gen (toHeader <=> parseHeader :: a -> Property)
     prop "toEncodedUrlPiece encodes correctly" $ forAll gen encodedUrlPieceProp
+    prop "toEncodedQueryParam encodes correctly" $ forAll gen encodedQueryParamProp
 
 -- | Check case insensitivity for @parseUrlPiece@.
 checkUrlPieceI :: forall a. (Eq a, ToHttpApiData a, FromHttpApiData a, Arbitrary a) => Proxy a -> String -> Spec

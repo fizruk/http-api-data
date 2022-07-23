@@ -93,10 +93,10 @@ class ToHttpApiData a where
   toUrlPiece = toQueryParam
 
   -- | Convert to a URL path piece, making sure to encode any special chars.
-  -- The default definition uses 'H.encodePathSegmentsRelative',
+  -- The default definition uses @'H.urlEncodeBuilder' 'False'@
   -- but this may be overriden with a more efficient version.
   toEncodedUrlPiece :: a -> BS.Builder
-  toEncodedUrlPiece = H.encodePathSegmentsRelative . (:[]) . toUrlPiece
+  toEncodedUrlPiece = H.urlEncodeBuilder False . encodeUtf8 . toUrlPiece
 
   -- | Convert to HTTP header value.
   toHeader :: a -> ByteString
@@ -105,6 +105,14 @@ class ToHttpApiData a where
   -- | Convert to query param value.
   toQueryParam :: a -> Text
   toQueryParam = toUrlPiece
+
+  -- | Convert to URL query param,
+  -- The default definition uses @'H.urlEncodeBuilder' 'True'@
+  -- but this may be overriden with a more efficient version.
+  --
+  -- @since 0.5.1
+  toEncodedQueryParam :: a -> BS.Builder
+  toEncodedQueryParam = H.urlEncodeBuilder True . encodeUtf8 . toQueryParam
 
 -- | Parse value from HTTP API data.
 --
@@ -422,12 +430,21 @@ parseBounded reader input = do
 unsafeToEncodedUrlPiece :: ToHttpApiData a => a -> BS.Builder
 unsafeToEncodedUrlPiece = BS.byteString . encodeUtf8 . toUrlPiece
 
+-- | Convert to a URL-encoded query param using 'toQueryParam'.
+-- /Note/: this function does not check if the result contains unescaped characters!
+--
+-- @since 0.5.1
+unsafeToEncodedQueryParam :: ToHttpApiData a => a -> BS.Builder
+unsafeToEncodedQueryParam = BS.byteString . encodeUtf8 . toQueryParam
+
 -- |
 -- >>> toUrlPiece ()
 -- "_"
 instance ToHttpApiData () where
-  toUrlPiece () = "_"
-  toEncodedUrlPiece = unsafeToEncodedUrlPiece
+  toUrlPiece _          = "_"
+  toHeader _            = "_"
+  toEncodedUrlPiece _   = "_"
+  toEncodedQueryParam _ = "_"
 
 instance ToHttpApiData Char where
   toUrlPiece = T.singleton
@@ -438,29 +455,30 @@ instance ToHttpApiData Char where
 instance ToHttpApiData Version where
   toUrlPiece = T.pack . showVersion
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
+  toEncodedQueryParam = unsafeToEncodedQueryParam
 
 instance ToHttpApiData Void    where toUrlPiece = absurd
-instance ToHttpApiData Natural where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Natural where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
 
-instance ToHttpApiData Bool     where toUrlPiece = showTextData; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Ordering where toUrlPiece = showTextData; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Bool     where toUrlPiece = showTextData; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Ordering where toUrlPiece = showTextData; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
 
-instance ToHttpApiData Double   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Float    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Int      where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Int8     where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Int16    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Int32    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Int64    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Integer  where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Word     where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Word8    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Word16   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Word32   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
-instance ToHttpApiData Word64   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance ToHttpApiData Double   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Float    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Int      where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Int8     where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Int16    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Int32    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Int64    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Integer  where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Word     where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Word8    where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Word16   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Word32   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
+instance ToHttpApiData Word64   where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
 
 -- | Note: this instance is not polykinded
-instance F.HasResolution a => ToHttpApiData (F.Fixed (a :: Type)) where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece
+instance F.HasResolution a => ToHttpApiData (F.Fixed (a :: Type)) where toUrlPiece = showt; toEncodedUrlPiece = unsafeToEncodedUrlPiece; toEncodedQueryParam = unsafeToEncodedQueryParam
 
 -- |
 -- >>> toUrlPiece (fromGregorian 2015 10 03)
@@ -468,6 +486,7 @@ instance F.HasResolution a => ToHttpApiData (F.Fixed (a :: Type)) where toUrlPie
 instance ToHttpApiData Day where
   toUrlPiece = T.pack . show
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
+  toEncodedQueryParam = unsafeToEncodedQueryParam
 
 timeToUrlPiece :: FormatTime t => String -> t -> Text
 timeToUrlPiece fmt = T.pack . formatTime defaultTimeLocale (iso8601DateFormat (Just fmt))
@@ -478,6 +497,7 @@ timeToUrlPiece fmt = T.pack . formatTime defaultTimeLocale (iso8601DateFormat (J
 instance ToHttpApiData TimeOfDay where
   toUrlPiece = T.pack . formatTime defaultTimeLocale "%H:%M:%S%Q"
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
+  -- no toEncodedQueryParam as : is unsafe char.
 
 -- |
 -- >>> toUrlPiece $ LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 21.687)
@@ -485,6 +505,7 @@ instance ToHttpApiData TimeOfDay where
 instance ToHttpApiData LocalTime where
   toUrlPiece = timeToUrlPiece "%H:%M:%S%Q"
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
+  -- no toEncodedQueryParam as : is unsafe char.
 
 -- |
 -- >>> toUrlPiece $ ZonedTime (LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 51.001)) utc
@@ -492,6 +513,7 @@ instance ToHttpApiData LocalTime where
 instance ToHttpApiData ZonedTime where
   toUrlPiece = timeToUrlPiece "%H:%M:%S%Q%z"
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
+  -- no toEncodedQueryParam as : is unsafe char.
 
 -- |
 -- >>> toUrlPiece $ UTCTime (fromGregorian 2015 10 03) 864.5
@@ -499,6 +521,7 @@ instance ToHttpApiData ZonedTime where
 instance ToHttpApiData UTCTime where
   toUrlPiece = timeToUrlPiece "%H:%M:%S%QZ"
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
+  -- no toEncodedQueryParam as : is unsafe char.
 
 -- |
 -- >>> toUrlPiece Monday
@@ -513,8 +536,9 @@ instance ToHttpApiData DayOfWeek where
   toUrlPiece Sunday    = "sunday"
 
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
+  toEncodedQueryParam = unsafeToEncodedQueryParam
 
--- | 
+-- |
 -- >>> toUrlPiece Q4
 -- "q4"
 instance ToHttpApiData QuarterOfYear where
@@ -522,6 +546,9 @@ instance ToHttpApiData QuarterOfYear where
   toUrlPiece Q2 = "q2"
   toUrlPiece Q3 = "q3"
   toUrlPiece Q4 = "q4"
+
+  toEncodedUrlPiece = unsafeToEncodedUrlPiece
+  toEncodedQueryParam = unsafeToEncodedQueryParam
 
 -- |
 -- >>> import Data.Time.Calendar.Quarter.Compat (Quarter (..))
@@ -540,6 +567,9 @@ instance ToHttpApiData Quarter where
       f Q3 = "q3"
       f Q4 = "q4"
 
+  toEncodedUrlPiece = unsafeToEncodedUrlPiece
+  toEncodedQueryParam = unsafeToEncodedQueryParam
+
 -- |
 -- >>> import Data.Time.Calendar.Month.Compat (Month (..))
 -- >>> MkMonth 24482
@@ -551,8 +581,13 @@ instance ToHttpApiData Quarter where
 instance ToHttpApiData Month where
   toUrlPiece = T.pack . formatTime defaultTimeLocale "%Y-%m"
 
+  toEncodedUrlPiece = unsafeToEncodedUrlPiece
+  toEncodedQueryParam = unsafeToEncodedQueryParam
+
 instance ToHttpApiData NominalDiffTime where
   toUrlPiece = toUrlPiece . nominalDiffTimeToSeconds
+
+  toEncodedQueryParam = unsafeToEncodedQueryParam
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
 
 instance ToHttpApiData String   where toUrlPiece = T.pack
@@ -562,46 +597,57 @@ instance ToHttpApiData L.Text   where toUrlPiece = L.toStrict
 instance ToHttpApiData All where
   toUrlPiece        = coerce (toUrlPiece :: Bool -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: Bool -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: Bool -> BS.Builder)
 
 instance ToHttpApiData Any where
   toUrlPiece        = coerce (toUrlPiece :: Bool -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: Bool -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: Bool -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (Dual a) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: a -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (Sum a) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: a -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (Product a) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: a -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (First a) where
   toUrlPiece        = coerce (toUrlPiece :: Maybe a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: Maybe a -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: Maybe a -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (Last a) where
   toUrlPiece        = coerce (toUrlPiece :: Maybe a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: Maybe a -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: Maybe a -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (Semi.Min a) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: a -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (Semi.Max a) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: a -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (Semi.First a) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: a -> BS.Builder)
 
 instance ToHttpApiData a => ToHttpApiData (Semi.Last a) where
   toUrlPiece        = coerce (toUrlPiece :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece :: a -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: a -> BS.Builder)
 
 -- |
 -- >>> toUrlPiece (Just "Hello")
@@ -639,6 +685,7 @@ instance ToHttpApiData a => ToHttpApiData (Tagged (b :: Type) a) where
   toHeader          = coerce (toHeader :: a -> ByteString)
   toQueryParam      = coerce (toQueryParam :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece ::  a -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: a -> BS.Builder)
 
 -- | @since 0.4.2
 instance ToHttpApiData a => ToHttpApiData (Const a b) where
@@ -646,6 +693,7 @@ instance ToHttpApiData a => ToHttpApiData (Const a b) where
   toHeader          = coerce (toHeader :: a -> ByteString)
   toQueryParam      = coerce (toQueryParam :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece ::  a -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: a -> BS.Builder)
 
 -- | @since 0.4.2
 instance ToHttpApiData a => ToHttpApiData (Identity a) where
@@ -653,6 +701,7 @@ instance ToHttpApiData a => ToHttpApiData (Identity a) where
   toHeader          = coerce (toHeader :: a -> ByteString)
   toQueryParam      = coerce (toQueryParam :: a -> Text)
   toEncodedUrlPiece = coerce (toEncodedUrlPiece ::  a -> BS.Builder)
+  toEncodedQueryParam = coerce (toEncodedQueryParam :: a -> BS.Builder)
 
 -- |
 -- >>> parseUrlPiece "_" :: Either Text ()
