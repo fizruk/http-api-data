@@ -88,15 +88,15 @@ import           TextShow                     (TextShow, showt)
 -- instance will loop indefinitely.
 class ToHttpApiData a where
   {-# MINIMAL toUrlPiece | toQueryParam #-}
-  -- | Convert to URL path piece.
+  -- | Convert to URL piece.
   toUrlPiece :: a -> Text
   toUrlPiece = toQueryParam
 
-  -- | Convert to a URL path piece, making sure to encode any special chars.
-  -- The default definition uses 'H.encodePathSegmentsRelative',
+  -- | Convert to a URL piece, making sure to encode any special chars.
+  -- The default definition uses 'H.urlEncodeBuilder',
   -- but this may be overriden with a more efficient version.
   toEncodedUrlPiece :: a -> BS.Builder
-  toEncodedUrlPiece = H.encodePathSegmentsRelative . (:[]) . toUrlPiece
+  toEncodedUrlPiece = H.urlEncodeBuilder True . toUrlPiece
 
   -- | Convert to HTTP header value.
   toHeader :: a -> ByteString
