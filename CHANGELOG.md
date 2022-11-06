@@ -1,3 +1,10 @@
+0.5.1
+-----
+
+* Add `toEncodedQueryParam` to `ToHttpApiData` type class. It has default
+  implementation using `toQueryParam`, but may be overriden with more efficient
+  one.
+
 0.5
 ---
 
