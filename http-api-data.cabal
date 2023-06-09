@@ -18,7 +18,6 @@ stability:       unstable
 build-type:      Simple
 
 extra-source-files:
-  include/overlapping-compat.h
   test/*.hs
   CHANGELOG.md
   README.md
@@ -42,7 +41,6 @@ flag use-text-show
 
 library
     hs-source-dirs: src/
-    include-dirs:   include/
 
     -- GHC bundled
     build-depends:   base                  >= 4.9      && < 4.19
