@@ -64,13 +64,11 @@ import           Numeric.Natural            (Natural)
 import           Web.Internal.HttpApiData
 
 -- $setup
--- >>> :set -XDeriveGeneric
--- >>> :set -XOverloadedLists
--- >>> :set -XOverloadedStrings
--- >>> :set -XFlexibleContexts
--- >>> :set -XScopedTypeVariables
--- >>> :set -XTypeFamilies
+-- >>> :set -XDeriveGeneric -XOverloadedLists -XOverloadedStrings -XFlexibleContexts -XScopedTypeVariables -XTypeFamilies
+-- >>> import GHC.Generics (Generic)
 -- >>> import Data.Char (toLower)
+-- >>> import Data.Text (Text)
+-- >>> import Data.Word (Word8)
 --
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Show, Generic)
 -- >>> instance ToForm Person

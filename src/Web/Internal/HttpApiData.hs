@@ -77,10 +77,17 @@ import           TextShow                     (TextShow, showt)
 #endif
 
 -- $setup
+-- >>> :set -XOverloadedStrings
+-- >>> import Data.Text (Text)
+-- >>> import Data.Word (Word8)
+-- >>> import Data.Text.Read (decimal)
+-- >>> import Data.Time.Compat
+-- >>> import Data.Time.Calendar.Month.Compat
+-- >>> import Data.Time.Calendar.Quarter.Compat
+-- >>> import Data.Version
+-- >>> import Web.Cookie (SetCookie)
 -- >>> data BasicAuthToken = BasicAuthToken Text deriving (Show)
 -- >>> instance FromHttpApiData BasicAuthToken where parseHeader h = BasicAuthToken <$> parseHeaderWithPrefix "Basic " h; parseQueryParam p = BasicAuthToken <$> parseQueryParam p
--- >>> import Data.Time.Compat
--- >>> import Data.Version
 
 -- | Convert value to HTTP API data.
 --
