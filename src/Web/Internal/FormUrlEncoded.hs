@@ -1,5 +1,4 @@
 {-# LANGUAGE ConstraintKinds            #-}
-{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE DeriveGeneric              #-}
@@ -14,7 +13,6 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
-#include "overlapping-compat.h"
 module Web.Internal.FormUrlEncoded where
 
 import           Prelude                    ()
@@ -294,16 +292,11 @@ fromEntriesByKey = Form . HashMap.fromListWith (<>) . map (toFormKey *** map toQ
 data Proxy3 a b c = Proxy3
 
 type family NotSupported (cls :: k1) (a :: k2) (reason :: Symbol) :: Constraint where
-#if __GLASGOW_HASKELL__ < 800
-  -- this is just a placeholder case for older GHCs to not freak out on an empty closed type family
-  NotSupported cls a "this type family is actually empty" = ()
-#else
   NotSupported cls a reason = TypeError
     ( 'Text "Cannot derive a Generic-based " ':<>: 'ShowType cls ':<>: 'Text " instance for " ':<>: 'ShowType a ':<>: 'Text "." ':$$:
       'ShowType a ':<>: 'Text " " ':<>: 'Text reason ':<>: 'Text "," ':$$:
       'Text "but Generic-based " ':<>: 'ShowType cls ':<>: 'Text " instances can be derived only for records" ':$$:
       'Text "(i.e. product types with named fields)." )
-#endif
 
 -- | A 'Generic'-based implementation of 'toForm'.
 -- This is used as a default implementation in 'ToForm'.
@@ -355,7 +348,7 @@ instance (GToForm t f) => GToForm t (M1 D x f) where
 instance (GToForm t f) => GToForm t (M1 C x f) where
   gToForm p opts (M1 a) = gToForm p opts a
 
-instance OVERLAPPABLE_ (Selector s, ToHttpApiData c) => GToForm t (M1 S s (K1 i c)) where
+instance {-# OVERLAPPABLE #-} (Selector s, ToHttpApiData c) => GToForm t (M1 S s (K1 i c)) where
   gToForm _ opts (M1 (K1 c)) = fromList [(key, toQueryParam c)]
     where
       key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
@@ -373,7 +366,7 @@ instance (Selector s, ToHttpApiData c) => GToForm t (M1 S s (K1 i [c])) where
     where
       key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
 
-instance OVERLAPPING_ (Selector s) => GToForm t (M1 S s (K1 i String)) where
+instance {-# OVERLAPPING #-} (Selector s) => GToForm t (M1 S s (K1 i String)) where
   gToForm _ opts (M1 (K1 c)) = fromList [(key, toQueryParam c)]
     where
       key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
@@ -503,7 +496,7 @@ instance GFromForm t f => GFromForm t (M1 D x f) where
 instance GFromForm t f => GFromForm t (M1 C x f) where
   gFromForm p opts f = M1 <$> gFromForm p opts f
 
-instance OVERLAPPABLE_ (Selector s, FromHttpApiData c) => GFromForm t (M1 S s (K1 i c)) where
+instance {-# OVERLAPPABLE #-} (Selector s, FromHttpApiData c) => GFromForm t (M1 S s (K1 i c)) where
   gFromForm _ opts form = M1 . K1 <$> parseUnique key form
     where
       key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
@@ -518,7 +511,7 @@ instance (Selector s, FromHttpApiData c) => GFromForm t (M1 S s (K1 i [c])) wher
     where
       key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
 
-instance OVERLAPPING_ (Selector s) => GFromForm t (M1 S s (K1 i String)) where
+instance {-# OVERLAPPING #-} (Selector s) => GFromForm t (M1 S s (K1 i String)) where
   gFromForm _ opts form = M1 . K1 <$> parseUnique key form
     where
       key = Text.pack $ fieldLabelModifier opts $ selName (Proxy3 :: Proxy3 s g p)
