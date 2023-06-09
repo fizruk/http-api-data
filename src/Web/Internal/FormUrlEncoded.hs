@@ -1,5 +1,4 @@
 {-# LANGUAGE ConstraintKinds            #-}
-{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE DeriveGeneric              #-}
@@ -293,16 +292,11 @@ fromEntriesByKey = Form . HashMap.fromListWith (<>) . map (toFormKey *** map toQ
 data Proxy3 a b c = Proxy3
 
 type family NotSupported (cls :: k1) (a :: k2) (reason :: Symbol) :: Constraint where
-#if __GLASGOW_HASKELL__ < 800
-  -- this is just a placeholder case for older GHCs to not freak out on an empty closed type family
-  NotSupported cls a "this type family is actually empty" = ()
-#else
   NotSupported cls a reason = TypeError
     ( 'Text "Cannot derive a Generic-based " ':<>: 'ShowType cls ':<>: 'Text " instance for " ':<>: 'ShowType a ':<>: 'Text "." ':$$:
       'ShowType a ':<>: 'Text " " ':<>: 'Text reason ':<>: 'Text "," ':$$:
       'Text "but Generic-based " ':<>: 'ShowType cls ':<>: 'Text " instances can be derived only for records" ':$$:
       'Text "(i.e. product types with named fields)." )
-#endif
 
 -- | A 'Generic'-based implementation of 'toForm'.
 -- This is used as a default implementation in 'ToForm'.

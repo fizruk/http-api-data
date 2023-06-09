@@ -1,12 +1,6 @@
-{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Web.Internal.FormUrlEncodedSpec (spec) where
-
-#if __GLASGOW_HASKELL__ < 710
-import Control.Applicative
-import Data.Monoid
-#endif
 
 import Control.Monad ((<=<))
 import qualified Data.ByteString.Lazy.Char8 as BSL
