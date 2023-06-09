@@ -21,8 +21,6 @@ import           Prelude.Compat
 import           Control.Applicative          (Const(Const))
 import           Control.Arrow                (left, (&&&))
 import           Control.Monad                ((<=<))
-import qualified Data.Attoparsec.Text         as Atto
-import qualified Data.Attoparsec.Time         as Atto
 import           Data.ByteString              (ByteString)
 import qualified Data.ByteString              as BS
 import qualified Data.ByteString.Builder      as BS
@@ -46,19 +44,18 @@ import           Data.Text.Encoding           (decodeUtf8', decodeUtf8With,
                                                encodeUtf8)
 import           Data.Text.Encoding.Error     (lenientDecode)
 import qualified Data.Text.Lazy               as L
+import           Data.Text.Lazy.Builder       (Builder, toLazyText)
 import           Data.Text.Read               (Reader, decimal, rational,
                                                signed)
-import           Data.Time.Compat             (Day, FormatTime, LocalTime,
+import qualified Data.Time.ToText             as TT
+import qualified Data.Time.FromText           as FT
+import           Data.Time.Compat             (Day, LocalTime,
                                                NominalDiffTime, TimeOfDay,
-                                               UTCTime, ZonedTime, formatTime,
-                                               DayOfWeek (..),
+                                               UTCTime, ZonedTime, DayOfWeek (..),
                                                nominalDiffTimeToSeconds,
                                                secondsToNominalDiffTime)
-import           Data.Time.Format.Compat      (defaultTimeLocale,
-                                               iso8601DateFormat)
 import           Data.Time.Calendar.Month.Compat (Month)
-import           Data.Time.Calendar.Quarter.Compat (Quarter, QuarterOfYear (..),
-                                               toYearQuarter)
+import           Data.Time.Calendar.Quarter.Compat (Quarter, QuarterOfYear (..))
 import           Data.Typeable                (Typeable)
 import qualified Data.UUID.Types              as UUID
 import           Data.Version                 (Version, parseVersion,
@@ -491,18 +488,15 @@ instance F.HasResolution a => ToHttpApiData (F.Fixed (a :: Type)) where toUrlPie
 -- >>> toUrlPiece (fromGregorian 2015 10 03)
 -- "2015-10-03"
 instance ToHttpApiData Day where
-  toUrlPiece = T.pack . show
+  toUrlPiece = runTT TT.buildDay
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
   toEncodedQueryParam = unsafeToEncodedQueryParam
 
-timeToUrlPiece :: FormatTime t => String -> t -> Text
-timeToUrlPiece fmt = T.pack . formatTime defaultTimeLocale (iso8601DateFormat (Just fmt))
-
 -- |
 -- >>> toUrlPiece $ TimeOfDay 14 55 23.1
--- "14:55:23.1"
+-- "14:55:23.100"
 instance ToHttpApiData TimeOfDay where
-  toUrlPiece = T.pack . formatTime defaultTimeLocale "%H:%M:%S%Q"
+  toUrlPiece = runTT TT.buildTimeOfDay
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
   -- no toEncodedQueryParam as : is unsafe char.
 
@@ -510,23 +504,27 @@ instance ToHttpApiData TimeOfDay where
 -- >>> toUrlPiece $ LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 21.687)
 -- "2015-10-03T14:55:21.687"
 instance ToHttpApiData LocalTime where
-  toUrlPiece = timeToUrlPiece "%H:%M:%S%Q"
+  toUrlPiece = runTT TT.buildLocalTime
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
   -- no toEncodedQueryParam as : is unsafe char.
 
 -- |
 -- >>> toUrlPiece $ ZonedTime (LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 51.001)) utc
--- "2015-10-03T14:55:51.001+0000"
+-- "2015-10-03T14:55:51.001Z"
+--
+-- >>> toUrlPiece $ ZonedTime (LocalTime (fromGregorian 2015 10 03) (TimeOfDay 14 55 51.001)) (TimeZone 120 True "EET")
+-- "2015-10-03T14:55:51.001+02:00"
+--
 instance ToHttpApiData ZonedTime where
-  toUrlPiece = timeToUrlPiece "%H:%M:%S%Q%z"
+  toUrlPiece = runTT TT.buildZonedTime
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
   -- no toEncodedQueryParam as : is unsafe char.
 
 -- |
 -- >>> toUrlPiece $ UTCTime (fromGregorian 2015 10 03) 864.5
--- "2015-10-03T00:14:24.5Z"
+-- "2015-10-03T00:14:24.500Z"
 instance ToHttpApiData UTCTime where
-  toUrlPiece = timeToUrlPiece "%H:%M:%S%QZ"
+  toUrlPiece = runTT TT.buildUTCTime
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
   -- no toEncodedQueryParam as : is unsafe char.
 
@@ -549,10 +547,7 @@ instance ToHttpApiData DayOfWeek where
 -- >>> toUrlPiece Q4
 -- "q4"
 instance ToHttpApiData QuarterOfYear where
-  toUrlPiece Q1 = "q1"
-  toUrlPiece Q2 = "q2"
-  toUrlPiece Q3 = "q3"
-  toUrlPiece Q4 = "q4"
+  toUrlPiece = runTT TT.buildQuarterOfYear
 
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
   toEncodedQueryParam = unsafeToEncodedQueryParam
@@ -566,13 +561,7 @@ instance ToHttpApiData QuarterOfYear where
 -- "2010-q1"
 --
 instance ToHttpApiData Quarter where
-  toUrlPiece q = case toYearQuarter q of
-    (y, qoy) -> T.pack (show y ++ "-" ++ f qoy)
-    where
-      f Q1 = "q1"
-      f Q2 = "q2"
-      f Q3 = "q3"
-      f Q4 = "q4"
+  toUrlPiece = runTT TT.buildQuarter
 
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
   toEncodedQueryParam = unsafeToEncodedQueryParam
@@ -586,7 +575,7 @@ instance ToHttpApiData Quarter where
 -- "2040-03"
 --
 instance ToHttpApiData Month where
-  toUrlPiece = T.pack . formatTime defaultTimeLocale "%Y-%m"
+  toUrlPiece = runTT TT.buildMonth
 
   toEncodedUrlPiece = unsafeToEncodedUrlPiece
   toEncodedQueryParam = unsafeToEncodedQueryParam
@@ -769,17 +758,17 @@ instance F.HasResolution a => FromHttpApiData (F.Fixed (a :: Type)) where
 -- |
 -- >>> toGregorian <$> parseUrlPiece "2016-12-01"
 -- Right (2016,12,1)
-instance FromHttpApiData Day where parseUrlPiece = runAtto Atto.day
+instance FromHttpApiData Day where parseUrlPiece = runFT FT.parseDay
 
 -- |
 -- >>> parseUrlPiece "14:55:01.333" :: Either Text TimeOfDay
 -- Right 14:55:01.333
-instance FromHttpApiData TimeOfDay where parseUrlPiece = runAtto Atto.timeOfDay
+instance FromHttpApiData TimeOfDay where parseUrlPiece = runFT FT.parseTimeOfDay
 
 -- |
 -- >>> parseUrlPiece "2015-10-03T14:55:01" :: Either Text LocalTime
 -- Right 2015-10-03 14:55:01
-instance FromHttpApiData LocalTime where parseUrlPiece = runAtto Atto.localTime
+instance FromHttpApiData LocalTime where parseUrlPiece = runFT FT.parseLocalTime
 
 -- |
 -- >>> parseUrlPiece "2015-10-03T14:55:01+0000" :: Either Text ZonedTime
@@ -787,12 +776,12 @@ instance FromHttpApiData LocalTime where parseUrlPiece = runAtto Atto.localTime
 --
 -- >>> parseQueryParam "2016-12-31T01:00:00Z" :: Either Text ZonedTime
 -- Right 2016-12-31 01:00:00 +0000
-instance FromHttpApiData ZonedTime where parseUrlPiece = runAtto Atto.zonedTime
+instance FromHttpApiData ZonedTime where parseUrlPiece = runFT FT.parseZonedTime
 
 -- |
 -- >>> parseUrlPiece "2015-10-03T00:14:24Z" :: Either Text UTCTime
 -- Right 2015-10-03 00:14:24 UTC
-instance FromHttpApiData UTCTime   where parseUrlPiece = runAtto Atto.utcTime
+instance FromHttpApiData UTCTime   where parseUrlPiece = runFT FT.parseUTCTime
 
 -- |
 -- >>> parseUrlPiece "Monday" :: Either Text DayOfWeek
@@ -811,12 +800,12 @@ instance FromHttpApiData NominalDiffTime where parseUrlPiece = fmap secondsToNom
 -- |
 -- >>> parseUrlPiece "2021-01" :: Either Text Month
 -- Right 2021-01
-instance FromHttpApiData Month where parseUrlPiece = runAtto Atto.month
+instance FromHttpApiData Month where parseUrlPiece = runFT FT.parseMonth
 
 -- |
 -- >>> parseUrlPiece "2021-q1" :: Either Text Quarter
 -- Right 2021-Q1
-instance FromHttpApiData Quarter where parseUrlPiece = runAtto Atto.quarter
+instance FromHttpApiData Quarter where parseUrlPiece = runFT FT.parseQuarter
 
 -- |
 -- >>> parseUrlPiece "q2" :: Either Text QuarterOfYear
@@ -824,13 +813,7 @@ instance FromHttpApiData Quarter where parseUrlPiece = runAtto Atto.quarter
 --
 -- >>> parseUrlPiece "Q3" :: Either Text QuarterOfYear
 -- Right Q3
-instance FromHttpApiData QuarterOfYear where
-    parseUrlPiece t = case T.toLower t of
-        "q1"  -> return Q1
-        "q2"  -> return Q2
-        "q3"  -> return Q3
-        "q4"  -> return Q4
-        _     -> Left "Invalid quarter of year"
+instance FromHttpApiData QuarterOfYear where parseUrlPiece = runFT FT.parseQuarterOfYear
 
 instance FromHttpApiData All where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text Bool)
 instance FromHttpApiData Any where parseUrlPiece = coerce (parseUrlPiece :: Text -> Either Text Bool)
@@ -914,12 +897,13 @@ instance FromHttpApiData a => FromHttpApiData (Identity a) where
   parseQueryParam = coerce (parseQueryParam :: Text -> Either Text a)
 
 -------------------------------------------------------------------------------
--- Attoparsec helpers
+-- Helpers
 -------------------------------------------------------------------------------
 
-runAtto :: Atto.Parser a -> Text -> Either Text a
-runAtto p t = case Atto.parseOnly (p <* Atto.endOfInput) t of
+runTT :: (a -> Builder) -> a -> Text
+runTT f x = L.toStrict (toLazyText (f x))
+
+runFT :: (Text -> Either String a) -> Text -> Either Text a
+runFT f t = case f t of
     Left err -> Left (T.pack err)
     Right x  -> Right x
-
-

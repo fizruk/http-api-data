@@ -1,3 +1,16 @@
+0.6
+---
+
+* Use [`text-iso8601`](https://hackage.haskell.org/package/text-iso8601)
+  to parse and serialise `time` types. (Instead of `attoparsec-iso8601`).
+  Due this change some formats are slightly changed:
+
+  - Space between timezone is not accepted
+  - Timezone offset can be between -23:59..23:59
+  - Timezone offset is output with colon between hours and minutes
+
+* Require at least GHC-8.2
+
 0.5.1
 -----
 
