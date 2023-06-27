@@ -93,9 +93,6 @@ test-suite spec
                    , unordered-containers
                    , uuid-types
 
-    if !impl(ghc >= 7.10)
-      build-depends: nats
-
     build-depends:   HUnit                >= 1.6.0.0  && <1.7
                    , hspec                >= 2.7.1    && <2.11
                    , QuickCheck           >= 2.13.1   && <2.15
