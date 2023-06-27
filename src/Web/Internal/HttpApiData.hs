@@ -15,9 +15,6 @@
 -- such as URL pieces, headers and query parameters.
 module Web.Internal.HttpApiData where
 
-import           Prelude                      ()
-import           Prelude.Compat
-
 import           Control.Applicative          (Const(Const))
 import           Control.Arrow                (left, (&&&))
 import           Control.Monad                ((<=<))
