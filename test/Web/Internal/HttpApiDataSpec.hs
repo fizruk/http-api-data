@@ -2,9 +2,6 @@
 module Web.Internal.HttpApiDataSpec (spec) where
 
 
-import           Prelude                    ()
-import           Prelude.Compat
-
 import qualified Data.ByteString            as BS
 import           Data.ByteString.Builder    (toLazyByteString)
 import           Data.Char

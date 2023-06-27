@@ -15,9 +15,6 @@
 {-# LANGUAGE UndecidableInstances       #-}
 module Web.Internal.FormUrlEncoded where
 
-import           Prelude                    ()
-import           Prelude.Compat
-
 import           Control.Applicative        (Const(Const))
 import           Control.Arrow              ((***))
 import           Control.Monad              ((<=<))
