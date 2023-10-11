@@ -1,6 +1,7 @@
 cabal-version:   1.12
 name:            http-api-data
 version:         0.6
+x-revision:      1
 
 synopsis:        Converting to/from HTTP API data like URL pieces, headers and query parameters.
 category:        Web
@@ -30,8 +31,9 @@ tested-with:
   GHC==8.10.7,
   GHC==9.0.2,
   GHC==9.2.8,
-  GHC==9.4.5,
-  GHC==9.6.2
+  GHC==9.4.7,
+  GHC==9.6.3,
+  GHC==9.8.1
 
 flag use-text-show
   description: Use text-show library for efficient ToHttpApiData implementations.
@@ -42,10 +44,10 @@ library
     hs-source-dirs: src/
 
     -- GHC bundled
-    build-depends:   base                  >= 4.10.1.0 && < 4.19
-                   , bytestring            >= 0.10.8.2 && < 0.12
+    build-depends:   base                  >= 4.10.1.0 && < 4.20
+                   , bytestring            >= 0.10.8.2 && < 0.13
                    , containers            >= 0.5.10.2 && < 0.7
-                   , text                  >= 1.2.3.0  && < 1.3 || >=2.0 && <2.1
+                   , text                  >= 1.2.3.0  && < 1.3 || >=2.0 && <2.2
                    , transformers          >= 0.5.2.0  && < 0.7
 
     -- other-dependencies
@@ -81,7 +83,7 @@ test-suite spec
     hs-source-dirs: test
     ghc-options:   -Wall
     default-language: Haskell2010
-    build-tool-depends: hspec-discover:hspec-discover >= 2.7.1 && <2.11
+    build-tool-depends: hspec-discover:hspec-discover >= 2.7.1 && <2.12
     -- inherited  depndencies
     build-depends:
                      base
@@ -94,7 +96,7 @@ test-suite spec
                    , uuid-types
 
     build-depends:   HUnit                >= 1.6.0.0  && <1.7
-                   , hspec                >= 2.7.1    && <2.11
+                   , hspec                >= 2.7.1    && <2.12
                    , QuickCheck           >= 2.13.1   && <2.15
                    , quickcheck-instances >= 0.3.25.2 && <0.4
 
