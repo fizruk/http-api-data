@@ -1,3 +1,8 @@
+0.7
+
+* Change Form representation to use Map (from `containers`) instead of `HashMap`.
+  This prevents possible HashDOS attacks.
+
 0.6.3
 
 * Add To/FromForm instances for () and Void
