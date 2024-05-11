@@ -25,14 +25,11 @@ import           Data.Coerce                (coerce)
 import qualified Data.Foldable              as F
 import           Data.Functor.Identity      (Identity(Identity))
 import           Data.Hashable              (Hashable)
-import           Data.HashMap.Strict        (HashMap)
-import qualified Data.HashMap.Strict        as HashMap
+import qualified Data.Map.Strict            as Map
 import           Data.Int                   (Int16, Int32, Int64, Int8)
 import           Data.IntMap                (IntMap)
 import qualified Data.IntMap                as IntMap
 import           Data.List                  (intersperse, sortBy)
-import           Data.Map                   (Map)
-import qualified Data.Map                   as Map
 import           Data.Monoid                (All (..), Any (..), Dual (..),
                                              Product (..), Sum (..))
 import           Data.Ord                   (comparing)
@@ -205,7 +202,7 @@ instance FromFormKey Natural  where parseFormKey = parseQueryParam
 -- | The contents of a form, not yet URL-encoded.
 --
 -- 'Form' can be URL-encoded with 'urlEncodeForm' and URL-decoded with 'urlDecodeForm'.
-newtype Form = Form { unForm :: HashMap Text [Text] }
+newtype Form = Form { unForm :: Map.Map Text [Text] }
   deriving (Eq, Read, Generic, Semigroup, Monoid)
 
 instance Show Form where
@@ -216,8 +213,8 @@ instance Show Form where
 -- For a stable conversion use 'toListStable'.
 instance IsList Form where
   type Item Form = (Text, Text)
-  fromList = Form . HashMap.fromListWith (flip (<>)) . fmap (\(k, v) -> (k, [v]))
-  toList = concatMap (\(k, vs) -> map ((,) k) vs) . HashMap.toList . unForm
+  fromList = Form . Map.fromListWith (flip (<>)) . fmap (\(k, v) -> (k, [v]))
+  toList = concatMap (\(k, vs) -> map ((,) k) vs) . Map.toList . unForm
 
 -- | A stable version of 'toList'.
 toListStable :: Form -> [(Text, Text)]
@@ -270,11 +267,8 @@ instance ToForm Form where toForm = id
 instance (ToFormKey k, ToHttpApiData v) => ToForm [(k, v)] where
   toForm = fromList . map (toFormKey *** toQueryParam)
 
-instance (ToFormKey k, ToHttpApiData v) => ToForm (Map k [v]) where
+instance (ToFormKey k, ToHttpApiData v) => ToForm (Map.Map k [v]) where
   toForm = fromEntriesByKey . Map.toList
-
-instance (ToFormKey k, ToHttpApiData v) => ToForm (HashMap k [v]) where
-  toForm = fromEntriesByKey . HashMap.toList
 
 instance ToHttpApiData v => ToForm (IntMap [v]) where
   toForm = fromEntriesByKey . IntMap.toList
@@ -284,7 +278,7 @@ instance ToHttpApiData v => ToForm (IntMap [v]) where
 -- >>> fromEntriesByKey [("name",["Nick"]),("color",["red","blue"])]
 -- fromList [("color","red"),("color","blue"),("name","Nick")]
 fromEntriesByKey :: (ToFormKey k, ToHttpApiData v) => [(k, [v])] -> Form
-fromEntriesByKey = Form . HashMap.fromListWith (<>) . map (toFormKey *** map toQueryParam)
+fromEntriesByKey = Form . Map.fromListWith (<>) . map (toFormKey *** map toQueryParam)
 
 data Proxy3 a b c = Proxy3
 
@@ -417,11 +411,8 @@ instance FromForm Form where fromForm = pure
 instance (FromFormKey k, FromHttpApiData v) => FromForm [(k, v)] where
   fromForm = fmap (concatMap (\(k, vs) -> map ((,) k) vs)) . toEntriesByKey
 
-instance (Ord k, FromFormKey k, FromHttpApiData v) => FromForm (Map k [v]) where
+instance (Ord k, Eq k, Hashable k, FromFormKey k, FromHttpApiData v) => FromForm (Map.Map k [v]) where
   fromForm = fmap (Map.fromListWith (<>)) . toEntriesByKey
-
-instance (Eq k, Hashable k, FromFormKey k, FromHttpApiData v) => FromForm (HashMap k [v]) where
-  fromForm = fmap (HashMap.fromListWith (<>)) . toEntriesByKey
 
 instance FromHttpApiData v => FromForm (IntMap [v]) where
   fromForm = fmap (IntMap.fromListWith (<>)) . toEntriesByKey
@@ -431,7 +422,7 @@ instance FromHttpApiData v => FromForm (IntMap [v]) where
 -- _NOTE:_ this conversion is unstable and may result in different key order
 -- (but not values). For a stable encoding see 'toEntriesByKeyStable'.
 toEntriesByKey :: (FromFormKey k, FromHttpApiData v) => Form -> Either Text [(k, [v])]
-toEntriesByKey = traverse parseGroup . HashMap.toList . unForm
+toEntriesByKey = traverse parseGroup . Map.toList . unForm
   where
     parseGroup (k, vs) = (,) <$> parseFormKey k <*> traverse parseQueryParam vs
 
@@ -658,7 +649,7 @@ urlEncodeAsFormStable = urlEncodeFormStable . toForm
 -- >>> lookupAll "name" [("name", "Oleg"), ("name", "David")]
 -- ["Oleg","David"]
 lookupAll :: Text -> Form -> [Text]
-lookupAll key = F.concat . HashMap.lookup key . unForm
+lookupAll key = F.concat . Map.lookup key . unForm
 
 -- | Lookup an optional value for a key.
 -- Fail if there is more than one value.
