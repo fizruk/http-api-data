@@ -58,7 +58,6 @@ library
                    , text-iso8601          >= 0.1      && < 0.2
                    , tagged                >= 0.8.5    && < 0.9
                    , time-compat           >= 1.9.5    && < 1.10
-                   , unordered-containers  >= 0.2.10.0 && < 0.3
                    , uuid-types            >= 1.0.3    && < 1.1
 
     if flag(use-text-show)
@@ -92,7 +91,7 @@ test-suite spec
                    , http-api-data
                    , text
                    , time-compat
-                   , unordered-containers
+                   , containers
                    , uuid-types
 
     build-depends:   HUnit                >= 1.6.0.0  && <1.7

@@ -4,7 +4,7 @@ module Web.Internal.FormUrlEncodedSpec (spec) where
 
 import Control.Monad ((<=<))
 import qualified Data.ByteString.Lazy.Char8 as BSL
-import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Map.Strict            as Map
 import Data.Text (Text, unpack)
 import Test.Hspec
 import Test.QuickCheck
@@ -27,13 +27,13 @@ genericSpec = describe "Default (generic) instances" $ do
 
     it "contains the record names" $ property $ \(x :: SimpleRec) -> do
       let f = unForm $ toForm x
-      HashMap.member "rec1" f `shouldBe` True
-      HashMap.member "rec2" f `shouldBe` True
+      Map.member "rec1" f `shouldBe` True
+      Map.member "rec2" f `shouldBe` True
 
     it "contains the correct record values" $ property $ \(x :: SimpleRec) -> do
       let f = unForm $ toForm x
-      HashMap.lookup "rec1" f `shouldBe` Just [rec1 x]
-      (parseQueryParams <$> HashMap.lookup "rec2" f) `shouldBe` Just (Right [rec2 x])
+      Map.lookup "rec1" f `shouldBe` Just [rec1 x]
+      (parseQueryParams <$> Map.lookup "rec2" f) `shouldBe` Just (Right [rec2 x])
 
   context "FromForm" $ do
 
