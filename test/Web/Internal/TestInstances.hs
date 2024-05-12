@@ -8,6 +8,7 @@ module Web.Internal.TestInstances
    , NoEmptyKeyForm(..)
    ) where
 
+import           Control.Applicative  -- for ghc < 9.6
 import           Data.Char
 import qualified Data.Map.Strict      as Map
 import qualified Data.Text            as T
