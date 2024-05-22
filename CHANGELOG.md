@@ -1,3 +1,10 @@
+0.6.1
+
+* Require at least GHC-8.6
+* Support `cookie-0.5.0`, see [#137](https://github.com/fizruk/http-api-data/pull/137).
+
+  Note that `cookie-0.5.0`'s parser now removes double quotes around cookie values.
+
 0.6
 ---
 
