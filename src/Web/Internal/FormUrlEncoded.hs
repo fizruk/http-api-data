@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE CPP                        #-}
 module Web.Internal.FormUrlEncoded where
 
 import           Control.Applicative        (Const(Const))
@@ -57,6 +58,11 @@ import           GHC.TypeLits
 import           Network.HTTP.Types.URI     (urlDecode, urlEncodeBuilder)
 import           Numeric.Natural            (Natural)
 import           Web.Internal.HttpApiData
+#if MIN_VERSION_base(4,17,0)
+import           GHC.Generics               (Generically(Generically))           
+#else 
+import           GHC.Generics.Generically   (Generically(Generically))
+#endif
 
 -- $setup
 -- >>> :set -XDeriveGeneric -XOverloadedLists -XOverloadedStrings -XFlexibleContexts -XScopedTypeVariables -XTypeFamilies
@@ -265,6 +271,9 @@ class ToForm a where
   default toForm :: (Generic a, GToForm a (Rep a)) => a -> Form
   toForm = genericToForm defaultFormOptions
 
+instance (Generic a, GToForm a (Rep a)) => ToForm (Generically a) where
+  toForm (Generically a) = genericToForm defaultFormOptions a
+
 instance ToForm Form where toForm = id
 
 instance (ToFormKey k, ToHttpApiData v) => ToForm [(k, v)] where
@@ -410,6 +419,9 @@ class FromForm a where
   fromForm :: Form -> Either Text a
   default fromForm :: (Generic a, GFromForm a (Rep a)) => Form -> Either Text a
   fromForm = genericFromForm defaultFormOptions
+
+instance (Generic a, GFromForm a (Rep a)) => FromForm (Generically a) where
+  fromForm a = Generically <$> genericFromForm defaultFormOptions a
 
 instance FromForm Form where fromForm = pure
 
