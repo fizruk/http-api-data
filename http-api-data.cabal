@@ -1,6 +1,7 @@
 cabal-version:   1.12
 name:            http-api-data
 version:         0.6.1
+x-revision:      1
 
 synopsis:        Converting to/from HTTP API data like URL pieces, headers and query parameters.
 category:        Web
@@ -29,7 +30,7 @@ tested-with:
   GHC==9.0.2,
   GHC==9.2.8,
   GHC==9.4.8,
-  GHC==9.6.5,
+  GHC==9.6.6,
   GHC==9.8.2,
   GHC==9.10.1
 
@@ -51,7 +52,7 @@ library
     -- other-dependencies
     build-depends:
                      cookie                >= 0.4.3    && < 0.6
-                   , hashable              >= 1.4.4.0  && < 1.5
+                   , hashable              >= 1.4.4.0  && < 1.6
                    , http-types            >= 0.12.4   && < 0.13
                    , text-iso8601          >= 0.1.1    && < 0.2
                    , tagged                >= 0.8.8    && < 0.9
