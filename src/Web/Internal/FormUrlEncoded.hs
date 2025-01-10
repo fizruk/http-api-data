@@ -49,7 +49,7 @@ import           Data.Time.Compat           (Day, LocalTime, NominalDiffTime,
                                              UTCTime, ZonedTime)
 import           Data.Time.Calendar.Month.Compat (Month)
 import           Data.Time.Calendar.Quarter.Compat (Quarter, QuarterOfYear (..))
-import           Data.Void                  (Void)
+import           Data.Void                  (Void, absurd)
 import           Data.Word                  (Word16, Word32, Word64, Word8)
 import           GHC.Exts                   (Constraint, IsList (..))
 import           GHC.Generics
@@ -267,7 +267,7 @@ class ToForm a where
 
 instance ToForm Form where toForm = id
 
-instance ToForm Void where toForm _ = Form HashMap.empty
+instance ToForm Void where toForm = absurd
 
 instance ToForm () where toForm _ = Form HashMap.empty
 
