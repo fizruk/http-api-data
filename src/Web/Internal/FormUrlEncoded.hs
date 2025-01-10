@@ -49,7 +49,7 @@ import           Data.Time.Compat           (Day, LocalTime, NominalDiffTime,
                                              UTCTime, ZonedTime)
 import           Data.Time.Calendar.Month.Compat (Month)
 import           Data.Time.Calendar.Quarter.Compat (Quarter, QuarterOfYear (..))
-import           Data.Void                  (Void)
+import           Data.Void                  (Void, absurd)
 import           Data.Word                  (Word16, Word32, Word64, Word8)
 import           GHC.Exts                   (Constraint, IsList (..))
 import           GHC.Generics
@@ -267,6 +267,10 @@ class ToForm a where
 
 instance ToForm Form where toForm = id
 
+instance ToForm Void where toForm = absurd
+
+instance ToForm () where toForm _ = Form HashMap.empty
+
 instance (ToFormKey k, ToHttpApiData v) => ToForm [(k, v)] where
   toForm = fromList . map (toFormKey *** toQueryParam)
 
@@ -412,6 +416,10 @@ class FromForm a where
   fromForm = genericFromForm defaultFormOptions
 
 instance FromForm Form where fromForm = pure
+
+instance FromForm Void where fromForm _ = Left "fromForm: Void"
+
+instance FromForm () where fromForm _ = Right ()
 
 -- | _NOTE:_ this conversion is unstable and may result in different key order (but not values).
 instance (FromFormKey k, FromHttpApiData v) => FromForm [(k, v)] where
