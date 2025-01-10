@@ -267,6 +267,10 @@ class ToForm a where
 
 instance ToForm Form where toForm = id
 
+instance ToForm Void where toForm _ = Form HashMap.empty
+
+instance ToForm () where toForm _ = Form HashMap.empty
+
 instance (ToFormKey k, ToHttpApiData v) => ToForm [(k, v)] where
   toForm = fromList . map (toFormKey *** toQueryParam)
 
@@ -412,6 +416,8 @@ class FromForm a where
   fromForm = genericFromForm defaultFormOptions
 
 instance FromForm Form where fromForm = pure
+
+instance FromForm () where fromForm _ = Right ()
 
 -- | _NOTE:_ this conversion is unstable and may result in different key order (but not values).
 instance (FromFormKey k, FromHttpApiData v) => FromForm [(k, v)] where
