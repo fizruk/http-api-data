@@ -417,6 +417,8 @@ class FromForm a where
 
 instance FromForm Form where fromForm = pure
 
+instance FromForm Void where fromForm _ = Left "fromForm: Void"
+
 instance FromForm () where fromForm _ = Right ()
 
 -- | _NOTE:_ this conversion is unstable and may result in different key order (but not values).
