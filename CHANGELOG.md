@@ -1,3 +1,7 @@
+0.6.3
+
+* Add To/FromForm instances for () and Void
+
 0.6.2
 
 * Support GHC-9.12
