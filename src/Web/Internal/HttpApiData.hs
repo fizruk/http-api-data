@@ -870,7 +870,7 @@ instance FromHttpApiData a => FromHttpApiData (LenientData a) where
 -- | /Note:/ this instance works correctly for alphanumeric name and value
 --
 -- >>> parseUrlPiece "SESSID=r2t5uvjq435r4q7ib3vtdjq120" :: Either Text SetCookie
--- Right (SetCookie {setCookieName = "SESSID", setCookieValue = "r2t5uvjq435r4q7ib3vtdjq120", setCookiePath = Nothing, setCookieExpires = Nothing, setCookieMaxAge = Nothing, setCookieDomain = Nothing, setCookieHttpOnly = False, setCookieSecure = False, setCookieSameSite = Nothing})
+-- Right (SetCookie {setCookieName = "SESSID", setCookieValue = "r2t5uvjq435r4q7ib3vtdjq120", setCookiePath = Nothing, setCookieExpires = Nothing, setCookieMaxAge = Nothing, setCookieDomain = Nothing, setCookieHttpOnly = False, setCookieSecure = False, setCookieSameSite = Nothing, setCookiePartitioned = False})
 instance FromHttpApiData SetCookie where
   parseUrlPiece = parseHeader  . encodeUtf8
   parseHeader   = Right . parseSetCookie
