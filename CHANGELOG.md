@@ -1,3 +1,8 @@
+0.6.2
+
+* Support GHC-9.12
+* Require `cookie-0.5.1`
+
 0.6.1
 
 * Require at least GHC-8.6
