@@ -28,11 +28,10 @@ import qualified Data.Fixed                   as F
 import           Data.Functor.Identity        (Identity(Identity))
 import           Data.Int                     (Int16, Int32, Int64, Int8)
 import           Data.Kind                    (Type)
-import qualified Data.Map                     as Map
+import qualified Data.Map.Strict              as Map
 import           Data.Monoid                  (All (..), Any (..), Dual (..),
                                                First (..), Last (..),
                                                Product (..), Sum (..))
-import           Data.Semigroup               (Semigroup (..))
 import qualified Data.Semigroup               as Semi
 import           Data.Tagged                  (Tagged (..))
 import           Data.Text                    (Text)

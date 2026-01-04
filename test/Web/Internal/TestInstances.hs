@@ -8,9 +8,9 @@ module Web.Internal.TestInstances
    , NoEmptyKeyForm(..)
    ) where
 
-import           Control.Applicative
+import           Control.Applicative  -- for ghc < 9.6
 import           Data.Char
-import qualified Data.HashMap.Strict  as HashMap
+import qualified Data.Map.Strict      as Map
 import qualified Data.Text            as T
 import           Data.Time.Compat
 import           GHC.Exts             (fromList)
@@ -63,4 +63,4 @@ newtype NoEmptyKeyForm =
 instance Arbitrary NoEmptyKeyForm where
   arbitrary = NoEmptyKeyForm . removeEmptyKeys <$> arbitrary
     where
-      removeEmptyKeys (Form m) = Form (HashMap.delete "" m)
+      removeEmptyKeys (Form m) = Form (Map.delete "" m)
