@@ -39,12 +39,12 @@ genericSpec = describe "Default (generic) instances" $ do
 
     it "is the right inverse of ToForm" $ property $ \x (y :: Int) -> do
       let f1 = fromList [("rec1", x), ("rec2", toQueryParam y)]
-          Right r1 = fromForm f1 :: Either Text SimpleRec
-      toForm r1 `shouldBe` f1
+          r1 = fromForm f1 :: Either Text SimpleRec
+      fmap toForm r1 `shouldBe` Right f1
 
     it "returns the underlying error" $ do
       let f = fromList [("rec1", "anything"), ("rec2", "bad")]
-          Left e = fromForm f :: Either Text SimpleRec
+          e = either id (const "no error") (fromForm f :: Either Text SimpleRec)
       unpack e `shouldContain` "input does not start with a digit"
 
 urlEncoding :: Spec
