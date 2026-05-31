@@ -94,8 +94,8 @@ test-suite spec
                    , uuid-types
 
     build-depends:   hspec                >= 2.7.1    && <2.12
-                   , QuickCheck           >= 2.13.1   && <2.16
-                   , quickcheck-instances >= 0.3.25.2 && <0.4
+                   , QuickCheck           >= 2.13.1   && <2.19
+                   , quickcheck-instances >= 0.3.25.2 && <0.5
 
 source-repository head
   type:     git
